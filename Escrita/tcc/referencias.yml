@@ -1,0 +1,244 @@
+abdelmoneim2023:
+  type: article
+  title: Internet of Things (IoT) for Soil Moisture Tensiometer Automation
+  author:
+    - Abdelmoneim, Ahmed A.
+    - Khadra, Roula
+    - Derardja, Bilal
+    - Dragonetti, Giovanna
+  date: 2023-01
+  page-range: 263
+  serial-number:
+    doi: 10.3390/mi14020263
+  parent:
+    type: periodical
+    title: Micromachines
+    volume: 14
+    issue: 2
+    location: Basel
+
+correaquiroz2025:
+  type: article
+  title: IoT System with ESP32 for Smart Drip Irrigation and Climate Monitoring in Greenhouses
+  author:
+    - Correa-Quiroz, J. J.
+    - Toribio-Barrueto, M. A.
+    - Castro-Vargas, C.
+  date: 2025-06
+  page-range: 1133-1157
+  parent:
+    type: periodical
+    title: Emerging Science Journal
+    volume: 9
+    issue: 3
+
+elijah2018:
+  type: article
+  title: "An Overview of Internet of Things (IoT) and Data Analytics in Agriculture: Benefits and Challenges"
+  author:
+    - Elijah, Olakunle
+    - Rahman, Tharek Abdul
+    - Orikumhi, Igbafe
+    - Leow, Chee Yen
+    - Hindia, M. Nour
+  date: 2018-10
+  page-range: 3758-3773
+  serial-number:
+    doi: 10.1109/JIOT.2018.2844296
+  parent:
+    type: periodical
+    title: IEEE Internet of Things Journal
+    volume: 5
+    issue: 5
+
+garcia2020:
+  type: article
+  title: "IoT-Based Smart Irrigation Systems: An Overview on the Recent Trends on Sensors and IoT Systems for Irrigation in Precision Agriculture"
+  author:
+    - García, Laura
+    - Parra, Lorena
+    - Jimenez, Jose M.
+    - Lloret, Jaime
+    - Lorenz, Pascal
+  date: 2020-02
+  page-range: 1042
+  serial-number:
+    doi: 10.3390/s20041042
+  parent:
+    type: periodical
+    title: Sensors
+    volume: 20
+    issue: 4
+    location: Basel
+
+gebbers2010:
+  type: article
+  title: Precision Agriculture and Food Security
+  author:
+    - Gebbers, Robin
+    - Adamchuk, Viacheslav I.
+  date: 2010-02
+  page-range: 828-831
+  serial-number:
+    doi: 10.1126/science.1183899
+  parent:
+    type: periodical
+    title: Science
+    volume: 327
+    issue: 5967
+
+ghazi2025:
+  type: article
+  title: "Smart Irrigation Systems: A Comprehensive Review of IoT, AI, and Sustainable Agriculture Technologies. A Review Article"
+  author:
+    - Ghazi, N. M.
+  date: 2025
+  page-range: 266-281
+  parent:
+    type: periodical
+    title: Kirkuk University Journal for Agricultural Sciences
+    location: Kirkuk
+
+lakhiar2024:
+  type: article
+  title: A Review of Precision Irrigation Water-Saving Technology under Changing Climate for Enhancing Water Use Efficiency, Crop Yield, and Environmental Footprints
+  author:
+    - Lakhiar, Imran Ali
+  date: 2024-07
+  page-range: 1141
+  serial-number:
+    doi: 10.3390/agriculture14071141
+  parent:
+    type: periodical
+    title: Agriculture
+    volume: 14
+    issue: 7
+    location: Basel
+
+purnama2024:
+  type: article
+  title: IoT-Based Irrigation Control System with ESP32 for Sustainable Agriculture
+  author:
+    - Purnama, N. A.
+  date: 2024-12
+  page-range: 211-224
+  parent:
+    type: periodical
+    title: "Mars: Jurnal Teknik Mesin, Industri, Elektro dan Ilmu Komputer"
+    volume: 2
+    issue: 6
+
+sarr2026:
+  type: article
+  title: "Agroclimatic Sensing, Communication, and Computational Systems-Based Methods and Technologies for Precision Irrigation Management: Current State and Prospects"
+  author:
+    - Sarr, A.
+  date: 2026-02
+  page-range: 137
+  parent:
+    type: periodical
+    title: Computers
+    volume: 15
+    issue: 2
+    location: Basel
+
+wolfert2017:
+  type: article
+  title: Big Data in Smart Farming -- A review
+  author:
+    - Wolfert, Sjaak
+    - Ge, Lan
+    - Verdouw, Cor
+    - Bogaardt, Marc-Jeroen
+  date: 2017
+  page-range: 69-80
+  serial-number:
+    doi: 10.1016/j.agsy.2017.01.023
+  parent:
+    type: periodical
+    title: Agricultural Systems
+    volume: 153
+
+# ---------------------------------------------------------------------------
+# Referências acrescentadas no TCC 2
+# ---------------------------------------------------------------------------
+
+azevedo1999:
+  type: report
+  title: "Tensiômetro: dispositivo prático para controle da irrigação"
+  author:
+    - Azevedo, Juscelino Antônio de
+    - Silva, Euzebio Medrado da
+  date: 1999
+  page-total: 33
+  publisher:
+    name: Embrapa Cerrados
+    location: Planaltina, DF
+
+cfsensor:
+  type: report
+  title: XGZP6847A Pressure Sensor Module Datasheet
+  author: CFSensor
+  edition: V2.7
+  date: 2024-09-01
+  publisher:
+    name: CFSensor
+
+espressifadc:
+  type: web
+  title: Analog to Digital Converter (ADC) Oneshot Mode Driver
+  author: Espressif Systems
+  parent:
+    type: web
+    title: ESP-IDF Programming Guide
+  url:
+    value: https://docs.espressif.com/projects/esp-idf/en/stable/esp32/api-reference/peripherals/adc/adc_oneshot.html
+    date: 2026-08-25
+
+espressifcali:
+  type: web
+  title: Analog to Digital Converter (ADC) Calibration Driver
+  author: Espressif Systems
+  parent:
+    type: web
+    title: ESP-IDF Programming Guide
+  url:
+    value: https://docs.espressif.com/projects/esp-idf/en/stable/esp32/api-reference/peripherals/adc/adc_calibration.html
+    date: 2026-08-25
+
+naik2017:
+  type: article
+  title: "Choice of effective messaging protocols for IoT systems: MQTT, CoAP, AMQP and HTTP"
+  author:
+    - Naik, Nitin
+  date: 2017-10
+  page-range: 1-7
+  serial-number:
+    doi: 10.1109/SysEng.2017.8088251
+  parent:
+    type: periodical
+    title: 2017 IEEE International Systems Engineering Symposium (ISSE)
+    location: Vienna
+
+provos1999:
+  type: article
+  title: A Future-Adaptable Password Scheme
+  author:
+    - Provos, Niels
+    - Mazières, David
+  date: 1999-06
+  page-range: 81-92
+  parent:
+    type: periodical
+    title: Proceedings of the 1999 USENIX Annual Technical Conference
+    location: Monterey, CA
+
+abnt14105:
+  type: report
+  title: "ABNT NBR 14105-1: medidores de pressão -- Parte 1: medidores analógicos de pressão com sensor de elemento elástico -- requisitos de fabricação, classificação, ensaios e utilização"
+  author:
+    - name: Associação Brasileira de Normas Técnicas
+  date: 2013
+  publisher:
+    name: ABNT
+    location: Rio de Janeiro

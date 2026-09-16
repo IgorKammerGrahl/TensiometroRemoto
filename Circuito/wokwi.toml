@@ -1,0 +1,10 @@
+[wokwi]
+version = 1
+firmware = 'sketch/build/esp32.esp32.esp32doit-devkit-v1/sketch.ino.merged.bin'
+elf = 'sketch/build/esp32.esp32.esp32doit-devkit-v1/sketch.ino.elf'
+
+# Encaminhamento de porta para quando o firmware subir um servidor HTTP.
+# Necessario apenas na etapa de integracao IoT (objetivo especifico 4).
+# [[net.forward]]
+# from = "localhost:8180"
+# to = "target:80"

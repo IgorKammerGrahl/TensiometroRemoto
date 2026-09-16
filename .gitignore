@@ -1,0 +1,23 @@
+# Credenciais do no sensor: token do dispositivo e senha do Wi-Fi.
+# Nunca versionar. Ver Circuito/sketch/config.h.example.
+Circuito/sketch/config.h
+
+# Configuracao local do backend: segredo do HMAC e credencial do banco.
+# Nunca versionar. Ver Backend/.env.example.
+Backend/.env
+
+# Artefatos de compilacao
+Circuito/sketch/build/
+Circuito/teste/teste_payload
+Circuito/teste/teste_prov
+Backend/api
+Backend/devtoken
+
+# Dumps do banco de desenvolvimento. Repositorio publico: cada dump carrega
+# `usuarios` (e-mail e hash bcrypt), `sessoes` (hash de token de sessao ainda
+# dentro da janela de 30 dias) e `devices.token_hash`. Sao backups locais --
+# ficam no disco, nunca no repositorio.
+Backend/dump-*.sql
+
+# Configuracao de IDE
+Backend/.idea/

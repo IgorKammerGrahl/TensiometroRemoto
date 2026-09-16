@@ -1,0 +1,805 @@
+@import './tokens.css';
+
+/* Base e componentes de uso geral.
+ * Poucos componentes de proposito, e todos nascidos de uma tela real -- nao ha
+ * biblioteca de UI aqui para ser preenchida depois. */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+* {
+  margin: 0;
+}
+
+html {
+  /* Cobre a area sob a barra de status quando instalado como PWA. */
+  background: var(--superficie);
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  background: var(--superficie);
+  color: var(--tinta);
+  font-family: var(--fonte-texto);
+  font-size: var(--texto-base);
+  line-height: 1.5;
+  min-height: 100dvh;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1,
+h2,
+h3 {
+  font-weight: 700;
+  line-height: 1.2;
+}
+h1 {
+  font-size: var(--texto-xl);
+}
+h2 {
+  font-size: var(--texto-lg);
+}
+h3 {
+  font-size: var(--texto-base);
+}
+
+/* Foco visivel em TINTA, nao em cor. Duas razoes: cor e reservada para estado,
+ * e um anel preto de 3px tem contraste maior contra as duas superficies do que
+ * qualquer matiz teria. */
+:focus-visible {
+  outline: 3px solid var(--tinta);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+:focus:not(:focus-visible) {
+  outline: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ------------------------------------------------------------------ numeros
+ *
+ * tabular-nums e o motivo de a Plex Mono estar no projeto: o valor pode mudar
+ * a cada atualizacao e a coluna nao pode dancar junto. */
+.numero {
+  font-family: var(--fonte-numero);
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'zero' 1; /* zero cortado, para nao virar "O" */
+}
+
+/* ------------------------------------------------------------------ controles */
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+  color: inherit;
+}
+
+.botao {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--e2);
+  min-height: var(--toque);
+  padding: 0 var(--e5);
+  border: var(--borda-grossa) solid var(--tinta);
+  border-radius: var(--raio);
+  background: var(--tinta);
+  color: var(--superficie);
+  font-weight: 700;
+  cursor: pointer;
+  /* Sem cor: a hierarquia entre acoes e feita em preenchimento vs contorno. */
+  transition: opacity 120ms ease-out;
+}
+.botao:hover:not(:disabled) {
+  opacity: 0.85;
+}
+.botao:active:not(:disabled) {
+  transform: translateY(1px);
+}
+.botao:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+.botao--contorno {
+  background: transparent;
+  color: var(--tinta);
+}
+
+.botao--largo {
+  width: 100%;
+}
+
+.campo {
+  display: flex;
+  flex-direction: column;
+  gap: var(--e2);
+}
+.campo > label {
+  font-size: var(--texto-sm);
+  font-weight: 700;
+  color: var(--tinta-2);
+}
+.campo > input,
+.campo > select {
+  min-height: var(--toque);
+  padding: 0 var(--e3);
+  border: var(--borda-grossa) solid var(--borda-forte);
+  border-radius: var(--raio);
+  background: var(--superficie-2);
+}
+.campo > input:focus,
+.campo > select:focus {
+  border-color: var(--tinta);
+}
+.campo > .dica {
+  font-size: var(--texto-sm);
+  color: var(--tinta-3);
+}
+
+/* ------------------------------------------------------- aviso de erro
+ *
+ * Faixa de erro NAO usa a cor de estresse. Estresse quer dizer "a lavoura esta
+ * secando"; uma senha errada nao e isso. Reutilizar a cor treinaria o usuario a
+ * ignora-la justamente onde ela importa. */
+.aviso {
+  display: flex;
+  gap: var(--e3);
+  padding: var(--e3) var(--e4);
+  border: var(--borda-grossa) solid var(--tinta);
+  border-left-width: 6px;
+  border-radius: var(--raio);
+  background: var(--superficie-afundada);
+  font-size: var(--texto-sm);
+}
+
+/* -------------------------------------------------------------- estado
+ *
+ * A marca de estado. TRES codigos redundantes no mesmo elemento: cor,
+ * preenchimento (hachura) e rotulo em texto. Qualquer um sozinho basta para ler
+ * a tela; e o que RNF05 exige e o que faz "zona nula" nao passar por conforto.
+ *
+ * As hachuras vem de zona.ts (tipo Hachura) e nao sao enfeite: sao o canal que
+ * sobrevive a impressao em preto e branco, a daltonismo severo e a tela lavada
+ * pelo sol. */
+.estado {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--e2);
+  font-size: var(--texto-sm);
+  font-weight: 700;
+}
+
+.estado__marca {
+  flex: none;
+  width: 1.125rem;
+  height: 1.125rem;
+  border: var(--borda-grossa) solid var(--cor-estado, var(--neutro));
+  border-radius: 50%;
+  background-color: var(--cor-estado, var(--neutro));
+}
+
+.estado--conforto {
+  --cor-estado: var(--conforto);
+}
+.estado--alerta {
+  --cor-estado: var(--alerta);
+}
+.estado--estresse {
+  --cor-estado: var(--estresse);
+}
+.estado--nao-configurado {
+  --cor-estado: var(--neutro);
+}
+
+/* solido: sem gradiente, so o preenchimento */
+.hachura--diagonal {
+  background-image: repeating-linear-gradient(
+    45deg,
+    transparent 0 3px,
+    var(--sobre-cor) 3px 5px
+  );
+}
+.hachura--cruzado {
+  background-image:
+    repeating-linear-gradient(45deg, transparent 0 3px, var(--sobre-cor) 3px 5px),
+    repeating-linear-gradient(-45deg, transparent 0 3px, var(--sobre-cor) 3px 5px);
+}
+/* vazado: so contorno. E o unico que nao tem preenchimento nenhum, e por isso o
+ * reservado para "sem faixa configurada" -- vazio na tela porque falta dado, e
+ * nao porque o estado seja bom. */
+.hachura--vazado {
+  background-color: transparent;
+  border-style: dashed;
+}
+
+/* ---------------------------------------------------------------- utilidades */
+
+.so-leitor-de-tela {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+.pilha {
+  display: flex;
+  flex-direction: column;
+}
+
+.secundario {
+  color: var(--tinta-3);
+  font-size: var(--texto-sm);
+}
+
+.nota {
+  padding-top: var(--e4);
+  border-top: var(--borda-fina) solid var(--borda);
+}
+
+/* ------------------------------------------------------------------ layout
+ *
+ * Coluna unica, largura maxima curta. O aparelho de uso e o celular; a versao
+ * de desktop e a mesma coluna centralizada, nao um painel de tres colunas que
+ * ninguem vai abrir na lavoura. */
+
+.pagina {
+  max-width: 34rem;
+  margin: 0 auto;
+  padding: 0 var(--e4) var(--e7);
+}
+
+.cabecalho {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--e4);
+  padding: var(--e5) 0 var(--e4);
+  margin-bottom: var(--e5);
+  border-bottom: var(--borda-grossa) solid var(--tinta);
+}
+
+.conteudo {
+  gap: var(--e4);
+}
+
+/* Tela de borda: login, sem conexao, conta desativada, carregando. Centralizada
+ * e curta -- nao ha navegacao possivel a partir delas. */
+.tela-borda {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: var(--e4);
+  max-width: 26rem;
+  min-height: 100dvh;
+  margin: 0 auto;
+  padding: var(--e5) var(--e4);
+}
+
+.entrar__marca {
+  margin-bottom: var(--e3);
+}
+.entrar__marca h1 {
+  /* A marca do aplicativo e tipografica: caixa alta e espacamento aberto, sem
+     logotipo desenhado. Coerente com "instrumento", nao com "produto". */
+  font-size: var(--texto-xl);
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+.entrar__forma {
+  gap: var(--e4);
+}
+
+.lista {
+  display: flex;
+  flex-direction: column;
+  gap: var(--e3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.cartao {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--e4);
+  min-height: var(--toque);
+  padding: var(--e3) var(--e4);
+  border: var(--borda-fina) solid var(--borda);
+  border-radius: var(--raio);
+  background: var(--superficie-2);
+}
+
+/* =================================================================== etapa 3
+ *
+ * Lista de nos, detalhe, regua de escala e grafico. */
+
+/* ------------------------------------------------- ausencia de estado
+ *
+ * Nao e uma quinta cor de estado: e outra FORMA. Quadrado tracejado contra o
+ * circulo preenchido das zonas -- le-se "aqui nao ha estado" antes de
+ * qualquer cor, e sobrevive a impressao em preto e branco. */
+.estado--sem-estado {
+  color: var(--tinta-2);
+}
+.estado__marca--sem-estado {
+  border-radius: 2px;
+  border-style: dashed;
+  border-color: var(--borda-forte);
+  background-color: var(--neutro-fraco);
+}
+
+/* ------------------------------------------------------------ lista de nos */
+
+.cartao {
+  color: inherit;
+  text-decoration: none;
+  align-items: stretch;
+  border-left-width: 6px;
+  border-left-style: solid;
+  border-left-color: var(--borda);
+  transition: background-color 120ms ease-out;
+}
+a.cartao:hover {
+  background: var(--superficie-afundada);
+}
+
+.cartao--enfase-atencao {
+  border-left-color: var(--alerta);
+}
+.cartao--enfase-grave {
+  border-left-color: var(--estresse);
+}
+/* Tracejado, cinza, fora da paleta de estado: falta de informacao nao e um
+   grau de gravidade. */
+.cartao--enfase-pendencia {
+  border-left-style: dashed;
+  border-left-color: var(--borda-forte);
+}
+
+.cartao__corpo {
+  display: flex;
+  flex-direction: column;
+  gap: var(--e1);
+  min-width: 0;
+}
+.cartao__valor {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  justify-content: center;
+  flex: none;
+  font-size: var(--texto-lg);
+  font-weight: 700;
+  line-height: 1.15;
+}
+.cartao__unidade {
+  font-size: var(--texto-sm);
+  font-weight: 400;
+  color: var(--tinta-3);
+}
+
+.voltar {
+  min-height: var(--toque);
+  display: inline-flex;
+  align-items: center;
+  color: inherit;
+  font-weight: 700;
+  text-decoration: none;
+}
+.voltar:hover {
+  text-decoration: underline;
+}
+.cabecalho--detalhe {
+  padding-bottom: var(--e2);
+  margin-bottom: var(--e4);
+}
+
+/* --------------------------------------------------------------- leitura atual */
+
+.agora {
+  display: flex;
+  flex-direction: column;
+  gap: var(--e2);
+  align-items: flex-start;
+  padding: var(--e4);
+  border: var(--borda-fina) solid var(--borda);
+  border-radius: var(--raio);
+  background: var(--superficie-2);
+}
+.agora__valor {
+  font-size: var(--numero-grande);
+  font-family: var(--fonte-numero);
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  line-height: 1;
+}
+.agora__unidade {
+  font-size: var(--texto-lg);
+  color: var(--tinta-3);
+}
+.agora__acao {
+  font-size: var(--texto-lg);
+}
+
+/* ------------------------------------------------------------------- regua
+ *
+ * Escala de canto vivo, nao arredondada: e um instrumento graduado, e o canto
+ * reto tambem dispensa o overflow:hidden que cortaria o entalhe. */
+
+.regua {
+  margin: 0;
+}
+.regua__corpo {
+  display: flex;
+  gap: var(--e3);
+}
+.regua__escala {
+  position: relative;
+  flex: none;
+  width: 7rem;
+  height: 16rem;
+  border: var(--borda-grossa) solid var(--tinta);
+  background: var(--superficie-afundada);
+}
+/* Sem faixa: contorno tracejado, mesmo vocabulario da hachura `vazado`. A
+   escala continua inteira -- e ela que nao depende de limiar nenhum. */
+.regua__escala--sem-faixa {
+  border-style: dashed;
+  border-color: var(--borda-forte);
+}
+
+.regua__banda {
+  position: absolute;
+  left: 0;
+  right: 0;
+}
+.regua__banda--conforto {
+  background-color: var(--conforto);
+}
+.regua__banda--alerta {
+  background-color: var(--alerta);
+}
+.regua__banda--estresse {
+  background-color: var(--estresse);
+}
+
+/* Respiro de 2px entre preenchimentos adjacentes, na cor da superficie: sem
+   ele duas bandas escuras encostadas viram um bloco so. */
+.regua__fronteira {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 2px;
+  transform: translateY(-1px);
+  background: var(--superficie);
+}
+
+.regua__entalhe {
+  position: absolute;
+  left: -6px;
+  right: -6px;
+  border-top: 3px solid var(--tinta);
+  transform: translateY(-1.5px);
+}
+.regua__entalhe-valor {
+  position: absolute;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  padding: 0.15rem 0.4rem;
+  border-radius: 2px;
+  background: var(--tinta);
+  color: var(--superficie);
+  font-size: var(--texto-sm);
+  font-weight: 700;
+  white-space: nowrap;
+}
+.regua__unidade {
+  font-family: var(--fonte-texto);
+  font-weight: 400;
+  opacity: 0.8;
+}
+
+.regua__eixo {
+  position: relative;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  font-size: var(--texto-sm);
+  color: var(--tinta-2);
+}
+.regua__eixo-limiar {
+  position: absolute;
+  left: 0;
+  transform: translateY(-50%);
+  color: var(--tinta-3);
+}
+
+.regua__legenda {
+  margin-top: var(--e3);
+  font-size: var(--texto-sm);
+}
+.regua__chaves {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--e2) var(--e4);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.regua__sem-faixa,
+.regua__fora {
+  padding: var(--e3);
+  border-left: 4px solid var(--borda-forte);
+  background: var(--superficie-afundada);
+}
+.regua__fora {
+  margin-top: var(--e2);
+}
+
+/* ----------------------------------------------------------------- grafico
+ *
+ * O SVG contem SO o plano -- bandas, linhas e caminhos. Todo texto (eixos,
+ * rotulos, leitura) e HTML em volta dele. Assim os rotulos herdam a
+ * tipografia real do documento em vez de encolherem junto com o viewBox numa
+ * tela estreita, e o SVG pode esticar com preserveAspectRatio="none" sem
+ * deformar letra nenhuma. As linhas usam vector-effect para nao engordarem
+ * junto com o esticamento. */
+
+.grafico {
+  margin: 0;
+}
+.grafico__leitura {
+  min-height: 1.5rem; /* reserva a linha: sem isto o layout pula ao focar */
+  margin-bottom: var(--e2);
+  font-size: var(--texto-sm);
+}
+.grafico__corpo {
+  display: flex;
+  gap: var(--e2);
+}
+.grafico__eixo-y {
+  flex: none;
+  width: 2.5rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  text-align: right;
+  font-size: var(--texto-sm);
+  color: var(--tinta-3);
+}
+.grafico__plano {
+  flex: 1;
+  min-width: 0;
+  height: 14rem;
+  border: var(--borda-fina) solid var(--borda);
+  background: var(--superficie-afundada);
+  touch-action: none; /* o toque le um ponto, nao rola a pagina */
+}
+.grafico__eixo-x {
+  position: relative;
+  height: 1.4rem;
+  margin-left: calc(2.5rem + var(--e2));
+  font-size: var(--texto-sm);
+  color: var(--tinta-3);
+}
+.grafico__eixo-x span {
+  position: absolute;
+  transform: translateX(-50%);
+  white-space: nowrap;
+}
+
+/* Bandas de zona em opacidade baixa: aqui elas sao CONTEXTO, nao o sinal. O
+   sinal e a linha, e a zona da leitura atual ja tem indicador proprio com
+   rotulo. Cor forte no fundo tiraria contraste da linha sem acrescentar
+   informacao nenhuma. */
+.grafico__banda {
+  opacity: 0.16;
+}
+.grafico__banda--conforto {
+  fill: var(--conforto);
+}
+.grafico__banda--alerta {
+  fill: var(--alerta);
+}
+.grafico__banda--estresse {
+  fill: var(--estresse);
+}
+
+.grafico__referencia {
+  stroke: var(--tinta-3);
+  stroke-width: 1.5;
+  stroke-dasharray: 6 4;
+}
+.grafico__faixa {
+  fill: var(--tinta);
+  opacity: 0.18;
+}
+.grafico__linha {
+  fill: none;
+  stroke: var(--tinta);
+  stroke-width: 2;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+.grafico__cursor {
+  stroke: var(--tinta);
+  stroke-width: 1.5;
+  stroke-dasharray: 3 3;
+}
+
+.grafico__legenda {
+  margin-top: var(--e2);
+}
+.grafico__vazio {
+  padding: var(--e4);
+  border: var(--borda-fina) dashed var(--borda-forte);
+  border-radius: var(--raio);
+  color: var(--tinta-2);
+}
+
+/* -------------------------------------------------------------- janelas
+ *
+ * Seletor de periodo do historico (UC03). Ativo e inativo se distinguem por
+ * PREENCHIMENTO, nao por matiz -- e a mesma hierarquia do .botao, e continua
+ * legivel no sol, em preto e branco e com daltonismo. `aria-pressed` no
+ * elemento diz a mesma coisa para quem nao ve. */
+.janelas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--e2);
+  margin: var(--e3) 0 var(--e4);
+}
+.janelas__opcao {
+  min-height: var(--toque);
+  padding: 0 var(--e4);
+  border: var(--borda-grossa) solid var(--borda-forte);
+  border-radius: var(--raio);
+  background: transparent;
+  color: var(--tinta-2);
+  font-weight: 700;
+  cursor: pointer;
+}
+.janelas__opcao--ativa {
+  border-color: var(--tinta);
+  background: var(--tinta);
+  color: var(--superficie);
+}
+
+/* ---------------------------------------------------------------- faixa
+ *
+ * Painel de escrita: os limiares do talhao (UC04) e a gestao do no (RF10).
+ * Fundo afundado porque sao os unicos blocos da tela que ESCREVEM -- separar
+ * por superficie evita que um formulario seja confundido com mais um painel de
+ * leitura. Um bloco so para os dois: a segunda copia divergiria da primeira, e
+ * a tela passaria a ter dois jeitos de dizer "aqui se altera alguma coisa". */
+.painel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--e4);
+  padding: var(--e4);
+  border: var(--borda-fina) solid var(--borda);
+  border-radius: var(--raio);
+  background: var(--superficie-afundada);
+}
+.painel--fechado {
+  padding: 0;
+  border: 0;
+  background: none;
+}
+.painel__titulo {
+  font-size: var(--texto-base);
+}
+.painel__ajuda {
+  font-size: var(--texto-sm);
+}
+/* Erro do servidor: mesma faixa de erro do login, e pelo mesmo motivo -- nao
+ * usa a cor de estresse, que quer dizer "a lavoura esta secando". */
+.painel__erro {
+  padding: var(--e3) var(--e4);
+  border: var(--borda-grossa) solid var(--tinta);
+  border-left-width: 6px;
+  border-radius: var(--raio);
+  background: var(--superficie-2);
+  font-size: var(--texto-sm);
+}
+.painel__acoes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--e3);
+  align-items: center;
+}
+
+/* O formulario e a ativacao dividem o mesmo painel, entao precisam de uma
+ * separacao visivel: a linha diz que desativar nao faz parte de "salvar". */
+.painel__forma {
+  display: flex;
+  flex-direction: column;
+  gap: var(--e4);
+}
+.painel__ativacao {
+  display: flex;
+  flex-direction: column;
+  gap: var(--e3);
+  padding-top: var(--e4);
+  border-top: var(--borda-fina) solid var(--borda);
+}
+.painel--fechado .painel__ativacao {
+  padding-top: 0;
+  border-top: 0;
+}
+/* A confirmacao nao usa a cor de estresse, pelo mesmo motivo da faixa de erro:
+ * estresse quer dizer "a lavoura esta secando". A enfase vem da borda grossa,
+ * que continua visivel no sol e em preto e branco. */
+.painel__confirma {
+  display: flex;
+  flex-direction: column;
+  gap: var(--e3);
+  padding: var(--e3) var(--e4);
+  border: var(--borda-grossa) solid var(--tinta);
+  border-left-width: 6px;
+  border-radius: var(--raio);
+  background: var(--superficie-2);
+}
+
+/* ------------------------------------------------------------------ token
+ *
+ * O token aparece UMA vez (RF10). O bloco e o mais destacado da tela porque a
+ * perda e irreversivel, e nao usa cor de zona porque nao e um estado da
+ * lavoura -- e uma credencial que precisa ser copiada agora. */
+.token {
+  display: flex;
+  flex-direction: column;
+  gap: var(--e3);
+  padding: var(--e4);
+  border: var(--borda-grossa) solid var(--tinta);
+  border-radius: var(--raio);
+  background: var(--superficie-2);
+}
+.token__titulo {
+  font-size: var(--texto-lg);
+}
+.token__rotulo {
+  font-size: var(--texto-sm);
+  font-weight: 700;
+  color: var(--tinta-2);
+}
+/* Quebra em qualquer caractere: um token nao tem espacos, e sem isto ele
+ * estouraria a largura da tela do celular em vez de ocupar duas linhas. */
+.token__valor {
+  width: 100%;
+  min-height: var(--toque);
+  padding: var(--e3);
+  border: var(--borda-grossa) solid var(--borda-forte);
+  border-radius: var(--raio);
+  background: var(--superficie);
+  font-size: var(--texto-base);
+  word-break: break-all;
+}
+/* Altura reservada: a confirmacao de copia e uma regiao viva, e sem espaco
+ * guardado ela empurraria o botao para baixo no instante do clique. */
+.token__aviso {
+  min-height: 1.5em;
+  font-size: var(--texto-sm);
+  font-weight: 700;
+}

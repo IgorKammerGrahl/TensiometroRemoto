@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <!-- viewport-fit=cover: instalado como PWA a tela vai ate as bordas; sem
+         isso sobra tarja nos aparelhos com entalhe. -->
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover"
+    />
+    <!-- Uma theme-color por esquema: a barra do navegador acompanha a
+         superficie do aplicativo em vez de brigar com ela. -->
+    <meta name="theme-color" media="(prefers-color-scheme: light)" content="#f7f5f0" />
+    <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#131210" />
+    <meta name="description" content="Monitoramento de umidade do solo por tensiometria" />
+
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <link rel="icon" href="/icone-192.png" />
+    <!-- iOS ignora o manifest para o icone da tela inicial e para o modo
+         standalone; estas duas linhas sao o que faz "Adicionar a Tela de
+         Inicio" abrir sem a barra do Safari. -->
+    <link rel="apple-touch-icon" href="/icone-180.png" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="Tensio" />
+
+    <title>Tensio</title>
+  </head>
+  <body>
+    <div id="raiz"></div>
+    <noscript>Este aplicativo precisa de JavaScript habilitado.</noscript>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

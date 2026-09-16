@@ -1,0 +1,153 @@
+/* Tokens visuais.
+ *
+ * Direcao estetica: "instrumento de campo". A referencia nao e painel de SaaS,
+ * e mostrador de equipamento agricola -- superficie de papel envelhecido,
+ * tinta preta pesada, numero grande em monoespacada, e cor usada como
+ * sinalizacao, nao como decoracao.
+ *
+ * A REGRA QUE ORGANIZA TUDO: COR E RESERVADA PARA ESTADO.
+ * Nao ha cor de marca, nao ha cor de acento, nao ha botao azul. Interacao se
+ * expressa em tinta e forma -- peso, contorno, tamanho, sublinhado. A
+ * consequencia e que, quando alguma coisa aparece colorida na tela, ela e a
+ * unica, e e sempre a leitura. Um botao "Salvar" azul competiria por atencao
+ * com o indicador de estresse; aqui nao existe com o que competir.
+ *
+ * E as cores de estado NUNCA sao cor de texto. O texto veste tinta; a cor mora
+ * no preenchimento da regua, na marca e na linha do grafico, sempre acompanhada
+ * de rotulo e hachura. RNF05: nunca comunicar estado so por cor.
+ */
+
+/* ------------------------------------------------------------------ fontes
+ *
+ * Atkinson Hyperlegible (corpo e interface). Desenhada pelo Braille Institute
+ * para baixa visao: as formas que costumam colidir foram separadas de
+ * proposito -- I maiusculo, l minusculo e 1; O e 0; 6 e 9. O caso de uso do
+ * TCC e um produtor rural lendo um celular sob sol forte, com a tela suja e
+ * possivelmente sem oculos: e o mesmo problema que motivou a fonte. Nao e
+ * escolha de gosto, e requisito RNF05 resolvido na tipografia.
+ *
+ * IBM Plex Mono (numeros). Duas razoes, ambas mecanicas:
+ * 1. Digitos tabulares -- todo digito ocupa a mesma largura, entao um valor que
+ *    muda de -35 para -8 nao faz o resto da linha pular. Numero que se mexe
+ *    sozinho e numero em que ninguem confia.
+ * 2. O SINAL DE MENOS. kPa e sempre negativo e o sinal e a informacao mais
+ *    carregada da tela. Em fonte proporcional o hifen encolhe ate virar sujeira
+ *    de renderizacao; na Plex Mono ele tem largura de digito.
+ *
+ * Ambas embarcadas em woff2 no bundle -- sem CDN. O aplicativo e servido pelo
+ * binario Go dentro da propriedade rural; depender de fonts.googleapis.com
+ * seria depender de internet que pode nao existir la.
+ */
+@font-face {
+  font-family: 'Atkinson Hyperlegible';
+  src: url('./fontes/atkinson-400.woff2') format('woff2');
+  font-weight: 400;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Atkinson Hyperlegible';
+  src: url('./fontes/atkinson-700.woff2') format('woff2');
+  font-weight: 700;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'IBM Plex Mono';
+  src: url('./fontes/plexmono-400.woff2') format('woff2');
+  font-weight: 400;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'IBM Plex Mono';
+  src: url('./fontes/plexmono-600.woff2') format('woff2');
+  font-weight: 600;
+  font-display: swap;
+}
+
+:root {
+  --fonte-texto: 'Atkinson Hyperlegible', Verdana, sans-serif;
+  --fonte-numero: 'IBM Plex Mono', ui-monospace, monospace;
+
+  /* Escala tipografica. Base 17px, nao 16: um passo acima do padrao porque a
+   * tela vai ser lida a distancia de braco estendido, na lavoura. */
+  --texto-xs: 0.8125rem;
+  --texto-sm: 0.9375rem;
+  --texto-base: 1.0625rem;
+  --texto-lg: 1.25rem;
+  --texto-xl: 1.5rem;
+  --numero-grande: 3.25rem;
+
+  /* Ritmo de 4px. */
+  --e1: 0.25rem;
+  --e2: 0.5rem;
+  --e3: 0.75rem;
+  --e4: 1rem;
+  --e5: 1.5rem;
+  --e6: 2rem;
+  --e7: 3rem;
+
+  /* Alvo de toque. 48px e o minimo praticavel para o dedo de quem trabalha com
+   * a mao -- acima dos 44px que as diretrizes citam. RNF05. */
+  --toque: 3rem;
+
+  --raio: 4px;
+  --borda-fina: 1px;
+  --borda-grossa: 2px;
+
+  /* Superficie e tinta -- modo claro (o padrao; e o modo de uso sob sol). */
+  --superficie: #f7f5f0;
+  --superficie-2: #ffffff;
+  --superficie-afundada: #edeae2;
+  --tinta: #14120e;
+  --tinta-2: #4a453c;
+  --tinta-3: #6e675b;
+  --borda: #b8af9e;
+  --borda-forte: #8c8474;
+  --sobre-cor: #ffffff;
+
+  /* Estado. Validados por scripts/validate_palette.js contra a superficie
+   * clara: os cinco testes passam (deuteranopia dE 16.0, tritanopia 15.7,
+   * visao normal 19.3).
+   *
+   * Conforto e AZUL, nao verde. O verde que passava no teste de daltonismo nao
+   * passava no piso de croma sobre este bege; e azul e semanticamente melhor
+   * aqui de qualquer modo -- o assunto e agua no solo. */
+  --conforto: #0e6fa8;
+  --alerta: #c07800;
+  --estresse: #a82015;
+
+  /* Cinza de estado. DELIBERADAMENTE FORA da paleta de estado.
+   * Cobre os dois casos que nao sao leitura ruim nem leitura boa: talhao sem
+   * faixa configurada e leitura velha. Se um deles usasse uma cor da escala,
+   * seria lido como um grau dela. */
+  --neutro: #7d766a;
+  --neutro-fraco: #ded9cf;
+}
+
+/* Modo escuro SELECIONADO, nao invertido. Os passos foram escolhidos e
+ * validados contra a superficie escura por conta propria: os cinco testes
+ * passam (deuteranopia dE 9.1, tritanopia 14.2, visao normal 20.8).
+ *
+ * O estresse foi para o carmim em vez do vermelho: no escuro, na faixa estreita
+ * de luminosidade que sobra, ambar e vermelho convergem sob deuteranopia.
+ * Coerencia de matiz entre os modos custaria a separacao -- e a separacao e o
+ * requisito. */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --superficie: #131210;
+    --superficie-2: #1e1c19;
+    --superficie-afundada: #0c0b0a;
+    --tinta: #f2efe9;
+    --tinta-2: #bdb6a9;
+    --tinta-3: #8c857a;
+    --borda: #4a453e;
+    --borda-forte: #6e675d;
+    --sobre-cor: #131210;
+
+    --conforto: #3080be;
+    --alerta: #ac8c05;
+    --estresse: #e85b7c;
+
+    --neutro: #8c857a;
+    --neutro-fraco: #2a2724;
+  }
+}

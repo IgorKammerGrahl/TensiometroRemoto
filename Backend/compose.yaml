@@ -1,0 +1,35 @@
+# Postgres de desenvolvimento.
+#
+# A API NAO esta aqui de proposito. Ela roda no host com `go run`, que
+# recompila em segundos; containeriza-la poria um build de imagem entre cada
+# edicao e o teste seguinte, que e exatamente o atrito que este arquivo
+# existe para remover.
+#
+# Funciona igual sob Docker e Podman -- o `compose.yaml` e a mesma
+# especificacao para os dois. Quem escolhe o engine e o Makefile (ENGINE).
+services:
+  db:
+    # Nome totalmente qualificado de proposito: o Podman nao assume
+    # docker.io para nome curto -- ou abre prompt interativo, ou falha. O
+    # Docker aceita a forma longa sem diferenca.
+    image: docker.io/library/postgres:16-alpine
+    container_name: tcc-pg
+    environment:
+      POSTGRES_USER: tcc
+      POSTGRES_PASSWORD: tcc
+      POSTGRES_DB: telemetria
+    ports:
+      # 55432 e nao 5432: nao disputa com um Postgres instalado no host.
+      #
+      # 127.0.0.1 e nao 0.0.0.0: a forma curta "55432:5432" publica em TODAS
+      # as interfaces, e as credenciais aqui sao tcc/tcc. Num notebook ligado
+      # ao Wi-Fi de casa isso e um Postgres com senha conhecida aberto para a
+      # rede inteira. Banco de desenvolvimento nao precisa sair da maquina.
+      - "127.0.0.1:55432:5432"
+    volumes:
+      - tcc-pg-dados:/var/lib/postgresql/data
+      - ./scripts/initdb:/docker-entrypoint-initdb.d:ro
+    restart: unless-stopped
+
+volumes:
+  tcc-pg-dados:

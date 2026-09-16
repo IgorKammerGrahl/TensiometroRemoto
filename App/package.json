@@ -1,0 +1,30 @@
+{
+  "name": "tensio-app",
+  "private": true,
+  "type": "module",
+  "description": "PWA de monitoramento de tensao de agua no solo (TCC - IFC Rio do Sul)",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit",
+    "dist:check": "test -f ../Backend/internal/webapp/dist/index.html || { echo 'dist AUSENTE: rode npm run build'; exit 1; }; if find src index.html public vite.config.ts -newer ../Backend/internal/webapp/dist/index.html -print -quit | grep -q .; then echo 'dist DEFASADO: ha fonte mais nova que o build. Rode npm run build'; exit 1; else echo 'dist em dia'; fi"
+  },
+  "dependencies": {
+    "@tanstack/react-query": "^5.102.8",
+    "d3-scale": "^4.0.2",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8",
+    "react-router": "^8.3.1"
+  },
+  "devDependencies": {
+    "@types/d3-scale": "^4.0.9",
+    "@types/react": "^19.2.18",
+    "@types/react-dom": "^19.2.5",
+    "@vitejs/plugin-react": "^6.1.1",
+    "typescript": "^7.0.2",
+    "vite": "^8.2.2",
+    "vitest": "^4.1.11"
+  }
+}

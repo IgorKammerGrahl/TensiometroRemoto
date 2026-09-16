@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img"
+     aria-label="Tensio">
+  <!-- O icone e a regua de escala do aplicativo, reduzida ao essencial: a
+       faixa que vai de conforto (topo, azul) a estresse (base, vermelho), com o
+       ponteiro de tinta marcando a leitura. Mesma gramatica da tela principal,
+       entao o icone na gaveta do celular ja ensina o que a tela vai mostrar.
+
+       Direcao da escala: PIOR PARA BAIXO. kPa e negativo e fica mais negativo
+       conforme o solo seca; a descida na tela e a descida no icone. -->
+  <rect width="512" height="512" rx="96" fill="#14120e" />
+
+  <!-- faixa -->
+  <rect x="176" y="72" width="160" height="123" fill="#0e6fa8" />
+  <rect x="176" y="195" width="160" height="123" fill="#c07800" />
+  <rect x="176" y="318" width="160" height="122" fill="#a82015" />
+
+  <!-- separadores na cor do fundo: mesma regra do "espacador de 2px" entre
+       preenchimentos adjacentes usada nos graficos -->
+  <rect x="176" y="188" width="160" height="14" fill="#14120e" />
+  <rect x="176" y="311" width="160" height="14" fill="#14120e" />
+
+  <!-- ponteiro: atravessa a faixa inteira, em tinta clara, na altura de
+       "secando". E o unico elemento sem cor, e por isso o que se le primeiro. -->
+  <rect x="120" y="240" width="272" height="26" rx="13" fill="#f7f5f0" />
+</svg>
