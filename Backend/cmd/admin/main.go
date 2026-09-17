@@ -43,7 +43,7 @@ const uso = `uso: admin <subcomando> [flags]
            cadastra o no, imprime o token uma unica vez e ja o associa ao
            talhao se -talhao vier. Exige TELEMETRIA_TOKEN_SECRET.
 
-  calibracao -id=<id> -device=<id> -v-zero=<mV> -k=<mV/kPa>
+  calibracao -id=<id> -device=<id> -v-zero=<V> -k=<V/kPa>
            -divisor=<fator> -vdd=<mV> [-r2=] [-rmse=] [-nota=]
            registra o ensaio de bancada. Sem isso o no ate autentica, mas
            toda leitura que ele enviar e recusada por calibration_id ausente.
@@ -307,8 +307,13 @@ func criarCalibracao(ctx context.Context, pool *pgxpool.Pool, args []string) err
 	fs := flag.NewFlagSet("calibracao", flag.ExitOnError)
 	id := fs.String("id", "", "id da calibracao (ex: cal-2026-08-25-a)")
 	device := fs.String("device", "", "id do device ensaiado")
-	vZero := fs.Float64("v-zero", 0, "tensao em mV a 0 kPa")
-	k := fs.Float64("k", 0, "coeficiente mV por kPa (nao pode ser zero)")
+	// VOLTS, e nao milivolts. A ajuda dizia mV e a coluna sempre foi V: a
+	// formula de 0001_init.sql compara v_zero_kpa com
+	// `raw_mv * fator_divisor / 1000`, que ja converteu. Seguir a ajuda
+	// antiga (4500 em vez de 4.5) passa por todos os CHECK do banco e grava
+	// uma serie inteira mil vezes errada.
+	vZero := fs.Float64("v-zero", 0, "tensao em VOLTS a 0 kPa (ex: 4.5)")
+	k := fs.Float64("k", 0, "coeficiente em V por kPa, nao pode ser zero (ex: 0.04)")
 	divisor := fs.Float64("divisor", 0, "fator do divisor resistivo (> 0)")
 	vdd := fs.Int("vdd", 0, "Vdd do ensaio em mV (> 0)")
 	r2 := fs.Float64("r2", 0, "R2 do ajuste (opcional, 0 = nao informado)")
@@ -321,7 +326,7 @@ func criarCalibracao(ctx context.Context, pool *pgxpool.Pool, args []string) err
 	// v-zero zero significaria um sensor que le 0 mV a 0 kPa.
 	if *id == "" || *device == "" || *vZero == 0 || *k == 0 || *divisor <= 0 || *vdd <= 0 {
 		return errors.New("uso: admin calibracao -id=cal-2026-08-25-a -device=tensio-01 " +
-			"-v-zero=<mV> -k=<mV/kPa> -divisor=<fator> -vdd=<mV> [-r2=] [-rmse=] [-nota=]")
+			"-v-zero=<V> -k=<V/kPa> -divisor=<fator> -vdd=<mV> [-r2=] [-rmse=] [-nota=]")
 	}
 
 	opcional := func(v float64) *float64 {

@@ -89,6 +89,43 @@ export type Serie = {
   pontos: PontoSerie[];
 };
 
+/** Ensaio de calibracao de um no.
+ *
+ *  AS UNIDADES SAO VOLTS, E O NOME DA COLUNA MENTE SOBRE ISSO. `v_zero_kpa`
+ *  e a tensao NO PONTO de 0 kPa -- volts, nao kPa --, e `k_v_por_kpa` e o
+ *  coeficiente em V/kPa. O servidor reconstroi kPa a partir de `raw_mv` com
+ *  `Vsensor = raw_mv * fator_divisor / 1000`, ou seja, ja converteu para
+ *  volts antes de comparar. Digitar 4500 onde vai 4,5 passa por todos os
+ *  CHECK do banco e produz uma serie mil vezes errada; ver o formulario em
+ *  componentes/Calibracao.tsx, onde o erro e barrado antes de sair daqui.
+ */
+export type Calibracao = {
+  id: string;
+  device_id: string;
+  /** Tensao, em VOLTS, no ponto de 0 kPa. */
+  v_zero_kpa: number;
+  /** Coeficiente em V/kPa. Pode ser negativo; nunca zero. */
+  k_v_por_kpa: number;
+  fator_divisor: number;
+  vdd_ensaio_mv: number;
+  r2: number | null;
+  rmse_kpa: number | null;
+  /** "AAAA-MM-DD", e nao instante. A coluna e DATE, e o servidor a serializa
+   *  como dia justamente para o fuso do navegador nao recuar a data em um. */
+  ensaio_em: string;
+  nota: string;
+};
+
+/** Resposta do cadastro de calibracao. Diferente do token de no, o `id` daqui
+ *  E recuperavel -- `GET /calibracoes` continua devolvendo. Por isso esta tela
+ *  nao precisa da cerimonia de NovoNo.tsx. */
+export type CalibracaoCriada = {
+  calibracao: Calibracao;
+  /** Aviso escrito pelo servidor: nomeia o campo do portal do no onde o id
+   *  precisa ser gravado. Vai para a tela como veio. */
+  aviso: string;
+};
+
 export type ListaDevices = { count: number; devices: DeviceApp[] };
 
 export type RespostaMe = { usuario: Usuario; talhoes: Talhao[] };
@@ -223,11 +260,6 @@ export const api = {
   device: (id: string, sinal?: AbortSignal) =>
     requisitar<DeviceApp>(`/devices/${encodeURIComponent(id)}`, sinal ? { sinal } : {}),
 
-  /** Serie agregada. Sem `bucket`, o servidor escolhe a largura de balde.
-   *
-   *  `bucket_s` volta na resposta e nao e informativo: e o que permite ao
-   *  cliente distinguir "balde sem leitura" de "leitura contigua". Ver
-   *  serie.ts. */
   /** Cadastro de no (RF10). O 201 traz o TOKEN EM CLARO, uma unica vez.
    *
    *  Se a tela perder esse valor antes de a pessoa guarda-lo, o no nao
@@ -286,6 +318,52 @@ export const api = {
       ...(sinal ? { sinal } : {}),
     }),
 
+  /** Ensaios do no, DO MAIS RECENTE PARA O MAIS ANTIGO (ORDER BY do servidor).
+   *
+   *  Lista vazia nao e detalhe de exibicao: e a causa de uma falha silenciosa.
+   *  Sem nenhuma linha em `calibrations`, o no autentica, `POST /readings`
+   *  responde 200 e TODA leitura volta em `rejected` -- o nó parece mudo e o
+   *  que falta e cadastro. Ver componentes/Calibracao.tsx. */
+  calibracoes: (id: string, sinal?: AbortSignal) =>
+    requisitar<Calibracao[]>(
+      `/devices/${encodeURIComponent(id)}/calibracoes`,
+      sinal ? { sinal } : {},
+    ),
+
+  /** Registra um ensaio. O id vem DO SERVIDOR (`cal-AAAA-MM-DD-xxxx`) e e o
+   *  valor que precisa ser gravado no portal do no.
+   *
+   *  Nao ha PATCH nem DELETE no servidor, e e deliberado: ensaio novo e id
+   *  novo. Sobrescrever coeficientes reescreveria em silencio o significado
+   *  de todas as leituras ja gravadas que apontam para eles.
+   *
+   *  Os opcionais sao omitidos quando ausentes, nunca mandados como zero --
+   *  `r2: 0` significa "ajuste pessimo", que e uma afirmacao, e `r2` ausente
+   *  significa "nao medido". Ver corpoDeCalibracao() em calibracao.ts. */
+  criarCalibracao: (
+    id: string,
+    corpo: {
+      v_zero_kpa: number;
+      k_v_por_kpa: number;
+      fator_divisor: number;
+      vdd_ensaio_mv: number;
+      r2?: number;
+      rmse_kpa?: number;
+      nota?: string;
+    },
+    sinal?: AbortSignal,
+  ) =>
+    requisitar<CalibracaoCriada>(`/devices/${encodeURIComponent(id)}/calibracoes`, {
+      metodo: 'POST',
+      corpo,
+      ...(sinal ? { sinal } : {}),
+    }),
+
+  /** Serie agregada. Sem `bucket`, o servidor escolhe a largura de balde.
+   *
+   *  `bucket_s` volta na resposta e nao e informativo: e o que permite ao
+   *  cliente distinguir "balde sem leitura" de "leitura contigua". Ver
+   *  serie.ts. */
   serie: (
     id: string,
     params: { from?: string; to?: string; bucket?: number } = {},

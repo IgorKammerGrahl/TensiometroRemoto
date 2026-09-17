@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useRef, useState } from 'react';
 import { Link, useParams } from 'react-router';
 import { api, ErroAPI, SEM_REDE } from '../api';
+import { Calibracao, useCalibracoes } from '../componentes/Calibracao';
 import { MarcaSituacao } from '../componentes/Estado';
 import { Faixa } from '../componentes/Faixa';
 import { Gerenciar } from '../componentes/Gerenciar';
@@ -62,6 +63,15 @@ export function No() {
     staleTime: 5 * 60_000,
   });
 
+  /* A MESMA CONSULTA QUE O PAINEL DE CALIBRACAO FAZ, pela chave -- uma
+   * requisicao so. Ela sobe ate aqui por um motivo estreito: um no sem
+   * nenhum ensaio tem TODA leitura recusada pelo servidor, e do lado de ca
+   * isso e indistinguivel de um no que nunca ligou. Sem este dado, a frase
+   * de "nunca reportou" mandaria conferir bateria e sinal de um aparelho que
+   * esta funcionando. */
+  const qCal = useCalibracoes(id);
+  const semCalibracao = qCal.data?.length === 0;
+
   const dev = qDev.data;
   const s = dev ? situacao(dev.ativo, dev.ultima, qDev.dataUpdatedAt, agora) : null;
   const zonaAtual = s?.tipo === 'atual' ? aparencia(s.zona) : null;
@@ -114,12 +124,23 @@ export function No() {
                 atual do solo é desconhecido.
               </p>
             )}
-            {s.tipo === 'nunca' && (
-              <p className="secundario">
-                O nó está cadastrado neste talhão, mas nenhuma leitura chegou até agora. Verifique
-                se ele está ligado e com sinal.
-              </p>
-            )}
+            {s.tipo === 'nunca' &&
+              (semCalibracao ? (
+                /* A causa provavel primeiro, e ela nao e o aparelho. Sem
+                   ensaio o servidor recusa tudo que o no envia, entao mandar
+                   conferir bateria e sinal aqui e mandar procurar defeito
+                   onde nao ha. O conserto esta no painel logo abaixo. */
+                <p className="secundario">
+                  O nó está cadastrado neste talhão, mas nenhuma leitura entrou — e ele ainda não
+                  tem calibração. Sem ela o servidor recusa tudo que o nó envia, mesmo com o
+                  aparelho ligado e com sinal.
+                </p>
+              ) : (
+                <p className="secundario">
+                  O nó está cadastrado neste talhão, mas nenhuma leitura chegou até agora. Verifique
+                  se ele está ligado e com sinal.
+                </p>
+              ))}
             {s.tipo === 'desativado' && (
               <p className="secundario">
                 Enquanto estiver desativado, o servidor recusa as leituras deste nó.
@@ -138,6 +159,13 @@ export function No() {
               conserto na linha seguinte, em vez de ter que procurar outra
               tela para consertar o que a regua reclamou. */}
           <Faixa talhao={dev.talhao} />
+
+          {/* Ao lado da faixa, e pelo mesmo motivo: sao os dois painels de
+              "isto aqui ainda nao esta configurado", e ficam acima do
+              historico porque um no sem calibracao nao TEM historico -- o
+              servidor recusou tudo. Quem acabou de ler a frase da secao de
+              cima encontra o conserto sem trocar de tela. */}
+          <Calibracao dev={dev} />
 
           <section>
             <h2>{janela.titulo}</h2>

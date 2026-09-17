@@ -4,10 +4,12 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log/slog"
 	"net/http"
 	"net/http/httptest"
+	"regexp"
 	"strings"
 	"testing"
 	"time"
@@ -394,7 +396,8 @@ func TestSemCookie401(t *testing.T) {
 	c := novoCenarioApp(t)
 	for _, caminho := range []string{
 		"/api/v1/app/me", "/api/v1/app/devices", "/api/v1/app/devices/dev-a1",
-		"/api/v1/app/devices/dev-a1/series", "/api/v1/app/talhoes",
+		"/api/v1/app/devices/dev-a1/series", "/api/v1/app/devices/dev-a1/calibracoes",
+		"/api/v1/app/talhoes",
 	} {
 		if rec := req(t, c.h, http.MethodGet, caminho, "", ""); rec.Code != http.StatusUnauthorized {
 			t.Errorf("%s: status = %d, quero 401", caminho, rec.Code)
@@ -502,6 +505,7 @@ func TestDeviceDeOutroUsuario404(t *testing.T) {
 	for _, caminho := range []string{
 		"/api/v1/app/devices/dev-b1",
 		"/api/v1/app/devices/dev-b1/series",
+		"/api/v1/app/devices/dev-b1/calibracoes",
 	} {
 		rec := req(t, c.h, http.MethodGet, caminho, cookie, "")
 		if rec.Code != http.StatusNotFound {
@@ -873,7 +877,12 @@ func TestBucketUsaOPiorCasoNaoAMedia(t *testing.T) {
 	c := novoCenarioApp(t)
 	// Onze leituras num intervalo de 11 min: dez em conforto, uma em
 	// estresse. Media ~ -14 kPa (conforto), minimo -70 kPa (estresse).
-	base := time.Now().UTC().Add(-30 * time.Minute)
+	// Ancorado no bucket pelo mesmo motivo de TestLacunaSobreviveAAgregacao:
+	// semearKPa espaca as leituras de 1 minuto, entao 11 leituras a partir de
+	// "agora menos 30 min" caem em DOIS buckets sempre que o relogio esta
+	// entre os minutos 50 e 59. Truncate(time.Hour) poe as onze dentro da
+	// hora anterior, inteiras.
+	base := time.Now().UTC().Truncate(time.Hour).Add(-30 * time.Minute)
 	semearKPa(t, "dev-a1", base, -10, -10, -10, -10, -10, -70, -10, -10, -10, -10, -10)
 	cookie := entrar(t, c.h, emailA)
 
@@ -1156,4 +1165,287 @@ func init() {
 		panic(err)
 	}
 	hashSenhaTeste = string(h)
+}
+
+// ------------------------------------------------- RISCO: calibracao
+
+// Corpo valido para o XGZP6847A: 4,5 V no ponto de 0 kPa, 0,04 V/kPa,
+// divisor de 1,5 e ensaio a 5 V. Os mesmos numeros de cmd/seed.
+const calibracaoBoa = `{"v_zero_kpa":4.5,"k_v_por_kpa":0.04,` +
+	`"fator_divisor":1.5,"vdd_ensaio_mv":5000,"nota":"bancada"}`
+
+var formatoIDCalibracao = regexp.MustCompile(`^cal-\d{4}-\d{2}-\d{2}-[0-9a-f]{4}$`)
+
+func calibracoesNoBanco(t *testing.T, deviceID string) int {
+	t.Helper()
+	var n int
+	if err := testPool.QueryRow(context.Background(),
+		`SELECT count(*) FROM calibrations WHERE device_id = $1`, deviceID).Scan(&n); err != nil {
+		t.Fatalf("contagem de calibracoes: %v", err)
+	}
+	return n
+}
+
+// RISCO: o no fica mudo e ninguem sabe por que. Sem calibracao, POST
+// /readings responde 200 e toda leitura e descartada. Este e o caminho que
+// permite fechar o ciclo pelo celular, e o id devolvido e o que sera
+// digitado no portal do no.
+func TestCalibracaoPeloAppFechaOCiclo(t *testing.T) {
+	c := novoCenarioApp(t)
+	cookie := entrar(t, c.h, emailA)
+
+	var criada struct {
+		Calibracao Calibracao `json:"calibracao"`
+		Aviso      string     `json:"aviso"`
+	}
+	rec := req(t, c.h, http.MethodPost, "/api/v1/app/devices/dev-a1/calibracoes", cookie, calibracaoBoa)
+	if rec.Code != http.StatusCreated {
+		t.Fatalf("status = %d, quero 201; corpo: %s", rec.Code, rec.Body.String())
+	}
+	decodificarResp(t, rec, &criada)
+
+	// O id e digitado num celular, no portal cativo: precisa ter forma
+	// previsivel e curta.
+	if !formatoIDCalibracao.MatchString(criada.Calibracao.ID) {
+		t.Errorf("id = %q, fora do formato cal-AAAA-MM-DD-xxxx", criada.Calibracao.ID)
+	}
+	// E precisa aparecer no aviso: e ele que diz ao usuario o que digitar.
+	if !strings.Contains(criada.Aviso, criada.Calibracao.ID) {
+		t.Errorf("aviso nao repete o id a ser gravado no no: %q", criada.Aviso)
+	}
+	if hoje := time.Now().UTC().Format("2006-01-02"); criada.Calibracao.EnsaioEm != hoje {
+		t.Errorf("ensaio_em = %q, quero %q", criada.Calibracao.EnsaioEm, hoje)
+	}
+	// O id carrega a MESMA data de ensaio_em. Se ensaio_em viesse do relogio
+	// do banco e o id do relogio do processo, a virada do dia os separaria.
+	if !strings.HasPrefix(criada.Calibracao.ID, "cal-"+criada.Calibracao.EnsaioEm+"-") {
+		t.Errorf("id %q nao carrega a data de ensaio_em %q", criada.Calibracao.ID, criada.Calibracao.EnsaioEm)
+	}
+
+	var lista []Calibracao
+	decodificarResp(t, req(t, c.h, http.MethodGet,
+		"/api/v1/app/devices/dev-a1/calibracoes", cookie, ""), &lista)
+	if len(lista) != 1 || lista[0].ID != criada.Calibracao.ID {
+		t.Fatalf("lista = %+v, quero exatamente a calibracao criada", lista)
+	}
+	if lista[0].VZero != 4.5 || lista[0].K != 0.04 || lista[0].FatorDivisor != 1.5 ||
+		lista[0].VddEnsaioMV != 5000 {
+		t.Errorf("coeficientes voltaram alterados: %+v", lista[0])
+	}
+	// r2 e rmse ausentes viram NULL, e nao zero: "nao informado" e diferente
+	// de "ajuste perfeito" e de "erro zero".
+	if lista[0].R2 != nil || lista[0].RMSEKPa != nil {
+		t.Errorf("r2/rmse ausentes deveriam ser nulos: %+v, %+v", lista[0].R2, lista[0].RMSEKPa)
+	}
+}
+
+// RISCO: o erro de mil vezes. O datasheet do XGZP6847A fala em volts, o
+// multimetro da bancada mostra milivolts, e as colunas aceitam os dois --
+// 4500 e 40 passam por todos os CHECK do banco e produzem uma serie inteira
+// de kPa plausiveis e errados. Serie plausivel e errada e pior que serie
+// nenhuma, porque ninguem desconfia dela.
+func TestCalibracaoEmMilivoltsNaoEntra(t *testing.T) {
+	c := novoCenarioApp(t)
+	cookie := entrar(t, c.h, emailA)
+
+	rec := req(t, c.h, http.MethodPost, "/api/v1/app/devices/dev-a1/calibracoes", cookie,
+		`{"v_zero_kpa":4500,"k_v_por_kpa":40,"fator_divisor":1.5,"vdd_ensaio_mv":5000}`)
+	if rec.Code != http.StatusBadRequest {
+		t.Fatalf("status = %d, quero 400; corpo: %s", rec.Code, rec.Body.String())
+	}
+	// A mensagem precisa ENSINAR a unidade. "fora da faixa" sozinho manda o
+	// usuario procurar um numero menor, nao trocar de unidade.
+	if !strings.Contains(rec.Body.String(), "VOLTS") {
+		t.Errorf("mensagem nao fala da unidade: %s", rec.Body.String())
+	}
+	if n := calibracoesNoBanco(t, "dev-a1"); n != 0 {
+		t.Errorf("calibracoes gravadas = %d, quero 0", n)
+	}
+}
+
+// RISCO: coeficiente que passa nas faixas mas nao cabe no circuito. A
+// checagem do ponto de 0 kPa e a unica que fala com a fisica: se o 0 kPa cai
+// fora do que o ADC le, o no nunca produz uma leitura valida.
+func TestCalibracaoComZeroForaDoADCNaoEntra(t *testing.T) {
+	c := novoCenarioApp(t)
+	cookie := entrar(t, c.h, emailA)
+
+	// 9 V com divisor 1 => 9000 mV no pino, muito acima dos 3300 do ADC.
+	// Cada numero, isolado, e plausivel.
+	rec := req(t, c.h, http.MethodPost, "/api/v1/app/devices/dev-a1/calibracoes", cookie,
+		`{"v_zero_kpa":9.0,"k_v_por_kpa":0.04,"fator_divisor":1.0,"vdd_ensaio_mv":5000}`)
+	if rec.Code != http.StatusBadRequest {
+		t.Fatalf("status = %d, quero 400; corpo: %s", rec.Code, rec.Body.String())
+	}
+	if !strings.Contains(rec.Body.String(), "ADC") {
+		t.Errorf("mensagem nao explica o que nao cabe: %s", rec.Body.String())
+	}
+	if n := calibracoesNoBanco(t, "dev-a1"); n != 0 {
+		t.Errorf("calibracoes gravadas = %d, quero 0", n)
+	}
+
+	// E a calibracao nominal do sensor, que alcanca -112 kPa na borda de
+	// 0 mV, NAO pode ser recusada por essa checagem: ela verifica o ponto de
+	// 0 kPa, e nao a faixa inteira.
+	if rec := req(t, c.h, http.MethodPost, "/api/v1/app/devices/dev-a1/calibracoes",
+		cookie, calibracaoBoa); rec.Code != http.StatusCreated {
+		t.Fatalf("calibracao nominal recusada: status = %d; corpo: %s", rec.Code, rec.Body.String())
+	}
+}
+
+// RISCO: campo esquecido no formulario virar coeficiente zero em silencio.
+// Ausente e zero sao erros diferentes, e nenhum dos dois pode gravar linha.
+func TestCalibracaoExigeCadaCoeficiente(t *testing.T) {
+	c := novoCenarioApp(t)
+	cookie := entrar(t, c.h, emailA)
+
+	for _, caso := range []struct {
+		nome  string
+		corpo string
+	}{
+		{"v_zero ausente", `{"k_v_por_kpa":0.04,"fator_divisor":1.5,"vdd_ensaio_mv":5000}`},
+		{"v_zero zero", `{"v_zero_kpa":0,"k_v_por_kpa":0.04,"fator_divisor":1.5,"vdd_ensaio_mv":5000}`},
+		{"k ausente", `{"v_zero_kpa":4.5,"fator_divisor":1.5,"vdd_ensaio_mv":5000}`},
+		{"k zero", `{"v_zero_kpa":4.5,"k_v_por_kpa":0,"fator_divisor":1.5,"vdd_ensaio_mv":5000}`},
+		{"divisor ausente", `{"v_zero_kpa":4.5,"k_v_por_kpa":0.04,"vdd_ensaio_mv":5000}`},
+		{"divisor zero", `{"v_zero_kpa":4.5,"k_v_por_kpa":0.04,"fator_divisor":0,"vdd_ensaio_mv":5000}`},
+		{"divisor negativo", `{"v_zero_kpa":4.5,"k_v_por_kpa":0.04,"fator_divisor":-1.5,"vdd_ensaio_mv":5000}`},
+		{"vdd ausente", `{"v_zero_kpa":4.5,"k_v_por_kpa":0.04,"fator_divisor":1.5}`},
+		{"vdd zero", `{"v_zero_kpa":4.5,"k_v_por_kpa":0.04,"fator_divisor":1.5,"vdd_ensaio_mv":0}`},
+		{"r2 acima de 1", `{"v_zero_kpa":4.5,"k_v_por_kpa":0.04,"fator_divisor":1.5,"vdd_ensaio_mv":5000,"r2":1.4}`},
+		{"rmse negativo", `{"v_zero_kpa":4.5,"k_v_por_kpa":0.04,"fator_divisor":1.5,"vdd_ensaio_mv":5000,"rmse_kpa":-3}`},
+		{"corpo vazio", `{}`},
+	} {
+		rec := req(t, c.h, http.MethodPost, "/api/v1/app/devices/dev-a1/calibracoes", cookie, caso.corpo)
+		if rec.Code != http.StatusBadRequest {
+			t.Errorf("%s: status = %d, quero 400; corpo: %s", caso.nome, rec.Code, rec.Body.String())
+		}
+	}
+	if n := calibracoesNoBanco(t, "dev-a1"); n != 0 {
+		t.Errorf("calibracoes gravadas = %d, quero 0", n)
+	}
+}
+
+// RISCO: sobrescrever um ensaio. Os coeficientes dao significado as leituras
+// ja gravadas que apontam para eles; editar no lugar reescreveria o passado
+// em silencio. Ensaio novo e id novo, e os dois convivem.
+func TestCalibracaoNaoEhSobrescrita(t *testing.T) {
+	c := novoCenarioApp(t)
+	cookie := entrar(t, c.h, emailA)
+
+	var primeira, segunda struct {
+		Calibracao Calibracao `json:"calibracao"`
+	}
+	decodificarResp(t, req(t, c.h, http.MethodPost,
+		"/api/v1/app/devices/dev-a1/calibracoes", cookie, calibracaoBoa), &primeira)
+	decodificarResp(t, req(t, c.h, http.MethodPost,
+		"/api/v1/app/devices/dev-a1/calibracoes", cookie, calibracaoBoa), &segunda)
+
+	if primeira.Calibracao.ID == segunda.Calibracao.ID {
+		t.Fatalf("dois ensaios no mesmo dia receberam o mesmo id: %q", primeira.Calibracao.ID)
+	}
+	if n := calibracoesNoBanco(t, "dev-a1"); n != 2 {
+		t.Errorf("calibracoes gravadas = %d, quero 2", n)
+	}
+
+	// Nao existe caminho de edicao nem de remocao pela API.
+	for _, metodo := range []string{http.MethodPatch, http.MethodDelete, http.MethodPut} {
+		rec := req(t, c.h, metodo, "/api/v1/app/devices/dev-a1/calibracoes", cookie, calibracaoBoa)
+		if rec.Code < 400 {
+			t.Errorf("%s em /calibracoes: status = %d, quero erro", metodo, rec.Code)
+		}
+	}
+	if n := calibracoesNoBanco(t, "dev-a1"); n != 2 {
+		t.Errorf("calibracoes apos PATCH/DELETE/PUT = %d, quero 2", n)
+	}
+}
+
+// RISCO: calibrar o no do vizinho, ou descobrir que ele existe.
+//
+// O 404 do POST precisa vir ANTES de qualquer 400 de coeficiente: um 400
+// "v_zero ausente" contra dev-a1 diria a B que dev-a1 existe, e varrer ids
+// com corpo invalido viraria um mapa dos nos alheios. Por isso o corpo
+// enviado aqui e invalido de proposito -- se a ordem inverter, a resposta
+// muda de 404 para 400 e este teste quebra.
+func TestCalibracaoDeOutroUsuario404(t *testing.T) {
+	c := novoCenarioApp(t)
+	cookieB := entrar(t, c.h, emailB)
+
+	for _, caso := range []struct {
+		nome, metodo, caminho, corpo string
+	}{
+		{"listar no alheio", http.MethodGet, "/api/v1/app/devices/dev-a1/calibracoes", ""},
+		{"calibrar no alheio", http.MethodPost, "/api/v1/app/devices/dev-a1/calibracoes", calibracaoBoa},
+		{"corpo invalido nao antecipa 400", http.MethodPost, "/api/v1/app/devices/dev-a1/calibracoes", `{}`},
+		{"no inexistente", http.MethodPost, "/api/v1/app/devices/nao-existe/calibracoes", calibracaoBoa},
+		// Device orfao (talhao_id NULL) nao casa JOIN nenhum: invisivel para
+		// todos, inclusive para quem o cadastrou.
+		{"no orfao", http.MethodPost, "/api/v1/app/devices/dev-orfao/calibracoes", calibracaoBoa},
+	} {
+		rec := req(t, c.h, caso.metodo, caso.caminho, cookieB, caso.corpo)
+		if rec.Code != http.StatusNotFound {
+			t.Errorf("%s: status = %d, quero 404; corpo: %s", caso.nome, rec.Code, rec.Body.String())
+		}
+	}
+	if n := calibracoesNoBanco(t, "dev-a1"); n != 0 {
+		t.Errorf("o vizinho gravou %d calibracoes em dev-a1", n)
+	}
+	if n := calibracoesNoBanco(t, "dev-orfao"); n != 0 {
+		t.Errorf("gravou %d calibracoes no no orfao", n)
+	}
+}
+
+// RISCO: a calibracao do vizinho aparecer na lista do device. O JOIN de
+// autorizacao se repete na consulta de lista, e nao so no buscarDevice que a
+// precede.
+func TestCalibracaoNaoVazaEntreDevices(t *testing.T) {
+	c := novoCenarioApp(t)
+	cookieA := entrar(t, c.h, emailA)
+	cookieB := entrar(t, c.h, emailB)
+
+	decodificarResp(t, req(t, c.h, http.MethodPost,
+		"/api/v1/app/devices/dev-b1/calibracoes", cookieB, calibracaoBoa), &struct {
+		Calibracao Calibracao `json:"calibracao"`
+	}{})
+
+	var lista []Calibracao
+	decodificarResp(t, req(t, c.h, http.MethodGet,
+		"/api/v1/app/devices/dev-a2/calibracoes", cookieA, ""), &lista)
+	if len(lista) != 0 {
+		t.Errorf("lista de dev-a2 = %+v, quero vazia", lista)
+	}
+}
+
+// RISCO: a autorizacao do store depender da disciplina de quem o chama.
+//
+// Os testes acima passam por buscarDevice, que ja devolve 404 antes de a
+// consulta rodar -- entao eles NAO exercitam o JOIN do proprio INSERT.
+// Verificado por mutacao: apagar `ut.usuario_id = $1` do INSERT nao quebrava
+// nenhum deles. Este teste chama o store direto, sem handler, porque a
+// promessa do arquivo e que cada consulta seja autorizada por si.
+func TestStoreDeCalibracaoAutorizaPorSi(t *testing.T) {
+	c := novoCenarioApp(t)
+	s := NewStore(testPool)
+	ctx := context.Background()
+
+	nova := NovaCalibracao{VZero: 4.5, K: 0.04, FatorDivisor: 1.5, VddEnsaioMV: 5000}
+
+	if _, err := s.CriarCalibracao(ctx, c.usuarioB, "dev-a1", nova); !errors.Is(err, ErrNaoEncontrado) {
+		t.Errorf("CriarCalibracao no no do vizinho: err = %v, quero ErrNaoEncontrado", err)
+	}
+	if n := calibracoesNoBanco(t, "dev-a1"); n != 0 {
+		t.Fatalf("gravou %d calibracoes em dev-a1", n)
+	}
+
+	// Com a calibracao existindo, a listagem tambem precisa recusar por si.
+	if _, err := s.CriarCalibracao(ctx, c.usuarioA, "dev-a1", nova); err != nil {
+		t.Fatalf("CriarCalibracao do proprio dono: %v", err)
+	}
+	cals, err := s.CalibracoesDoDevice(ctx, c.usuarioB, "dev-a1")
+	if err != nil {
+		t.Fatalf("CalibracoesDoDevice: %v", err)
+	}
+	if len(cals) != 0 {
+		t.Errorf("o vizinho leu %d calibracoes de dev-a1", len(cals))
+	}
 }

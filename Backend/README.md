@@ -101,7 +101,7 @@ go run ./cmd/admin device   -id=tensio-01 -descricao="nó de bancada"
 go run ./cmd/admin associar -device=tensio-01 -talhao=<uuid>
 
 go run ./cmd/admin calibracao -id=cal-2026-08-25-a -device=tensio-01 \
-  -v-zero=<mV> -k=<mV/kPa> -divisor=<fator> -vdd=<mV> [-r2=] [-rmse=] [-nota=]
+  -v-zero=<V> -k=<V/kPa> -divisor=<fator> -vdd=<mV> [-r2=] [-rmse=] [-nota=]
 ```
 
 A senha e o token aparecem **uma vez cada**. O banco guarda bcrypt e HMAC, e
@@ -232,8 +232,41 @@ que o recurso existe; `404` não distingue "não existe" de "não é seu".
 | `GET /app/devices/{id}` | Um nó, com talhão e última leitura |
 | `PATCH /app/devices/{id}` | `{descricao?, talhao_id?, ativo?}` |
 | `GET /app/devices/{id}/series?from=&to=&bucket=` | Série agregada no servidor |
+| `GET /app/devices/{id}/calibracoes` | Ensaios do nó, do mais recente para o mais antigo |
+| `POST /app/devices/{id}/calibracoes` | `{v_zero_kpa, k_v_por_kpa, fator_divisor, vdd_ensaio_mv, r2?, rmse_kpa?, nota?}` → `201` `{calibracao, aviso}`. `400` coeficiente fora da faixa física, `404` nó fora do alcance |
 | `GET /app/talhoes` | Talhões concedidos, com os limiares |
 | `PATCH /app/talhoes/{id}` | `{cultura?, kpa_alerta?, kpa_estresse?}` |
+
+### Calibração pelo app
+
+Sem uma linha em `calibrations` o nó autentica, o `POST /readings` responde
+`200` e **toda** leitura volta em `rejected`. O sintoma parece do firmware e
+o que falta é cadastro. `POST /app/devices/{id}/calibracoes` existe para que
+fechar esse ciclo não exija um terminal — é o mesmo registro que
+`admin calibracao` faz pela linha de comando.
+
+**`v_zero_kpa` e `k_v_por_kpa` estão em VOLTS e V/kPa, não em milivolts.**
+O nome da coluna atrapalha: `v_zero_kpa` é a *tensão* no ponto de 0 kPa. Para
+o XGZP6847A os valores são `4.5` e `0.04`. Informar `4500` e `40` passa por
+todos os `CHECK` do banco e produz uma série inteira de kPa plausíveis e mil
+vezes errados — que é pior que série nenhuma, porque ninguém desconfia dela.
+O endpoint barra isso de duas formas: pela faixa de cada coeficiente e, mais
+importante, verificando que o ponto de 0 kPa (`v_zero_kpa * 1000 /
+fator_divisor`) cai dentro dos `[0, 3300]` mV que o ADC do nó consegue ler.
+
+A verificação olha só o ponto de 0 kPa, e não a faixa inteira: a calibração
+nominal do sensor alcança −112 kPa na borda de 0 mV e seria recusada por um
+teste mais estrito.
+
+O `id` é gerado no servidor no formato `cal-AAAA-MM-DD-xxxx`, com sufixo
+sorteado. Curto porque é **digitado no celular**, no campo `CALIBRATION_ID`
+do portal cativo do nó; sorteado e não sequencial porque `calibrations.id` é
+um namespace global — um contador diria a cada usuário quantos ensaios os
+outros registraram naquele dia.
+
+**Não há `PATCH` nem `DELETE`: ensaio novo é id novo.** Os coeficientes dão
+significado às leituras já gravadas que apontam para eles; editar no lugar
+reescreveria o passado em silêncio, sem nada no dado registrando a mudança.
 
 ### Limite de tentativas no login
 

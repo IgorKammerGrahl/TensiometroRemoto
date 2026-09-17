@@ -2,7 +2,9 @@ package telemetria
 
 import (
 	"context"
+	"crypto/rand"
 	"errors"
+	"fmt"
 	"time"
 
 	"github.com/jackc/pgx/v5"
@@ -508,4 +510,175 @@ func (s *Store) AtualizarDevice(ctx context.Context, usuarioID, deviceID string,
 		return ErrNaoEncontrado
 	}
 	return nil
+}
+
+// ------------------------------------------------------------ calibracao
+
+// Calibracao e um ensaio: os coeficientes que convertem tensao em kPa para
+// UM sensor com UM divisor resistivo.
+//
+// ATENCAO A UNIDADE. v_zero_kpa e k_v_por_kpa estao em VOLTS e em V/kPa, nao
+// em milivolts. A formula de 0001_init.sql os compara com
+// `raw_mv * fator_divisor / 1000`, que ja converteu para volts. O nome da
+// coluna atrapalha: v_zero_kpa e a TENSAO no ponto de 0 kPa, e nao um valor
+// em kPa. Para o XGZP6847A os valores sao 4.5 e 0.04; informar 4500 e 40
+// passa por todos os CHECK do banco e produz uma serie inteira mil vezes
+// errada. Quem barra isso e appCriarCalibracao, nao o banco.
+type Calibracao struct {
+	ID           string   `json:"id"`
+	DeviceID     string   `json:"device_id"`
+	VZero        float32  `json:"v_zero_kpa"`
+	K            float32  `json:"k_v_por_kpa"`
+	FatorDivisor float32  `json:"fator_divisor"`
+	VddEnsaioMV  int32    `json:"vdd_ensaio_mv"`
+	R2           *float32 `json:"r2"`
+	RMSEKPa      *float32 `json:"rmse_kpa"`
+
+	// EnsaioEm e string "AAAA-MM-DD", e nao time.Time, porque a coluna e
+	// DATE. Serializado como instante, o dia 17 viraria 2026-09-17T00:00:00Z
+	// e o navegador em UTC-3 renderizaria dia 16.
+	EnsaioEm string `json:"ensaio_em"`
+	Nota     string `json:"nota"`
+}
+
+// NovaCalibracao sao os coeficientes ja validados pelo handler. O id e a
+// data nao estao aqui de proposito: quem os escolhe e CriarCalibracao, e
+// nada que venha do cliente influencia nenhum dos dois.
+type NovaCalibracao struct {
+	VZero        float64
+	K            float64
+	FatorDivisor float64
+	VddEnsaioMV  int32
+	R2           *float64
+	RMSEKPa      *float64
+	Nota         string
+}
+
+// tentativasIDCalibracao limita o sorteio do sufixo. Quatro digitos hex dao
+// 65536 valores por dia; colidir tres vezes seguidas nao e azar, e sinal de
+// outra coisa (relogio parado, fonte de entropia quebrada) -- e nesse caso
+// insistir e pior que devolver erro.
+const tentativasIDCalibracao = 3
+
+// idDeCalibracao monta "cal-AAAA-MM-DD-3f9a".
+//
+// Curto porque e DIGITADO no celular, no campo CALIBRATION_ID do portal
+// cativo do no. Um UUID aqui seria correto e inutilizavel.
+//
+// O sufixo e SORTEADO, e nao sequencial (-a, -b, -c): calibrations.id e um
+// namespace global, entao um contador diria a cada usuario quantos ensaios
+// os outros registraram naquele dia. E um oraculo entre inquilinos barato de
+// nao criar enquanto o formato ainda esta sendo escolhido.
+func idDeCalibracao(data time.Time) (string, error) {
+	var sufixo [2]byte
+	if _, err := rand.Read(sufixo[:]); err != nil {
+		return "", err
+	}
+	return fmt.Sprintf("cal-%s-%x", data.Format("2006-01-02"), sufixo), nil
+}
+
+// CriarCalibracao registra o ensaio de um device que o usuario alcanca.
+//
+// Mesma forma de CriarDevice: INSERT ... SELECT com o JOIN de autorizacao
+// como fonte das linhas, e nao um SELECT de checagem seguido de INSERT. Nao
+// ha janela entre checar e escrever porque nao ha duas operacoes.
+//
+// A ORDEM DOS DOIS ERROS E A DEFESA, nao uma preferencia de estilo.
+// Autorizacao negada produz zero linhas para inserir, e zero linhas nunca
+// chegam a violar a chave primaria: o 23505 so e alcancavel DEPOIS que o
+// JOIN ja concedeu. E por isso que repetir o sorteio do id no 23505 nao vira
+// um oraculo de ids existentes -- quem nao alcanca o device sai na primeira
+// volta com ErrNaoEncontrado, sem ter descoberto id nenhum.
+//
+// A data e calculada uma vez, aqui, e vai tanto para o id quanto para
+// ensaio_em. Se ensaio_em viesse de now()::date no servidor de banco, um
+// registro feito na virada do dia poderia ter id dizendo uma data e coluna
+// dizendo outra.
+func (s *Store) CriarCalibracao(ctx context.Context, usuarioID, deviceID string, c NovaCalibracao) (Calibracao, error) {
+	data := time.Now().UTC()
+	for range tentativasIDCalibracao {
+		id, err := idDeCalibracao(data)
+		if err != nil {
+			return Calibracao{}, err
+		}
+
+		var cal Calibracao
+		var ensaioEm time.Time
+		var nota *string
+		err = s.pool.QueryRow(ctx, `
+			INSERT INTO calibrations
+			      (id, device_id, v_zero_kpa, k_v_por_kpa, fator_divisor,
+			       vdd_ensaio_mv, r2, rmse_kpa, ensaio_em, nota)
+			SELECT $3, d.id, $4, $5, $6, $7, $8, $9, $10::date, $11
+			  FROM devices d
+			  JOIN usuario_talhoes ut ON ut.talhao_id = d.talhao_id
+			 WHERE ut.usuario_id = $1 AND d.id = $2
+			RETURNING id, device_id, v_zero_kpa, k_v_por_kpa, fator_divisor,
+			          vdd_ensaio_mv, r2, rmse_kpa, ensaio_em, nota`,
+			usuarioID, deviceID, id, c.VZero, c.K, c.FatorDivisor,
+			c.VddEnsaioMV, c.R2, c.RMSEKPa, data, c.Nota,
+		).Scan(&cal.ID, &cal.DeviceID, &cal.VZero, &cal.K, &cal.FatorDivisor,
+			&cal.VddEnsaioMV, &cal.R2, &cal.RMSEKPa, &ensaioEm, &nota)
+
+		var pgErr *pgconn.PgError
+		if errors.As(err, &pgErr) && pgErr.Code == "23505" {
+			continue
+		}
+		if errors.Is(err, pgx.ErrNoRows) {
+			return Calibracao{}, ErrNaoEncontrado
+		}
+		if err != nil {
+			return Calibracao{}, err
+		}
+
+		cal.EnsaioEm = ensaioEm.Format("2006-01-02")
+		if nota != nil {
+			cal.Nota = *nota
+		}
+		return cal, nil
+	}
+	return Calibracao{}, ErrJaExiste
+}
+
+// CalibracoesDoDevice lista os ensaios do device, do mais recente para o
+// mais antigo.
+//
+// O JOIN de autorizacao se repete mesmo com o handler ja tendo passado por
+// buscarDevice, pela mesma razao de SerieDoUsuario: a consulta e autorizada
+// por si, e nao pela disciplina de quem a chama.
+//
+// Device fora do alcance devolve lista vazia, e nao erro. E indistinguivel
+// de um device sem ensaio nenhum, que e exatamente o que se quer -- o 404 de
+// recurso inalcancavel ja e dado por buscarDevice, antes desta consulta.
+func (s *Store) CalibracoesDoDevice(ctx context.Context, usuarioID, deviceID string) ([]Calibracao, error) {
+	rows, err := s.pool.Query(ctx, `
+		SELECT c.id, c.device_id, c.v_zero_kpa, c.k_v_por_kpa, c.fator_divisor,
+		       c.vdd_ensaio_mv, c.r2, c.rmse_kpa, c.ensaio_em, c.nota
+		  FROM calibrations c
+		  JOIN devices d          ON d.id = c.device_id
+		  JOIN usuario_talhoes ut ON ut.talhao_id = d.talhao_id AND ut.usuario_id = $1
+		 WHERE c.device_id = $2
+		 ORDER BY c.ensaio_em DESC, c.id DESC`, usuarioID, deviceID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	cals := []Calibracao{}
+	for rows.Next() {
+		var cal Calibracao
+		var ensaioEm time.Time
+		var nota *string
+		if err := rows.Scan(&cal.ID, &cal.DeviceID, &cal.VZero, &cal.K,
+			&cal.FatorDivisor, &cal.VddEnsaioMV, &cal.R2, &cal.RMSEKPa,
+			&ensaioEm, &nota); err != nil {
+			return nil, err
+		}
+		cal.EnsaioEm = ensaioEm.Format("2006-01-02")
+		if nota != nil {
+			cal.Nota = *nota
+		}
+		cals = append(cals, cal)
+	}
+	return cals, rows.Err()
 }

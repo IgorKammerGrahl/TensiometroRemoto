@@ -184,6 +184,57 @@ o erro e a operação e nada mais. Não há parâmetro por onde o palpite entras
 > em lugar nenhum do repositório. Se um nó real for gravado com ele, reemita
 > antes da entrega: cadastre outro nó e desative este.
 
+## Calibração pelo aplicativo
+
+O painel de calibração (`src/componentes/Calibracao.tsx`) fica na tela do nó,
+junto do de limiares. Ele existe por causa de uma falha que **não aparece em
+lugar nenhum**: sem nenhuma linha em `calibrations`, o aparelho conecta,
+autentica, `POST /readings` responde `200 OK` — e toda leitura volta dentro de
+`rejected`, por `calibration_id` desconhecido. Do lado da interface o nó
+simplesmente nunca reporta. O sintoma tem cara de defeito de firmware, de antena
+ou de bateria; o que falta é cadastro.
+
+Por isso a tela do nó consulta os ensaios mesmo quando o painel está fechado:
+com zero calibrações, a frase de *nenhuma leitura chegou* deixa de mandar
+conferir bateria e sinal e passa a nomear a causa real.
+
+**Os coeficientes são em VOLTS, apesar do nome da coluna.** `v_zero_kpa` é a
+tensão *no ponto* de 0 kPa e `k_v_por_kpa` é o coeficiente em V/kPa. Quem lê o
+sensor num multímetro em milivolts digita `4500` onde vai `4,5`, e o valor passa
+por todos os `CHECK` do banco: o servidor grava, o gráfico desenha, e a série
+inteira fica mil vezes errada — que é pior que série nenhuma, porque ninguém
+desconfia dela. A defesa é dividida, na mesma separação de `Faixa.tsx`:
+
+- **Affordance**, daqui: o `max` de 10 V no campo. Com ele, `4500` não chega a
+  ser digitável. Não há comparação escrita em lugar nenhum do componente.
+- **Validação**, do servidor: `appCriarCalibracao` projeta o ponto de 0 kPa de
+  volta no pino e exige que ele caia na faixa que o ADC lê. A mensagem dele vai
+  para a tela **como veio**, porque ela diz *em quantos mV* o ponto caiu — e é
+  esse número que explica o erro de unidade.
+
+Duas decisões menores, pelo mesmo princípio de não afirmar o que não se mediu:
+
+- Opcional em branco é **omitido**, nunca zerado. `Number('')` é `0`, e um
+  `r2: 0` escapado daqui gravaria *ajuste péssimo* onde a pessoa quis dizer *não
+  medi*. Testado em `src/calibracao.test.ts`.
+- Ao registrar um ensaio novo, só `fator_divisor` e `vdd_ensaio_mv` são herdados
+  do anterior — descrevem a placa. `v_zero_kpa` e `k_v_por_kpa` **não**: são o
+  resultado do ensaio, e herdá-los deixaria o formulário pronto para salvar sem
+  que nada tivesse sido medido.
+
+Não há editar nem apagar, porque o servidor não tem `PATCH` nem `DELETE` aqui:
+ensaio novo é id novo. Sobrescrever coeficientes reescreveria em silêncio o
+significado de todas as leituras já gravadas que apontam para eles. O id gerado
+(`cal-AAAA-MM-DD-xxxx`) precisa ser transcrito para o campo `CALIBRATION_ID` do
+portal do nó, e fica visível no painel fechado — ao contrário do token de
+`NovoNo.tsx`, ele é recuperável, e a forma de garantir isso é nunca escondê-lo.
+
+> **Ainda não exercitado contra hardware.** O ciclo *cadastrar ensaio → gravar o
+> id no portal → leitura aceita* foi verificado contra o backend de verdade pelos
+> testes do servidor, mas não com um nó físico: o tensiômetro quebrou em
+> 15/09/2026 e o substituto não chegou. Vale como implementado, não como
+> validado em bancada.
+
 ## Escopo
 
 Instalação como PWA (manifest, ícones, service worker) está no escopo.
@@ -202,6 +253,7 @@ o comentário em `public/sw.js`.
 | `src/serie.ts` | Quebra a série em trechos contíguos para o gráfico não ligar através de lacuna. |
 | `src/leitura.ts` | A **ordem** desativado → nunca reportou → velha → atual. A zona só é alcançável no último caso. |
 | `src/escala.ts` | Geometria da régua: escala 0…−80 kPa (medição) separada das bandas (classificação). |
+| `src/calibracao.ts` | Rascunho → corpo do ensaio. **Opcional em branco é omitido, nunca zerado**, e a data `DATE` não passa por `Date`. |
 | `src/janela.ts` | Janelas do histórico. **O cliente escolhe a duração; o servidor decide quando é "agora"** — `to` nunca é enviado. |
 | `src/relogio.ts` | `useAgora`: relógio que avança sozinho, porque *atual → velha* muda sem resposta nova do servidor. |
 | `src/sessao.tsx` | Sessão, login/logout e o porteiro das rotas (401 ≠ 403 ≠ sem rede). |
@@ -209,6 +261,7 @@ o comentário em `public/sw.js`.
 | `src/telas/` | Lista de nós e detalhe do nó. |
 | `src/erros.ts` | Erro de nó → frase. Não tem por onde receber *qual* concessão faltou. |
 | `src/componentes/Faixa.tsx` | Configuração dos limiares. A inversão é **inexprimível**, não detectada. |
+| `src/componentes/Calibracao.tsx` | Ensaio do nó. Existe porque a falta de calibração é **silenciosa**: o nó parece mudo. |
 | `src/telas/NovoNo.tsx` | Cadastro. É sobre a **ordem das operações**: o token aparece uma vez. |
 | `src/componentes/Gerenciar.tsx` | Editar, mover e desativar. Dois controles porque são dois riscos. |
 | `src/estilo/` | Tokens e base. Cor é reservada para estado; interação é tinta e forma. |

@@ -336,18 +336,23 @@ Tamanhos de referência das três configurações:
 
 | Configuração | Flash | % de 1.310.720 B |
 |---|---:|---:|
-| Telemetria com TLS e portal cativo | 1.094.068 B | 83% |
-| Telemetria `DEV_SEM_TLS` | 1.003.700 B | 76% |
+| Telemetria com TLS e portal cativo | 1.095.116 B | 83% |
+| Telemetria `DEV_SEM_TLS` | 1.004.076 B | 76% |
 | `MODO_CALIBRACAO` | ~279.000 B | 21% |
 
-O número do `DEV_SEM_TLS` é medido (16/09/2026); o do modo TLS é anterior
-às correções de reconexão de Wi-Fi e do placeholder do portal, que
-acrescentaram 92 B.
+Os dois primeiros foram medidos no mesmo estado de código em 17/09/2026,
+compilando a partir do `config.h.example` — que já é a configuração de
+produção, com a ISRG Root X1 e `DEV_SEM_TLS` comentado.
 
-Os ~92 KB a mais do modo TLS são o mbedTLS mais o certificado embutido. O
-portal cativo (`prov.h`, `prov_nvs.h`, `prov_valida.h`) acrescentou mais
-46.456 B sobre o baseline anterior com TLS — RAM em 49.800 B (15%), 216.652 B
-de flash livres.
+Os 91.040 B a mais do modo TLS são o mbedTLS mais o certificado embutido.
+RAM em 49.800 B (15%), 215.604 B de flash livres. Não há aperto: o limite é
+a partição de 1.310.720 B, e o build de produção usa 83% dela.
+
+O build de produção também é onde se verifica que a guarda de build inseguro
+funciona. Com `DEV_SEM_TLS` o compilador emite
+`note: '#pragma message: DEV_SEM_TLS ativo...'`; sem ele, silêncio. O
+`#warning` da mesma dupla é de fato engolido pelo `-w` do `arduino-cli` —
+sobrevive só o `#pragma message`, que é o motivo de os dois existirem.
 
 ## Teste de payload no host
 

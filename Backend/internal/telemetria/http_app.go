@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"math"
 	"net/http"
 	"strconv"
 	"strings"
@@ -72,6 +73,9 @@ func (a *API) registrarApp(mux *http.ServeMux) {
 	mux.Handle("GET /api/v1/app/devices/{id}", a.sessao(a.appDevice))
 	mux.Handle("PATCH /api/v1/app/devices/{id}", a.sessao(a.appPatchDevice))
 	mux.Handle("GET /api/v1/app/devices/{id}/series", a.sessao(a.appSerie))
+	// Sem DELETE e sem PATCH: ensaio novo e id novo. Ver appCriarCalibracao.
+	mux.Handle("GET /api/v1/app/devices/{id}/calibracoes", a.sessao(a.appCalibracoes))
+	mux.Handle("POST /api/v1/app/devices/{id}/calibracoes", a.sessao(a.appCriarCalibracao))
 
 	mux.Handle("GET /api/v1/app/talhoes", a.sessao(a.appTalhoes))
 	mux.Handle("PATCH /api/v1/app/talhoes/{id}", a.sessao(a.appPatchTalhao))
@@ -597,4 +601,175 @@ func uuidValido(s string) bool {
 		}
 	}
 	return true
+}
+
+// ------------------------------------------------------------ calibracao
+
+// Faixas dos coeficientes. Sao generosas de proposito: o objetivo aqui nao e
+// adivinhar qual sensor esta na ponta, e sim barrar o numero que nao pode ser
+// coeficiente de sensor nenhum. Quem aperta de verdade e a checagem do ponto
+// de 0 kPa mais abaixo, que fala com a fisica do circuito em vez de com uma
+// faixa arbitraria.
+const (
+	vZeroMaxV         = 10.0
+	kMaxVPorKPa       = 1.0
+	fatorDivisorMax   = 100.0
+	vddEnsaioMinMV    = 1000
+	vddEnsaioMaxMV    = 15000
+	rmseMaxKPa        = 100.0
+	notaMaxCalibracao = 500
+)
+
+func (a *API) appCalibracoes(w http.ResponseWriter, r *http.Request) {
+	if _, ok := a.buscarDevice(w, r); !ok {
+		return
+	}
+	cs, err := a.store.CalibracoesDoDevice(r.Context(), usuarioDoCtx(r.Context()), r.PathValue("id"))
+	if err != nil {
+		a.erroInterno(w, "consulta de calibracoes", err)
+		return
+	}
+	escreverJSON(w, http.StatusOK, cs)
+}
+
+// appCriarCalibracao registra pelo aplicativo o mesmo ensaio que
+// `admin calibracao` registra pela linha de comando.
+//
+// Existe porque a falha de nao ter calibracao e SILENCIOSA: o no autentica,
+// POST /readings responde 200, e toda leitura volta em "rejected" por
+// calibration_id ausente. O sintoma parece do firmware, e o que falta e
+// cadastro. Fechar esse ciclo nao pode exigir um terminal no meio da lavoura.
+//
+// Nao ha PATCH nem DELETE, e e deliberado: um ensaio novo e um id novo.
+// Sobrescrever coeficientes reescreveria em silencio o significado de todas
+// as leituras ja gravadas que apontam para eles -- o historico diria uma
+// coisa hoje e outra amanha, sem nada no dado registrando a mudanca.
+func (a *API) appCriarCalibracao(w http.ResponseWriter, r *http.Request) {
+	// Autorizacao ANTES de olhar o corpo, como em appSerie: assim nenhuma
+	// mensagem de 400 sobre coeficiente pode revelar que o device existe.
+	if _, ok := a.buscarDevice(w, r); !ok {
+		return
+	}
+
+	// Ponteiros nos quatro obrigatorios para separar "ausente" de "zero". Sao
+	// erros diferentes e merecem mensagens diferentes: campo esquecido no
+	// formulario nao e a mesma coisa que coeficiente zerado, que seria um
+	// sensor sem resposta.
+	var in struct {
+		VZero        *float64 `json:"v_zero_kpa"`
+		K            *float64 `json:"k_v_por_kpa"`
+		FatorDivisor *float64 `json:"fator_divisor"`
+		VddEnsaioMV  *int32   `json:"vdd_ensaio_mv"`
+		R2           *float64 `json:"r2"`
+		RMSEKPa      *float64 `json:"rmse_kpa"`
+		Nota         string   `json:"nota"`
+	}
+	if !decodificar(w, r, &in) {
+		return
+	}
+
+	switch {
+	case in.VZero == nil:
+		erroJSON(w, http.StatusBadRequest, "v_zero_kpa ausente (tensao em VOLTS no ponto de 0 kPa)")
+		return
+	case *in.VZero <= 0 || *in.VZero > vZeroMaxV:
+		// A mensagem carrega a unidade porque e AQUI que o erro de mil vezes
+		// bate primeiro: quem digita 4500 esta lendo o sensor em milivolts.
+		erroJSON(w, http.StatusBadRequest, fmt.Sprintf(
+			"v_zero_kpa fora da faixa (0,%g] V -- o valor e em VOLTS, "+
+				"nao em milivolts (4.5, e nao 4500)", vZeroMaxV))
+		return
+	case in.K == nil:
+		erroJSON(w, http.StatusBadRequest, "k_v_por_kpa ausente (coeficiente em V/kPa)")
+		return
+	case *in.K == 0:
+		// Sensor que nao muda de tensao com a pressao nao e calibravel, e o
+		// coeficiente e divisor na formula de reconstrucao.
+		erroJSON(w, http.StatusBadRequest, "k_v_por_kpa nao pode ser zero")
+		return
+	case math.Abs(*in.K) > kMaxVPorKPa:
+		erroJSON(w, http.StatusBadRequest, fmt.Sprintf(
+			"k_v_por_kpa fora da faixa [-%g,%g] V/kPa", kMaxVPorKPa, kMaxVPorKPa))
+		return
+	case in.FatorDivisor == nil:
+		erroJSON(w, http.StatusBadRequest, "fator_divisor ausente")
+		return
+	case *in.FatorDivisor <= 0 || *in.FatorDivisor > fatorDivisorMax:
+		erroJSON(w, http.StatusBadRequest, fmt.Sprintf(
+			"fator_divisor fora da faixa (0,%g]", fatorDivisorMax))
+		return
+	case in.VddEnsaioMV == nil:
+		erroJSON(w, http.StatusBadRequest, "vdd_ensaio_mv ausente (alimentacao do sensor no ensaio, em mV)")
+		return
+	case *in.VddEnsaioMV < vddEnsaioMinMV || *in.VddEnsaioMV > vddEnsaioMaxMV:
+		erroJSON(w, http.StatusBadRequest, fmt.Sprintf(
+			"vdd_ensaio_mv fora da faixa [%d,%d] mV", vddEnsaioMinMV, vddEnsaioMaxMV))
+		return
+	case in.R2 != nil && (*in.R2 < 0 || *in.R2 > 1):
+		erroJSON(w, http.StatusBadRequest, "r2 fora da faixa [0,1]")
+		return
+	case in.RMSEKPa != nil && (*in.RMSEKPa < 0 || *in.RMSEKPa > rmseMaxKPa):
+		erroJSON(w, http.StatusBadRequest, fmt.Sprintf(
+			"rmse_kpa fora da faixa [0,%g]", rmseMaxKPa))
+		return
+	case len(in.Nota) > notaMaxCalibracao:
+		erroJSON(w, http.StatusBadRequest, fmt.Sprintf(
+			"nota acima de %d caracteres", notaMaxCalibracao))
+		return
+	}
+
+	// O PONTO DE 0 kPa PRECISA CAIR DENTRO DO QUE O ADC DO NO CONSEGUE LER.
+	//
+	// E a unica checagem que amarra os coeficientes a fisica do circuito em
+	// vez de a uma faixa escolhida a mao, e e ela que pega o erro de unidade:
+	// com 4500 em vez de 4,5 o ponto de 0 kPa cai em 3.000.000 mV no pino.
+	// Todos os CHECK do banco aceitariam, e o resultado seria uma serie de
+	// kPa plausiveis e mil vezes errados -- que e pior que serie nenhuma,
+	// porque ninguem desconfia dela.
+	//
+	// ponytail: so o ponto de 0 kPa, e nao a faixa inteira. Exigir que os dois
+	// extremos coubessem no ADC rejeitaria a calibracao nominal do XGZP6847A,
+	// que legitimamente alcanca -112 kPa na borda de 0 mV.
+	zeroMV := *in.VZero * 1000 / *in.FatorDivisor
+	if zeroMV < rawMVMin || zeroMV > rawMVMax {
+		erroJSON(w, http.StatusBadRequest, fmt.Sprintf(
+			"com esses coeficientes o ponto de 0 kPa cai em %.0f mV no pino, fora "+
+				"da faixa [%d,%d] que o ADC le; confira a unidade -- v_zero_kpa e "+
+				"k_v_por_kpa sao em VOLTS e V/kPa, nao em milivolts",
+			zeroMV, rawMVMin, rawMVMax))
+		return
+	}
+
+	cal, err := a.store.CriarCalibracao(r.Context(), usuarioDoCtx(r.Context()), r.PathValue("id"),
+		NovaCalibracao{
+			VZero:        *in.VZero,
+			K:            *in.K,
+			FatorDivisor: *in.FatorDivisor,
+			VddEnsaioMV:  *in.VddEnsaioMV,
+			R2:           in.R2,
+			RMSEKPa:      in.RMSEKPa,
+			Nota:         in.Nota,
+		})
+	switch {
+	case errors.Is(err, ErrNaoEncontrado):
+		// Alcancavel mesmo depois de buscarDevice ter passado: o no pode ter
+		// saido do talhao entre as duas consultas.
+		erroJSON(w, http.StatusNotFound, "device nao encontrado")
+		return
+	case errors.Is(err, ErrJaExiste):
+		// Nao e colisao de uso: tres sorteios de 16 bits colidindo seguidos e
+		// anomalia, e 500 e a resposta honesta. 409 mandaria o usuario tentar
+		// de novo contra um problema que nao e dele.
+		a.erroInterno(w, "sorteio do id da calibracao", err)
+		return
+	case err != nil:
+		a.erroInterno(w, "cadastro de calibracao", err)
+		return
+	}
+
+	escreverJSON(w, http.StatusCreated, map[string]any{
+		"calibracao": cal,
+		"aviso": "grave " + cal.ID + " no campo CALIBRATION_ID do portal do no; " +
+			"leitura enviada com outro id volta rejeitada",
+	})
 }

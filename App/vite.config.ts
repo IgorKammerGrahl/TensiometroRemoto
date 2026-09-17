@@ -41,5 +41,18 @@ export default defineConfig({
   test: {
     environment: 'node',
     include: ['src/**/*.test.ts'],
+
+    // FUSO FIXO EM UTC-3, E NAO O DA MAQUINA.
+    //
+    // Sem isto a suite passa ou nao conforme o relogio de quem a roda, e o
+    // caso que some e justamente o que interessa: uma data DATE ("2026-09-17")
+    // que passe por `new Date` vira meia-noite UTC e recua um dia a oeste de
+    // Greenwich -- em UTC a conversao errada da o mesmo resultado que a certa,
+    // e o defeito so aparece no celular de quem esta em campo.
+    //
+    // America/Sao_Paulo porque e onde o sistema roda (IFC Rio do Sul), e
+    // porque nao tem mais horario de verao desde 2019: o deslocamento e -3
+    // o ano inteiro, entao o fuso nao introduz sazonalidade nos testes.
+    env: { TZ: 'America/Sao_Paulo' },
   },
 });
