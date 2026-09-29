@@ -71,8 +71,10 @@ do manejo hídrico.
 - *Relação com o TCC:* este estudo reforça a viabilidade técnica da
   telemetria por meio do ESP32. A presente proposta se diferencia ao
   delimitar o escopo estritamente ao monitoramento de precisão (telemetria),
-  aprofundando-se na calibração do sinal analógico do sensor de pressão
-  XGZP6847A em relação ao vácuo mecânico.
+  aprofundando-se na cadeia de aquisição do sinal analógico do transdutor de
+  pressão XGZP6847A --- condicionamento, correção do conversor e preservação
+  da leitura bruta para recalibração ---, cuja calibração contra o vacuômetro
+  mecânico permanece por realizar (@sec-estado).
 
 == Análise comparativa
 
@@ -105,8 +107,10 @@ microcontrolador a medida já convertida internamente.
 Convém delimitar com precisão o que este trabalho não reivindica como
 contribuição. A autonomia energética por bateria e painel solar e o
 armazenamento local das leituras durante indisponibilidade da rede já estão
-presentes em @abdelmoneim2023; ambos são aqui adotados como decisões de
-projeto informadas pela literatura, e não como novidade. O diferencial
+presentes em @abdelmoneim2023 e, por isso, não seriam novidade. Neste
+trabalho, nenhum dos dois foi implementado: ambos ficam registrados como
+limitação do protótipo (@sec-estado), com precedente conhecido na
+literatura. O diferencial
 concentra-se em dois pontos. O primeiro é a aquisição analógica com
 condicionamento de sinal e correção do conversor analógico-digital, que
 mantém a cadeia de medição exposta e auditável, em vez de delegá-la a um

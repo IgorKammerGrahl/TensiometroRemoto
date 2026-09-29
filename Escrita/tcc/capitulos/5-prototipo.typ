@@ -33,8 +33,8 @@ cerâmica dessaturada, e não a montagem improvisada. Ainda assim, toda a
 experimentação relatada neste capítulo é de bancada, com o transdutor aberto à
 atmosfera ou submetido a sucção manual.
 
-Três itens previstos permanecem não realizados, e determinam os limites do que
-este capítulo autoriza afirmar.
+Quatro itens previstos permanecem não realizados, e determinam os limites do
+que este capítulo autoriza afirmar.
 
 A *calibração experimental* não foi conduzida. Os coeficientes de conversão em
 uso são os valores nominais de catálogo, e nenhuma métrica de ajuste ---
@@ -46,6 +46,16 @@ A *validação em solo* não foi conduzida. Os ensaios mantiveram o transdutor
 aberto à atmosfera, condição que exercita a cadeia de aquisição, de conversão
 e de transmissão, mas não a resposta do instrumento à dinâmica de secagem e
 umedecimento do solo.
+
+O *RNF04 não está atendido.* O nó sensor não armazena leituras durante a
+indisponibilidade da rede: uma transmissão que falha perde a leitura. O número
+de sequência avança mesmo assim, de modo que a perda fica registrada como
+lacuna na série, e não oculta, mas não é recuperada. Quanto ao RNF02, o
+consumo do nó não foi medido, e o ciclo de aquisição aguarda entre leituras
+sem suspensão profunda (_deep sleep_): a alimentação por rede elétrica é
+atendida, mas a evolução para bateria, prevista no próprio requisito, exigirá
+esse recurso. Ambos têm precedente direto na literatura @abdelmoneim2023 e
+ficam registrados como trabalho futuro.
 
 O *RF08 está cumprido apenas na direção de configurar.* A interface permite
 definir e alterar os limiares de atenção de um talhão, mas não removê-los: o
@@ -299,17 +309,18 @@ leitura carrega um número de sequência monotônico atribuído pelo dispositivo
 e o par formado pelo identificador do dispositivo e por esse número constitui
 a chave primária da tabela de leituras. Uma retransmissão da mesma leitura é
 identificada e descartada pelo próprio banco de dados, sem depender de lógica
-de aplicação. Quando uma transmissão falha em definitivo, o número de
-sequência avança mesmo assim, por decisão de projeto: a lacuna resultante é
+de aplicação. Quando uma transmissão falha, o número de sequência avança
+mesmo assim --- ele é gravado na memória não volátil antes do envio ---, por
+decisão de projeto: a lacuna resultante é
 diagnosticável na série, ao passo que reaproveitar o número produziria duas
 leituras distintas sob o mesmo identificador.
 
-A @fig-sequencia detalha esse comportamento em três situações sucessivas: a
+A @fig-sequencia detalha esse contrato em três situações sucessivas: a
 transmissão bem-sucedida, a perda da resposta após gravação efetiva e a
 retransmissão subsequente, descartada por idempotência.
 
 #figure(
-  caption: [Sequência de ingestão de leituras, com retransmissão e descarte idempotente],
+  caption: [Contrato de ingestão de leituras, com retransmissão e descarte idempotente],
   block[
   #cetz.canvas({
     import cetz.draw: *
@@ -358,11 +369,16 @@ retransmissão subsequente, descartada por idempotência.
 ) <fig-sequencia>
 #fonte[Elaborado pelo autor (2026).]
 
-O armazenamento local durante indisponibilidade da rede, previsto para a etapa
-seguinte, tem precedente direto na literatura, em que se emprega cartão de
-memória para o mesmo fim @abdelmoneim2023. Trata-se, portanto, de decisão de
-projeto informada pela literatura, e não de contribuição original deste
-trabalho.
+A figura descreve o contrato completo, e apenas a metade do servidor está
+implementada. A chave composta e o descarte da leitura repetida estão
+construídos e cobertos pela suíte automatizada. O lado do nó --- manter a
+leitura sem confirmação e retransmiti-la --- depende do armazenamento local,
+que não foi implementado (@sec-estado): no firmware atual, a leitura cuja
+transmissão falha é perdida, e a terceira situação da figura não ocorre. Como
+o servidor já trata a retransmissão, esse armazenamento pode ser acrescentado
+ao nó sem alteração do lado do servidor. O recurso tem precedente direto na
+literatura, em que se emprega cartão de memória para o mesmo fim
+@abdelmoneim2023, e não constituiria contribuição original deste trabalho.
 
 Um detalhe de ordem de inicialização merece registro por não ser evidente. O
 firmware sincroniza o relógio por NTP antes de estabelecer qualquer conexão
@@ -371,7 +387,10 @@ declarada contra o relógio local: com o relógio na origem da contagem, em
 1970, um certificado perfeitamente válido é recusado sob a alegação de ainda
 não haver sido emitido. O certificado raiz da autoridade certificadora é
 embutido no firmware, de modo que a validação não depende de nenhum
-repositório externo de confiança.
+repositório externo de confiança. Esse ramo do firmware foi compilado --- o
+binário ocupa 83% da partição de aplicação ---, mas os ensaios relatados na
+@sec-bancada usaram HTTP sem TLS, de modo que o estabelecimento da sessão
+segura contra o servidor não foi exercitado.
 
 == Serviço de retaguarda e modelo de dados
 
@@ -414,17 +433,18 @@ A @fig-modelo-dados apresenta as entidades e os relacionamentos do modelo.
     node-shape: rect,
     node-inset: 6pt,
     node((0, 0), ent("usuarios", [id\ email\ senha_hash]), name: <u>),
-    node((1, 0), ent("usuario_talhoes", [usuario_id\ talhao_id\ papel]), name: <ut>),
-    node((2, 0), ent("talhoes", [id\ nome\ cultura]), name: <t>),
-    node((3, 0), ent("dispositivos", [id\ talhao_id (nulo)\ token_hash]), name: <d>),
+    node((1, 0), ent("usuario_talhoes", [usuario_id (PK)\ talhao_id (PK)]), name: <ut>),
+    node((2, 0), ent("talhoes", [id\ nome\ cultura\ kpa_alerta\ kpa_estresse]), name: <t>),
+    node((3, 0), ent("dispositivos", [id\ talhao_id (nulo)\ token_hash\ ativo]), name: <d>),
     node((3, 1), ent("leituras", [dispositivo_id (PK)\ seq (PK)\ kpa / raw_mv\ vdd_mv\ calibracao_id\ medido_em\ recebido_em]), name: <l>),
     node((0, 1), ent("sessoes", [token_hash\ usuario_id\ expira_em]), name: <s>),
-    node((1, 1), ent("calibracoes", [id\ v_zero_kpa\ k_volts_por_kpa]), name: <c>),
+    node((2, 1), ent("calibracoes", [id\ dispositivo_id\ v_zero_kpa\ k_v_por_kpa\ ensaio_em]), name: <c>),
 
     edge(<u>, <ut>, "-|>", label: text(size: 8pt)[1..N]),
     edge(<ut>, <t>, "<|-", label: text(size: 8pt)[N..1]),
     edge(<t>, <d>, "-|>", label: text(size: 8pt)[1..N]),
-    edge(<d>, <l>, "-|>", label: text(size: 8pt)[1..N], label-side: right),
+    edge(<d>, <l>, "-|>", label: text(size: 8pt)[1..N], label-side: left),
+    edge(<d>, <c>, "-|>", label: text(size: 8pt)[1..N], label-side: right),
     edge(<u>, <s>, "-|>", label: text(size: 8pt)[1..N], label-side: right),
     edge(<c>, <l>, "-|>", label: text(size: 8pt)[1..N]),
   )
@@ -452,8 +472,8 @@ requisição de ingestão, de modo que uma função deliberadamente lenta
 inviabilizaria a busca indexada e transformaria o mecanismo de proteção em
 gargalo.
 
-A credencial de usuário é tratada de forma oposta, com bcrypt e fator de custo
-12. Senhas escolhidas por pessoas têm entropia baixa e previsível, o que as
+A credencial de usuário é tratada de forma oposta, com bcrypt e fator de
+custo 12. Senhas escolhidas por pessoas têm entropia baixa e previsível, o que as
 expõe a ataque de dicionário; a lentidão deixa de ser um custo e passa a ser a
 propriedade desejada, e o fator de custo ajustável permite acompanhar a
 evolução do poder computacional sem alterar o formato armazenado
@@ -489,7 +509,10 @@ separadamente, tornam-se representáveis configurações em que existem lacunas
 entre elas, ou sobreposições, e essas configurações precisariam ser detectadas
 e rejeitadas por validação. Derivando as zonas de dois limiares por comparações
 sucessivas, lacunas e sobreposições tornam-se irrepresentáveis por construção,
-e a validação correspondente deixa de ser necessária.
+e a validação correspondente deixa de ser necessária. Por essa razão, a
+entidade FaixaAtencao prevista no modelo conceitual das especificações
+formais não existe como tabela: os dois limiares são atributos do próprio
+talhão, como mostra a @fig-modelo-dados.
 
 O tratamento do sinal algébrico é o ponto de maior propensão a erro em toda a
 aplicação. A tensão da água no solo é uma grandeza negativa, e valores mais
@@ -733,11 +756,11 @@ audível.
 
 === Suíte automatizada
 
-A verificação do serviço de retaguarda é feita por 67 funções de teste, que se
-desdobram em 87 casos executáveis quando os subtestes parametrizados são
+A verificação do serviço de retaguarda é feita por 87 funções de teste, que se
+desdobram em 107 casos executáveis quando os subtestes parametrizados são
 contados individualmente. A distinção é registrada porque os dois números
-descrevem a mesma suíte e divergem por um fator de organização do código: 67 é
-o que se conta lendo os arquivos, 87 é o que a ferramenta reporta ao executar.
+descrevem a mesma suíte e divergem por um fator de organização do código: 87 é
+o que se conta lendo os arquivos, 107 é o que a ferramenta reporta ao executar.
 As funções distribuem-se por três dos oito pacotes do serviço, e são
 executadas contra uma instância real do PostgreSQL, e não contra substitutos
 em memória. A escolha decorre de o comportamento sob verificação depender de
@@ -746,9 +769,10 @@ chave primária composta e o resultado das consultas de autorização por junç�
 não são reproduzíveis por um substituto sem reimplementá-lo, o que faria o
 teste verificar a reimplementação em vez do sistema.
 
-A camada de apresentação é verificada por 86 casos distribuídos em oito
+A camada de apresentação é verificada por 95 casos distribuídos em nove
 arquivos, que cobrem a segmentação da série, a geometria da régua, a ordem de
-verificação dos estados da leitura e a tradução de zona em aparência.
+verificação dos estados da leitura, a tradução de zona em aparência e a
+montagem dos coeficientes de calibração enviados ao servidor.
 
 Os comportamentos críticos cobertos são a inversão de sinal na classificação
 das faixas de atenção; as fronteiras exatas dos limiares, verificadas nos
@@ -1104,9 +1128,12 @@ contraste entre os dois.
 Cabe registrar o que esse resultado não estabelece. Nenhum dos dois ensaios
 submeteu o enlace a uma condição adversa controlada, com atenuação medida ou
 interferência conhecida; a degradação do segundo ensaio foi encontrada, e não
-provocada. O comportamento do nó sob perda prolongada de conectividade, e a
-eficácia do mecanismo de retransmissão idempotente sob essa condição,
-permanecem não caracterizados.
+provocada. Sob perda prolongada de conectividade, o comportamento do nó é
+conhecido por construção, e não por ensaio: sem armazenamento local, toda
+leitura emitida durante a indisponibilidade se perde. O descarte idempotente
+de retransmissões está verificado apenas do lado do servidor, pela suíte
+automatizada; nenhum ensaio o exercitou a partir do nó, que hoje não
+retransmite.
 
 === Latência e o desvio entre relógios
 
@@ -1305,8 +1332,9 @@ observações sustentam.
 
 *O enlace não foi submetido a condição adversa controlada.* A degradação
 observada no início do segundo ensaio foi encontrada e corrigida, não
-provocada e medida. O comportamento do sistema sob perda prolongada de
-conectividade não foi caracterizado.
+provocada e medida. Sob perda prolongada de conectividade, sabe-se apenas o
+que decorre da construção: sem armazenamento local, as leituras do período
+se perdem.
 
 #pendente[FOTO PENDENTE: tensiômetro com o vacuômetro mecânico acoplado,
 utilizado como padrão de referência nos ensaios de calibração previstos.]

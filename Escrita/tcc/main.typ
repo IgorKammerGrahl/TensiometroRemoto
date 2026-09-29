@@ -10,8 +10,8 @@
   campus: "Rio do Sul",
   cidade: "Rio do Sul",
   ano: "2026",
-  // TODO: sobrenome e titulação do orientador
-  orientador: "Prof. André",
+  // TODO: titulação do orientador (Me./Dr.)
+  orientador: "Prof. André Alessandro Stein",
   natureza: [
     Trabalho de Conclusão de Curso submetido ao curso de Bacharelado em
     Ciência da Computação do Instituto Federal Catarinense -- _Campus_ Rio do
@@ -30,13 +30,13 @@
     construídos os quatro estágios da cadeia de medição: um tensiômetro
     analógico derivado por septo perfurado e acoplado a um transdutor de
     pressão piezorresistivo; o condicionamento do sinal e a aquisição em um
-    microcontrolador ESP32; a telemetria sobre HTTPS, com idempotência
+    microcontrolador ESP32; a telemetria autenticada, com idempotência
     garantida pelo par identificador do nó e número de sequência; e um serviço
     de retaguarda com aplicação web progressiva embarcada no próprio binário,
     que apresenta ao produtor a leitura corrente, o histórico e as faixas de
     atenção configuráveis. A verificação combinou suíte automatizada de
     testes, ensaio ponta a ponta contra o servidor em execução e dois ensaios
-    contínuos de bancada com o transdutor aberto à atmosfera. No segundo
+    contínuos de bancada, sem TLS e com o transdutor aberto à atmosfera. No segundo
     deles, de 13 h 36 min e 784 amostras, o sinal apresentou desvio padrão de
     2,6 mV, e não houve perda de pacotes em 772 emissões consecutivas após a
     correção da condição de rede responsável pelas perdas iniciais. As duas
@@ -67,14 +67,14 @@
     readings limits large-scale use. All four stages of the measurement chain
     were built: an analog tensiometer tapped through a needle-pierced septum
     and coupled to a piezoresistive pressure transducer; signal conditioning
-    and acquisition on an ESP32 microcontroller; telemetry over HTTPS, with
+    and acquisition on an ESP32 microcontroller; authenticated telemetry, with
     idempotency guaranteed by the pair node identifier and sequence number;
     and a back-end service with a progressive web application embedded in the
     binary itself, which presents the farmer with the current reading, the
     history and the configurable attention thresholds. Verification combined
     an automated test suite, an end-to-end trial against the running server
-    and two continuous bench trials with the transducer open to the
-    atmosphere. In the second of these, lasting 13 h 36 min and comprising 784
+    and two continuous bench trials, without TLS and with the transducer open
+    to the atmosphere. In the second of these, lasting 13 h 36 min and comprising 784
     samples, the signal showed a standard deviation of 2.6 mV, and no packet
     loss occurred over 772 consecutive transmissions once the network
     condition responsible for the initial losses had been corrected. The two

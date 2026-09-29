@@ -205,14 +205,15 @@ opera em 3,3 V.
 
 A segunda etapa abrangeu a programação do firmware e a configuração da
 arquitetura de telemetria. O firmware do ESP32 foi desenvolvido em linguagem
-C/C++ utilizando a plataforma Arduino IDE, que oferece vasto suporte a
+C/C++ sobre o núcleo Arduino para ESP32, compilado pela ferramenta de linha de
+comando `arduino-cli`; o ecossistema Arduino oferece vasto suporte a
 bibliotecas para manipulação de sensores analógicos e módulos de rede.
 
 O algoritmo embarcado foi projetado para efetuar a leitura contínua do pino
 ADC do microcontrolador e aplicar a fórmula de conversão matemática
 necessária para transformar a faixa de tensão obtida (Volts) em uma unidade
-de pressão de sucção (kPa), refletindo o exato nível de esforço hídrico da
-planta.
+de pressão de sucção (kPa), grandeza que indica o esforço necessário à planta
+para extrair a água do solo.
 
 Paralelamente, foi configurada a comunicação IoT, enviando esses valores
 convertidos via conexão Wi-Fi para um servidor. A interface do produtor foi

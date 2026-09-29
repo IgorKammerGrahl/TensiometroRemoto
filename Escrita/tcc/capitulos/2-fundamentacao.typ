@@ -82,12 +82,14 @@ hídrico.
 Apesar da sua eficácia, o tensiômetro mecânico possui o gargalo de exigir
 leituras visuais diárias, impossibilitando a telemetria nativa. A solução
 técnica fundamentada pela IoT para contornar esse problema é a tensiometria
-eletrônica. Ao acoplar um transdutor de pressão piezorresistivo, converte-se
-a pressão de vácuo mecânica em um sinal elétrico analógico @abdelmoneim2023.
-O transdutor emite pulsos de tensão (Volts) que podem ser lidos diretamente
-pelos conversores analógico-digitais (ADCs) de um microcontrolador,
-traduzindo o sinal em medidas exatas de pressão (quilopascais -- kPa)
-enviadas diretamente para a nuvem.
+eletrônica. Ao acoplar um transdutor de pressão à câmara de ar do
+instrumento, converte-se a pressão de vácuo em um sinal elétrico
+@abdelmoneim2023. Nos transdutores de saída analógica, como o adotado neste
+trabalho, esse sinal é uma tensão contínua proporcional à pressão, lida pelo
+conversor analógico-digital (ADC) de um microcontrolador e convertida em
+quilopascais (kPa) por uma função de calibração. A exatidão do resultado não
+é propriedade do transdutor isolado: depende dessa função e do padrão de
+referência contra o qual ela é ajustada.
 
 == Infraestrutura computacional de hardware e software
 
@@ -95,11 +97,13 @@ A materialização de um nó sensor agrícola requer hardware robusto, de baixo
 consumo energético e custo acessível. O microcontrolador ESP32 tem se
 destacado amplamente em pesquisas de redes de sensores agrícolas devido à sua
 arquitetura _dual-core_ e, principalmente, por possuir módulos nativos de
-conectividade Wi-Fi e Bluetooth @correaquiroz2025. O ESP32 possui múltiplos
-conversores analógico-digitais de alta resolução (12 bits), garantindo uma
-amostragem elétrica precisa das flutuações enviadas pelo transdutor do
-tensiômetro, operando de forma estável para aquisição dos dados do campo
-@purnama2024.
+conectividade Wi-Fi e Bluetooth @correaquiroz2025, e é empregado em sistemas
+de irrigação de baixo custo @purnama2024. O microcontrolador possui dois
+conversores analógico-digitais de 12 bits. A resolução nominal, contudo, não
+equivale a exatidão: o fabricante descreve o conversor como sensível a ruído
+@espressifadc, e a sua tensão de referência varia entre exemplares
+@espressifcali, o que exige filtragem e correção no firmware, conforme
+detalhado no @cap-prototipo.
 
 Em relação à camada de software e comunicação, a conexão entre o hardware no
 campo e o usuário é frequentemente mediada por protocolos de transporte leves
