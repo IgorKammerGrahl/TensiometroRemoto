@@ -21,7 +21,7 @@ usuário. O nó sensor integra o tensiômetro analógico, o transdutor de press�
 XGZP6847A100KPGN e o microcontrolador ESP32, responsável pela aquisição do sinal
 analógico, conversão para unidades de tensão (kPa) e envio dos dados pela
 rede Wi-Fi. Na nuvem, um serviço de backend recebe as leituras, armazena-as
-em um banco de dados temporal e disponibiliza uma API para consulta, enquanto
+em um banco de dados relacional e disponibiliza uma API para consulta, enquanto
 o aplicativo móvel oferece uma interface gráfica para acompanhamento em tempo
 real do histórico hídrico do solo.
 
@@ -69,7 +69,7 @@ sinal no campo até a visualização pelo usuário.
       // Camada 2 — nuvem
       node((2, 1), align(center)[Backend\ #text(size: 8pt)[(ingestão de leituras)]]),
       edge((2, 1), (1, 1), "-|>", label: [gravação], label-side: left),
-      node((1, 1), align(center)[Banco de dados\ temporal]),
+      node((1, 1), align(center)[Banco de dados\ relacional]),
       edge((1, 1), (0, 1), "-|>", label: [consulta], label-side: left),
       node((0, 1), align(center)[API de\ consulta]),
       node(
@@ -121,9 +121,10 @@ identificados:
   por meio de requisições HTTP sobre TLS (HTTPS), autenticadas por um token
   próprio do dispositivo. Optou-se pelo modelo de requisição e resposta, em
   vez de publicação e assinatura, por dispensar um intermediário permanente
-  e por tornar síncrona a confirmação de gravação: o nó sensor só descarta a
-  leitura do seu armazenamento local após receber do servidor o código de
-  sucesso correspondente.
+  e por tornar síncrona a confirmação de gravação: pela resposta, o nó sensor
+  sabe se a leitura foi persistida, condição para que um armazenamento local
+  possa descartá-la com segurança. Esse armazenamento não foi implementado
+  nesta etapa, conforme declarado no @cap-prototipo.
 - *RF05 -- Armazenamento persistente em nuvem:* o backend deve armazenar as
   leituras recebidas em um repositório persistente, organizado por nó sensor,
   talhão e cultura, garantindo a integridade e a rastreabilidade dos dados.
@@ -342,9 +343,11 @@ capítulo.
 
 O plano de testes deve, ainda, incorporar três condicionantes de natureza
 metrológica identificadas durante o desenvolvimento. A comparação entre a
-leitura eletrônica e a leitura do vacuômetro exige a correção de coluna de
-água descrita na seção 1.3.3, sob pena de atribuir ao transdutor um desvio que
-é, na verdade, hidrostático. A faixa de ensaio deve limitar-se ao intervalo em
+leitura eletrônica e a leitura do vacuômetro não deve receber a correção de
+coluna de água descrita na @sec-validacao, porque os dois instrumentos leem o
+topo da mesma coluna: aplicá-la apenas à referência atribuiria ao transdutor
+um desvio que é, na verdade, hidrostático. Resta apenas o termo da diferença
+de altura entre a tomada do vacuômetro e o septo. A faixa de ensaio deve limitar-se ao intervalo em
 que a coluna de água permanece íntegra, uma vez que além do limite de
 cavitação a leitura do próprio padrão de referência deixa de ser válida
 @azevedo1999. E a exatidão atribuível ao protótipo é limitada pela do
