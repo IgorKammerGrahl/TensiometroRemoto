@@ -48,6 +48,7 @@ Circuito/
 │   ├── prov_valida.h       validação dos campos do formulário (C puro)
 │   ├── config.h.example    modelo versionado, com placeholders
 │   └── config.h            física, coeficientes, intervalos, CA raiz e senha do AP — gitignored
+├── calibrar.py             ensaio de calibração: pareia serial × vacuômetro e ajusta a reta
 └── teste/
     ├── teste_payload.c     teste do payload no host, sem hardware
     └── teste_prov.c        teste da validação e do escape de HTML, sem hardware
@@ -313,13 +314,79 @@ mv_pino,v_sensor,kpa
 3019,4.529,0.71
 ```
 
-Copie do monitor serial direto para a planilha. A ausência de escrita na NVS
-é o motivo de existir este modo: o ensaio de calibração lê a cada poucos
-segundos por horas, o que geraria dezenas de milhares de escritas por dia num
-`seq` que nem está sendo usado.
+A ausência de escrita na NVS é o motivo de existir este modo: o ensaio de
+calibração lê a cada poucos segundos por horas, o que geraria dezenas de
+milhares de escritas por dia num `seq` que nem está sendo usado.
 
 Uma linha marcada `<-- FORA DA FAIXA` significa `v_sensor` fora de 0,40–4,60 V:
 erro de montagem, sensor sem alimentação, ou `FATOR_DIVISOR` errado.
+
+#### Roteiro do ensaio de calibração
+
+O CSV não traz a leitura do vacuômetro nem horário, então o pareamento é
+feito por `calibrar.py`: a cada patamar você digita o que o vacuômetro
+mostra, e ele guarda a mediana das amostras dos últimos 30 s. No fim, ajusta
+`v_sensor = v_zero + k·p` e imprime os campos do formulário de calibração do
+app e as constantes do firmware. Só biblioteca padrão do Python.
+
+**Antes de ligar**
+
+1. **Cápsula saturada.** O "vazamento" atribuído à derivação era cápsula
+   seca (TCC, cap. 5). Aplique sucção e veja o vacuômetro segurar antes de começar.
+2. **Meça a alimentação do transdutor** com o multímetro, nos pinos VCC–GND,
+   em mV. Vai em `--vdd-mv`, que é obrigatório: é o "VDD do ensaio" do app e a
+   base das constantes do firmware, que hoje assume 5,00 V sem nunca ter
+   medido.
+3. **Meça o Δh:** a altura do septo *acima* da tomada do vacuômetro, em cm.
+   Vai em `--dh-cm`; se a tomada estiver no ar do topo, é 0. **Não é a altura
+   da cápsula**: a coluna inteira pesa igual sobre os dois instrumentos e fica
+   fora da comparação (TCC, seção 1.3.3). Aplicá-la à referência embutiria
+   ~6 kPa de erro nos coeficientes.
+4. Grave o firmware com `MODO_CALIBRACAO` e **feche o monitor serial** — o
+   script precisa da porta só para ele.
+
+**Durante**
+
+5. Ligue e rode o script logo em seguida, para registrar também o
+   aquecimento:
+
+   ```bash
+   python3 Circuito/calibrar.py /dev/ttyUSB0 --vdd-mv 4870 --dh-cm 3 --saida ~/ensaios
+   ```
+
+   Toda linha que o nó imprime vai, com horário, para `calibracao-…-serial.tsv`;
+   os pares vão para `calibracao-…-pares.csv`, regravado a cada ponto.
+6. **Espere 2 a 3 h antes do primeiro ponto.** A acomodação após a energização
+   apareceu nos dois ensaios de bancada (TCC, cap. 5).
+7. **Em cada patamar:** aplique a sucção, espere, e aperte Enter algumas vezes.
+   A linha mostra mediana, faixa e `tendencia`. Só digite a leitura quando a
+   tendência parar perto de zero: a mangueira atrasa a equalização. Leia o
+   vacuômetro de frente e digite **com sinal** (`-20`); valor positivo é
+   recusado. `d` desfaz o último ponto.
+8. **Patamares:** de 0 até perto de −70 kPa, em passos de ~10, descendo e
+   depois subindo. O resíduo dos dois ramos mostra histerese. Não passe de
+   −80 kPa: além disso a coluna cavita e o próprio vacuômetro deixa de valer.
+9. `fim` (ou Ctrl-C) ajusta e imprime os resíduos por ponto, R², RMSE, os
+   campos do app e as constantes do firmware.
+
+**Depois**
+
+10. `wc -l` nos dois arquivos e **copie-os para fora da máquina**. O primeiro
+    ensaio se perdeu num backup de zero bytes.
+11. No app, na tela do nó, registre o ensaio com os valores impressos. O id
+    gerado vai para `CALIBRATION_ID` no portal do nó.
+12. **O registro no app não muda o kPa exibido.** O firmware converte com as
+    constantes compiladas, e o backend ainda não reprocessa pelas calibrações
+    cadastradas. Troque `VDD_SENSOR`, `V_ZERO_KPA_NOMINAL` e
+    `K_VOLTS_POR_KPA_NOMINAL` no `sketch.ino` e `VDD_MV_NOMINAL` no
+    `config.h` pelos valores impressos, e regrave em modo telemetria. Os dois
+    VDD precisam ser o medido: um escala a conversão no nó, o outro vai no
+    payload e é o que a reconstrução no backend compara com o VDD do ensaio.
+
+Para refazer o ajuste sem o nó (por exemplo, depois de apagar um ponto ruim
+do CSV, ou com outro Δh): `python3 Circuito/calibrar.py --ajuste-de
+calibracao-…-pares.csv --vdd-mv 4870 [--dh-cm 3]`. Auto-verificação, sem
+hardware: `python3 Circuito/calibrar.py --teste`.
 
 ## Compilando e gravando
 
