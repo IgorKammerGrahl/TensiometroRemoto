@@ -222,7 +222,7 @@ interativa que permite ao usuário a visualização do histórico e das tendênc
 de variação da tensão da água no solo, sem a necessidade de deslocamento
 físico até a lavoura.
 
-=== Validação experimental e análise de dados
+=== Validação experimental e análise de dados <sec-validacao>
 
 A etapa final consistiu na validação funcional do protótipo de monitoramento
 em ambiente de bancada, e foi cumprida apenas em parte. As duas métricas
@@ -246,9 +246,8 @@ Os ensaios executados mantiveram o transdutor aberto à atmosfera, condição qu
 exercita a cadeia de aquisição e de transmissão, mas não a resposta do
 instrumento ao solo.
 
-A comparação entre a leitura eletrônica e a leitura visual exige duas
-correções que não são evidentes no arranjo experimental. A primeira decorre
-da coluna de água. A cápsula cerâmica situa-se abaixo do manômetro, e o peso
+A interpretação das leituras, eletrônica e visual, exige dois cuidados que não
+são evidentes no arranjo experimental. O primeiro decorre da coluna de água. A cápsula cerâmica situa-se abaixo do manômetro, e o peso
 da água contida no tubo exerce pressão hidrostática sobre o ponto de medição:
 no nível da cápsula a pressão é maior do que no topo do instrumento, de modo
 que o manômetro indica um valor mais severo do que a tensão efetivamente
@@ -274,7 +273,19 @@ aplicada. Empregar a forma subtrativa sobre uma leitura já negativa deslocaria
 o resultado do exemplo acima para $-"45,9"$ kPa, um erro de 11,8 kPa na direção
 oposta à correta.
 
-A segunda correção diz respeito à incerteza do próprio padrão de referência.
+A correção converte uma leitura no topo em tensão no solo, e por isso não entra
+na comparação entre o transdutor e o vacuômetro. O transdutor é acoplado pelo
+septo, no topo do instrumento, e lê a mesma câmara que o vacuômetro: os dois
+estão sujeitos à mesma coluna, e o termo $"0,098" dot h$ incide igualmente
+sobre ambas as leituras. Aplicá-lo apenas à leitura de referência durante a
+calibração embutiria nos coeficientes um desvio puramente hidrostático ---
+$"5,88"$ kPa no exemplo acima --- e o atribuiria ao transdutor. O único termo
+hidrostático da comparação é a diferença de altura $Delta h$ entre a tomada do
+vacuômetro e o septo, com o mesmo coeficiente, que depende da geometria do
+instrumento e deve ser medida na bancada. A correção pela altura $h$ completa
+pertence à apresentação da grandeza, discutida na @sec-lacunas.
+
+O segundo cuidado diz respeito à incerteza do próprio padrão de referência.
 O vacuômetro mecânico acoplado ao tensiômetro é um instrumento de classe B
 segundo a ABNT NBR 14105-1 @abnt14105, e sua tolerância limita a exatidão máxima que se pode
 atribuir ao protótipo, uma vez que nenhuma calibração pode ser mais exata que

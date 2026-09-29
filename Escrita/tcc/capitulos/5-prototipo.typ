@@ -854,9 +854,9 @@ detalhe de implementação.
 
 == Lacunas metrológicas identificadas <sec-lacunas>
 
-Além das correções de coluna de água e da incerteza do padrão de referência já
-descritas na seção 1.3.3, a análise do arranjo experimental identificou quatro
-lacunas que condicionam a interpretação de qualquer medida obtida.
+Além da correção de coluna de água e da incerteza do padrão de referência já
+descritas na @sec-validacao, a análise do arranjo experimental identificou
+cinco lacunas que condicionam a interpretação de qualquer medida obtida.
 
 A primeira é o limite de cavitação. A coluna de água no interior do
 tensiômetro não suporta tensões arbitrariamente altas: a partir de certo
@@ -884,7 +884,18 @@ uma vez que o tubo do tensiômetro empregado é transparente. Não foram
 realizados ensaios comparativos entre condições de iluminação, de modo que a
 magnitude desse efeito no arranjo específico permanece desconhecida.
 
-A quarta diz respeito à separação entre água e ar. O transdutor admite como
+A quarta diz respeito à grandeza exibida. O sistema converte e apresenta a
+pressão no topo do instrumento, sem a correção de coluna de água: a altura
+entre a cápsula e o ponto de derivação depende da profundidade de instalação
+de cada nó, e não é registrada no cadastro. Os limiares de atenção
+comparam-se, portanto, com a leitura no topo, e um limiar agronômico expresso
+como tensão no solo precisa ser convertido pela relação da @sec-validacao antes
+de ser configurado --- com $h = 60$ cm, um limiar de $-30$ kPa no solo
+corresponde a $-"35,9"$ kPa no topo. Registrar a profundidade no cadastro do
+nó e aplicar a correção no servidor dispensaria essa conversão manual, e fica
+como trabalho futuro.
+
+A quinta diz respeito à separação entre água e ar. O transdutor admite como
 meio de medição apenas gases não corrosivos, não sendo estanque à água
 @cfsensor. O acoplamento deve, portanto, garantir que o componente permaneça
 em contato exclusivamente com a coluna de ar da câmara do tensiômetro, jamais

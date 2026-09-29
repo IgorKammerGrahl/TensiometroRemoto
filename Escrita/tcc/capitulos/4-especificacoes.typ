@@ -343,9 +343,11 @@ capítulo.
 
 O plano de testes deve, ainda, incorporar três condicionantes de natureza
 metrológica identificadas durante o desenvolvimento. A comparação entre a
-leitura eletrônica e a leitura do vacuômetro exige a correção de coluna de
-água descrita na seção 1.3.3, sob pena de atribuir ao transdutor um desvio que
-é, na verdade, hidrostático. A faixa de ensaio deve limitar-se ao intervalo em
+leitura eletrônica e a leitura do vacuômetro não deve receber a correção de
+coluna de água descrita na @sec-validacao, porque os dois instrumentos leem o
+topo da mesma coluna: aplicá-la apenas à referência atribuiria ao transdutor
+um desvio que é, na verdade, hidrostático. Resta apenas o termo da diferença
+de altura entre a tomada do vacuômetro e o septo. A faixa de ensaio deve limitar-se ao intervalo em
 que a coluna de água permanece íntegra, uma vez que além do limite de
 cavitação a leitura do próprio padrão de referência deixa de ser válida
 @azevedo1999. E a exatidão atribuível ao protótipo é limitada pela do
