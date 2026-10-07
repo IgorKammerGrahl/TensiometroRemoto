@@ -1413,12 +1413,11 @@ partem de 3020,00 mV, passam por 3015,23 mV e 3012,73 mV, e chegam a
 8,5 mV. No primeiro ensaio, o mesmo movimento aparece com amplitude menor, de
 3011,32 mV para 3008,97 mV ao longo das três primeiras horas.
 
-A acomodação de transdutores piezorresistivos após a energização é fenômeno
-conhecido, atribuído ao equilíbrio térmico do próprio elemento sensor e da
-eletrônica de condicionamento.
-#pendente[REF PENDENTE: fonte que documente o transitório de aquecimento em
-transdutores piezorresistivos após energização --- o fenômeno é conhecido em
-instrumentação, mas nenhuma referência foi confirmada para citá-lo.]
+A causa não foi investigada. Uma hipótese plausível, não testada neste
+trabalho, é o equilíbrio térmico do conjunto após a energização --- o
+aquecimento da ponte piezorresistiva pela própria corrente de excitação e o da
+eletrônica ao redor ---, mas os dados disponíveis não permitem separá-la de
+outras, como uma variação da alimentação nas primeiras horas.
 
 Independentemente da causa, a consequência metodológica é imediata e vale como
 recomendação para os ensaios de calibração ainda por realizar: *as primeiras

@@ -40,34 +40,46 @@ infraestrutura de Internet das Coisas.
 
 == IoT System with ESP32 for Smart Drip Irrigation and Climate Monitoring
 
-#cite(<correaquiroz2025>, form: "prose") propuseram um sistema de
-monitoramento climático e de solo voltado para estufas, utilizando o
+#cite(<correaquiroz2025>, form: "prose") desenvolveram um sistema de
+irrigação por gotejamento e de monitoramento climático para estufas, com o
 microcontrolador ESP32 como núcleo de processamento.
 
-- *Metodologia:* a arquitetura baseia-se no uso do ESP32 para coletar dados
-  de múltiplos sensores e transmiti-los via Wi-Fi para um servidor em nuvem.
-  O foco metodológico residiu na estabilidade da rede sem fio em ambientes
-  agrícolas protegidos.
-- *Resultados:* o sistema provou ser eficaz na redução de custos operacionais
-  e na otimização do uso de energia elétrica.
-- *Relação com o TCC:* o trabalho compartilha a mesma plataforma
-  computacional (ESP32) deste projeto. A contribuição deste TCC em relação a
-  este estudo correlato reside na especialização da leitura por tensiometria
-  (potencial matricial), que é fisiologicamente mais precisa do que os
-  sensores de umidade genéricos utilizados pelos autores.
+- *Metodologia:* o ESP32 lê sensores de temperatura e umidade do ar (DHT11),
+  de radiação ultravioleta (GUVA-S12SD), de nível de água (HC-SR04) e um
+  sensor capacitivo de umidade do solo, cuja saída analógica é lida
+  diretamente pelo conversor analógico-digital e convertida em porcentagem
+  por dois pontos de referência --- o sensor exposto ao ar e submerso em água.
+  Os dados são exibidos em um visor local e enviados por Wi-Fi à plataforma
+  Arduino Cloud, e um relé aciona a bomba de irrigação, em modo manual ou em
+  modo automático, que a liga abaixo de 40% de umidade e a desliga acima de
+  50% @correaquiroz2025.
+- *Resultados:* em testes de campo, os autores relatam redução de 35% no
+  consumo de água em relação ao método tradicional. Entre as limitações,
+  registram flutuações nas leituras dos sensores atribuídas a interferência
+  eletromagnética, com a necessidade de filtros de sinal, e a dependência de
+  uma conexão estável à internet @correaquiroz2025.
+- *Relação com o TCC:* o trabalho compartilha a plataforma computacional
+  deste projeto. As diferenças estão na grandeza medida --- umidade
+  volumétrica por sensor capacitivo, e não potencial matricial --- e no
+  tratamento do sinal: a limitação que os autores registram, a flutuação das
+  leituras sem filtragem, é a que o condicionamento e a mediana de amostras
+  descritos no @cap-prototipo procuram tratar.
 
 == IoT-Based Irrigation Control System with ESP32 for Sustainable Agriculture
 
-O trabalho de #cite(<purnama2024>, form: "prose") investigou a implementação
-de um sistema de controle e monitoramento remoto focado na sustentabilidade
-do manejo hídrico.
+O trabalho de #cite(<purnama2024>, form: "prose") desenvolveu um sistema de
+controle de irrigação para lavouras de arroz, com o ESP32 e acompanhamento
+remoto pela plataforma Blynk.
 
-- *Metodologia:* foi desenvolvido um protótipo utilizando o ecossistema
-  Arduino/ESP32 integrado a uma interface web para visualização de dados em
-  tempo real.
-- *Resultados:* os testes confirmaram a viabilidade de sistemas de baixo
-  custo para a Agricultura Digital, apresentando baixa latência na
-  transmissão de pacotes de dados via protocolos de rede leves.
+- *Metodologia:* um sensor de umidade do solo de três terminais é lido por uma
+  entrada analógica do microcontrolador, e a sua leitura comanda uma válvula
+  solenoide e uma bomba d'água; indicadores de nível complementam o controle
+  do reservatório, e os dados são acompanhados em tempo real pela plataforma
+  Blynk @purnama2024.
+- *Resultados:* o sensor de umidade foi avaliado contra uma medida de
+  referência em seis pontos, do solo seco ao encharcado, com erro de até
+  1,67% @purnama2024. O trabalho não apresenta medidas de latência nem de
+  perda na transmissão.
 - *Relação com o TCC:* este estudo reforça a viabilidade técnica da
   telemetria por meio do ESP32. A presente proposta se diferencia ao
   delimitar o escopo estritamente ao monitoramento de precisão (telemetria),
@@ -84,16 +96,16 @@ analisados em comparação com a proposta deste TCC.
 #figure(
   caption: [Comparação entre estudos correlatos e o projeto proposto],
   text(size: 10pt)[#table(
-    columns: (1.25fr, 1.3fr, 1.25fr, 1.2fr, 1.65fr, 1.15fr),
+    columns: (1.7fr, 1.2fr, 1.15fr, 1.15fr, 1.55fr, 1.05fr),
     inset: (x: 5pt, y: 4.5pt),
     align: left + horizon,
     stroke: (x, y) => if y == 0 { (bottom: 0.75pt) } else { (bottom: 0.5pt) },
     table.header(
       [*Autor (Ano)*], [*Foco principal*], [*Plataforma*], [*Sensor de solo*], [*Aquisição do sinal*], [*Atuação física?*],
     ),
-    [Abdelmoneim (2023)], [Automação do sensor], [ESP32 + ThingSpeak], [Tensiômetro eletrônico], [Sensor digital (I#super[2]C)], [Não],
-    [Correa-Quiroz (2025)], [Monitoramento de estufa], [ESP32], [Umidade volumétrica], [#pendente[REF PENDENTE]], [Sim],
-    [Purnama (2024)], [Sustentabilidade], [ESP32], [Umidade volumétrica], [#pendente[REF PENDENTE]], [Sim],
+    [#cite(<abdelmoneim2023>, form: "prose")], [Automação do sensor], [ESP32 + ThingSpeak], [Tensiômetro eletrônico], [Sensor digital (I#super[2]C)], [Não],
+    [#cite(<correaquiroz2025>, form: "prose")], [Irrigação e clima em estufa], [ESP32 + Arduino Cloud], [Umidade volumétrica (capacitivo)], [Analógica, direto no ADC, sem filtragem], [Sim (bomba)],
+    [#cite(<purnama2024>, form: "prose")], [Controle de irrigação], [ESP32 + Blynk], [Umidade volumétrica], [Analógica, direto no ADC, sem condicionamento descrito], [Sim (válvula e bomba)],
     [*Este trabalho (2026)*], [*Telemetria / suporte à decisão*], [*ESP32 + backend próprio*], [*Tensiômetro eletrônico*], [*Analógica, com condicionamento e ADC corrigido*], [*Não (monitoramento)*],
   )],
 ) <tab-comparativa>
@@ -102,7 +114,11 @@ analisados em comparação com a proposta deste TCC.
 Conforme observado, embora existam soluções baseadas em ESP32, a maioria
 delas se apoia em medições volumétricas de umidade, e o único trabalho que
 automatiza a tensiometria o faz por meio de um sensor digital, que entrega ao
-microcontrolador a medida já convertida internamente.
+microcontrolador a medida já convertida internamente. Os dois trabalhos que
+leem sensores analógicos o fazem diretamente no conversor do
+microcontrolador, sem condicionamento de sinal descrito --- e um deles
+registra justamente a flutuação das leituras por interferência como
+limitação.
 
 Convém delimitar com precisão o que este trabalho não reivindica como
 contribuição. A autonomia energética por bateria e painel solar e o

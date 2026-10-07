@@ -44,11 +44,10 @@ cultura @abdelmoneim2023.
 
 O manejo da irrigação tradicional baseia-se, na maioria das vezes, em
 cronogramas fixos, estimativas climáticas genéricas ou na simples observação
-visual do agricultor. Essa abordagem empírica frequentemente resulta em dois
-cenários prejudiciais: a sobre-irrigação, que causa desperdício de água,
-lixiviação de nutrientes, aumento dos custos de energia e proliferação de
-doenças fúngicas; ou o subfornecimento, que leva a cultura ao estresse
-hídrico e à redução drástica da produtividade @purnama2024.
+visual do agricultor. Essa abordagem empírica expõe a lavoura aos dois extremos
+do suprimento de água: o excesso, que desperdiça um recurso cada vez mais
+limitado, e a falta, que leva a cultura ao estresse hídrico, ao murchamento e
+à redução da produtividade @purnama2024.
 
 Embora o tensiômetro seja o instrumento padrão-ouro em termos de resposta
 fisiológica para o agendamento da irrigação, sua versão mecânica tradicional
@@ -114,13 +113,13 @@ meio rural.
 Consequentemente, essa acessibilidade tecnológica reflete em impactos diretos
 nas esferas ambiental e social. A literatura científica aponta que a
 implementação de sistemas de irrigação inteligentes baseados em sensores pode
-reduzir o consumo de água entre 15% e 40% @ghazi2025, além de otimizar
-significativamente o uso de energia elétrica nas propriedades rurais
-@correaquiroz2025. Dessa forma, o projeto promove ativamente a
-sustentabilidade ambiental ao mitigar o desperdício de recursos críticos, ao
-mesmo tempo em que cumpre um papel social ao empoderar o pequeno e médio
-produtor com ferramentas de automação que reduzem a carga de trabalho manual
-e aumentam a eficiência operacional de suas lavouras.
+reduzir o consumo de água entre 15% e 40% @ghazi2025; em um sistema com ESP32
+aplicado a estufa, a redução medida em campo foi de 35% em relação ao método
+tradicional @correaquiroz2025. Dessa forma, o projeto pode contribuir para a
+sustentabilidade ambiental, ao subsidiar um uso mais racional da água, e
+cumprir um papel social, ao oferecer ao pequeno e médio produtor uma
+ferramenta de monitoramento remoto que dispensa a leitura manual do
+tensiômetro.
 
 == Objetivos
 
@@ -287,13 +286,18 @@ pertence à apresentação da grandeza, discutida na @sec-lacunas.
 
 O segundo cuidado diz respeito à incerteza do próprio padrão de referência.
 O vacuômetro mecânico acoplado ao tensiômetro é um instrumento de classe B
-segundo a ABNT NBR 14105-1 @abnt14105, e sua tolerância limita a exatidão máxima que se pode
-atribuir ao protótipo, uma vez que nenhuma calibração pode ser mais exata que
-o padrão contra o qual é comparada. A validação experimental não estabelece,
-portanto, a exatidão absoluta do transdutor, mas a sua concordância com um
-padrão de exatidão conhecida e limitada.
-#pendente[REF PENDENTE: valor numérico da tolerância admitida para a classe B
-na ABNT NBR 14105-1 --- a norma é paga e o número não pôde ser confirmado.]
+segundo a ABNT NBR 14105-1 @abnt14105, classe cujo erro máximo admissível é de
+2% da amplitude da faixa nominal entre um e três quartos da escala, e de 3% nos
+quartos extremos, conforme a tabela da norma reproduzida por
+#cite(<neumann2021>, form: "prose"). Para um vacuômetro de 100 kPa de faixa,
+isso corresponde a ±2 kPa no trecho central e ±3 kPa junto aos extremos ---
+a mesma ordem do erro máximo declarado para o próprio transdutor, de ±2 kPa
+@cfsensor. Essa tolerância limita a exatidão máxima que se pode atribuir ao
+protótipo, uma vez que nenhuma calibração pode ser mais exata que o padrão
+contra o qual é comparada. A validação experimental não estabelece, portanto,
+a exatidão absoluta do transdutor, mas a sua concordância com um padrão de
+exatidão conhecida e limitada; e, com um padrão dessa classe, essa
+concordância só pode ser afirmada na escala de alguns quilopascais.
 
 O procedimento da calibração foi preparado, embora o ensaio ainda não tenha
 sido executado. Os níveis de tensão são gerados sem solo e sem bomba de vácuo:

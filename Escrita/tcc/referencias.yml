@@ -26,6 +26,8 @@ correaquiroz2025:
     - Castro-Vargas, C.
   date: 2025-06
   page-range: 1133-1157
+  serial-number:
+    doi: 10.28991/ESJ-2025-09-03-01
   parent:
     type: periodical
     title: Emerging Science Journal
@@ -119,9 +121,16 @@ purnama2024:
   type: article
   title: IoT-Based Irrigation Control System with ESP32 for Sustainable Agriculture
   author:
-    - Purnama, N. A.
+    - Purnama, Nazwa Amelia
+    - Abyakto, Rafif
+    - Rosyid, Muhammad Gilang Nur
+    - Irfawan, Danna Rayyana
+    - Soli, Muhammad
+    - Aribowo, Didik
   date: 2024-12
   page-range: 211-224
+  serial-number:
+    doi: 10.61132/mars.v2i6.556
   parent:
     type: periodical
     title: "Mars: Jurnal Teknik Mesin, Industri, Elektro dan Ilmu Komputer"
@@ -242,3 +251,21 @@ abnt14105:
   publisher:
     name: ABNT
     location: Rio de Janeiro
+
+# Fonte secundária da tabela de classes de exatidão da ABNT NBR 14105-1, que é
+# paga: citada como apud.
+neumann2021:
+  type: article
+  title: Metodologia de calibração para manômetro analógico
+  author:
+    - Neumann, Caroline Meinl
+  date: 2021-10
+  parent:
+    type: periodical
+    title: Salão do Conhecimento
+    volume: 7
+    issue: 7
+    location: Ijuí
+  url:
+    value: https://www.publicacoeseventos.unijui.edu.br/index.php/salaoconhecimento/article/view/20574
+    date: 2026-10-07
