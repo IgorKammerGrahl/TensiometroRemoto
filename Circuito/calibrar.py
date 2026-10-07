@@ -81,8 +81,9 @@ def resumo_janela(vs):
 def ajustar(pares):
     """pares: [(p_topo_kpa, v_sensor_v)]. Minimos quadrados de v = v_zero + k*p.
 
-    O RMSE e em kPa e na direcao em que o no converte, p = (v - v_zero) / k,
-    porque e esse o erro que chega ao grafico."""
+    O RMSE e em kPa e na direcao em que o servidor converte (leituras_kpa,
+    migration 0003), p = (v - v_zero) / k, porque e esse o erro que chega ao
+    grafico."""
     if len(pares) < 3:
         raise ValueError(f'{len(pares)} ponto(s); o ajuste precisa de pelo menos 3')
     ps = [p for p, _ in pares]
@@ -200,11 +201,11 @@ def relatorio(pares, vdd_mv, fator):
     print(f'  nota: faixa {min(ps):.0f} a {max(ps):.0f} kPa, {len(pares)} pontos')
 
     vdd, v0n, kn = para_firmware(v_zero, k, vdd_mv)
-    print('\nFirmware -- o registro no app NAO muda o kPa exibido; estas constantes sim:')
+    print('\nO registro no app ja muda o kPa exibido (o servidor converte raw_mv).')
+    print('Opcional, para o kPa que o proprio no calcula (serial e registro) bater:')
     print(f'  sketch.ino: const float VDD_SENSOR = {vdd:.3f};')
     print(f'  sketch.ino: const float V_ZERO_KPA_NOMINAL = {v0n:.4f};')
     print(f'  sketch.ino: const float K_VOLTS_POR_KPA_NOMINAL = {kn:.6f};')
-    print(f'  config.h:   #define VDD_MV_NOMINAL  {vdd_mv}')
 
 
 def sessao(args):
