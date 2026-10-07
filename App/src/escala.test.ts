@@ -22,8 +22,9 @@ describe('posicao', () => {
     expect(posicao(-40)).toEqual({ fracao: 0.5, fora: null });
   });
 
-  // Faixas reais, nao hipoteticas: readings.kpa aceita BETWEEN -100 AND 10,
-  // enquanto a escala vai de 0 a -80. Os dois extremos do banco caem fora.
+  // Faixas reais, nao hipoteticas: o kPa exibido pode passar de -100 e de +10
+  // (raw_mv de 0 a 3300 mV pela calibracao nominal vai de -112,5 a +11,25),
+  // enquanto a escala vai de 0 a -80.
   it('grampeia leitura fora da escala e diz que grampeou', () => {
     expect(posicao(-100)).toEqual({ fracao: 1, fora: 'abaixo' });
     expect(posicao(10)).toEqual({ fracao: 0, fora: 'acima' });

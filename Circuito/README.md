@@ -374,14 +374,14 @@ app e as constantes do firmware. Só biblioteca padrão do Python.
 10. `wc -l` nos dois arquivos e **copie-os para fora da máquina**. O primeiro
     ensaio se perdeu num backup de zero bytes.
 11. No app, na tela do nó, registre o ensaio com os valores impressos. O id
-    gerado vai para `CALIBRATION_ID` no portal do nó.
-12. **O registro no app não muda o kPa exibido.** O firmware converte com as
-    constantes compiladas, e o backend ainda não reprocessa pelas calibrações
-    cadastradas. Troque `VDD_SENSOR`, `V_ZERO_KPA_NOMINAL` e
-    `K_VOLTS_POR_KPA_NOMINAL` no `sketch.ino` e `VDD_MV_NOMINAL` no
-    `config.h` pelos valores impressos, e regrave em modo telemetria. Os dois
-    VDD precisam ser o medido: um escala a conversão no nó, o outro vai no
-    payload e é o que a reconstrução no backend compara com o VDD do ensaio.
+    gerado vai para `CALIBRATION_ID` no portal do nó. **Isso basta para o kPa
+    exibido refletir o ensaio:** o servidor converte `raw_mv` pelos
+    coeficientes da calibração que cada leitura referencia
+    (`Backend/README.md`, "Conversão de kPa a partir de `raw_mv`").
+12. *Opcional:* troque `VDD_SENSOR`, `V_ZERO_KPA_NOMINAL` e
+    `K_VOLTS_POR_KPA_NOMINAL` no `sketch.ino` pelos valores impressos e regrave.
+    Isso só muda o kPa que o próprio nó calcula — o do serial e o que fica
+    gravado como registro do que ele reportou —, não o da tela.
 
 Para refazer o ajuste sem o nó (por exemplo, depois de apagar um ponto ruim
 do CSV, ou com outro Δh): `python3 Circuito/calibrar.py --ajuste-de
@@ -521,9 +521,9 @@ gcc -Wall -Wextra -o teste_prov teste_prov.c && ./teste_prov
   bateria (RNF02).
 - **Coeficientes nominais de catálogo.** `V_ZERO_KPA_NOMINAL` e
   `K_VOLTS_POR_KPA_NOMINAL` saem do datasheet e serão substituídos pelos
-  valores da calibração experimental contra o vacuômetro mecânico. O backend
-  guarda `raw_mv` e `calibration_id` junto com o `kpa` para permitir
-  reprocessar o histórico quando isso acontecer.
+  valores da calibração experimental contra o vacuômetro mecânico. O kPa
+  exibido não depende delas: o backend converte `raw_mv` pela calibração que
+  a leitura referencia, e o `kpa` do nó fica só como registro.
 - **`VDD_SENSOR` fixo em 5,00 V.** O sensor é ratiométrico e a alimentação real
   pode ser um pouco menor. O desvio observado em bancada (4,524 V contra 4,50 V
   teóricos, cerca de 0,6 kPa) está dentro do erro do próprio sensor

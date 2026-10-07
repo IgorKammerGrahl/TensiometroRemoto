@@ -305,6 +305,10 @@ func (s *Store) AtualizarTalhao(ctx context.Context, usuarioID, talhaoID string,
 // LEFT JOIN LATERAL para a ultima leitura: o no recem-cadastrado ainda nao
 // tem serie, e precisa aparecer na lista mesmo assim (com "sem dados"), nao
 // sumir dela.
+//
+// O kPa vem de leituras_kpa (migration 0003), convertido de raw_mv pela
+// calibracao da leitura -- nunca de readings.kpa, que e o que o firmware
+// calculou com as constantes compiladas nele.
 const selecaoDeviceApp = `
 	SELECT d.id, d.descricao, d.ativo,
 	       t.id, t.nome, t.cultura, t.kpa_alerta, t.kpa_estresse,
@@ -314,7 +318,7 @@ const selecaoDeviceApp = `
 	  JOIN usuario_talhoes ut ON ut.talhao_id = d.talhao_id AND ut.usuario_id = $1
 	  LEFT JOIN LATERAL (
 	         SELECT r.measured_at, r.kpa
-	           FROM readings r
+	           FROM leituras_kpa r
 	          WHERE r.device_id = d.id
 	          ORDER BY r.measured_at DESC, r.seq DESC
 	          LIMIT 1
@@ -403,6 +407,9 @@ func coletarDevicesApp(rows pgx.Rows) ([]DeviceApp, error) {
 // O JOIN de autorizacao se repete aqui mesmo com o handler ja tendo passado
 // por DeviceDoUsuario. A redundancia e o ponto: a consulta e autorizada por
 // si, nao por disciplina de quem a chama.
+//
+// leituras_kpa, e nao readings, pelo mesmo motivo de selecaoDeviceApp: a
+// lista e o grafico precisam concordar sobre o kPa de cada leitura.
 func (s *Store) SerieDoUsuario(ctx context.Context, usuarioID, deviceID string, de, ate time.Time, bucketS int) ([]PontoSerie, error) {
 	rows, err := s.pool.Query(ctx, `
 		SELECT to_timestamp(floor(extract(epoch FROM r.measured_at) / $3::float8) * $3::float8) AS t,
@@ -410,7 +417,7 @@ func (s *Store) SerieDoUsuario(ctx context.Context, usuarioID, deviceID string, 
 		       min(r.kpa)       AS kpa_min,
 		       max(r.kpa)       AS kpa_max,
 		       count(*)         AS n
-		  FROM readings r
+		  FROM leituras_kpa r
 		  JOIN devices d          ON d.id = r.device_id
 		  JOIN usuario_talhoes ut ON ut.talhao_id = d.talhao_id AND ut.usuario_id = $1
 		 WHERE r.device_id = $2 AND r.measured_at BETWEEN $4 AND $5

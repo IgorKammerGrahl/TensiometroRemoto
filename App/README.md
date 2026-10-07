@@ -200,10 +200,14 @@ conferir bateria e sinal e passa a nomear a causa real.
 
 **Os coeficientes são em VOLTS, apesar do nome da coluna.** `v_zero_kpa` é a
 tensão *no ponto* de 0 kPa e `k_v_por_kpa` é o coeficiente em V/kPa. Quem lê o
-sensor num multímetro em milivolts digita `4500` onde vai `4,5`, e o valor passa
-por todos os `CHECK` do banco: o servidor grava, o gráfico desenha, e a série
-inteira fica mil vezes errada — que é pior que série nenhuma, porque ninguém
-desconfia dela. A defesa é dividida, na mesma separação de `Faixa.tsx`:
+sensor num multímetro em milivolts digita `4500` onde vai `4,5`, e até a
+migration 0003 o valor passava por todos os `CHECK` do banco: o servidor grava,
+o gráfico desenha, e a série inteira fica mil vezes errada — que é pior que série
+nenhuma, porque ninguém desconfia dela. Não é hipótese: o nó de bancada foi
+cadastrado assim pela linha de comando. Hoje o banco também recusa, e desde
+então o coeficiente cadastrado é o que define o kPa exibido (ver
+`Backend/README.md`, "Conversão de kPa a partir de `raw_mv`"). A defesa daqui
+é dividida, na mesma separação de `Faixa.tsx`:
 
 - **Affordance**, daqui: o `max` de 10 V no campo. Com ele, `4500` não chega a
   ser digitável. Não há comparação escrita em lugar nenhum do componente.
@@ -232,8 +236,8 @@ portal do nó, e fica visível no painel fechado — ao contrário do token de
 > **Ainda não exercitado contra hardware.** O ciclo *cadastrar ensaio → gravar o
 > id no portal → leitura aceita* foi verificado contra o backend de verdade pelos
 > testes do servidor, mas não com um nó físico: o tensiômetro quebrou em
-> 15/09/2026 e o substituto não chegou. Vale como implementado, não como
-> validado em bancada.
+> 15/09/2026, e o ensaio com o substituto ainda não foi feito. Vale como
+> implementado, não como validado em bancada.
 
 ## Escopo
 

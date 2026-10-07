@@ -414,6 +414,35 @@ inutilizável; armazenando a grandeza bruta e a identificação dos coeficientes
 o histórico pode ser integralmente reprocessado quando os coeficientes forem
 refinados.
 
+Essa preservação tem efeito direto sobre o que o produtor vê. O valor em kPa
+exibido pela interface é convertido no próprio servidor, a partir da tensão
+bruta e dos coeficientes da calibração que cada leitura referencia; o valor que
+o nó calculou com as constantes gravadas no firmware permanece armazenado
+apenas como registro do que foi reportado. A consequência prática é que
+registrar uma calibração experimental basta para que as leituras seguintes a
+reflitam, sem regravar o firmware de cada nó. Cada leitura permanece presa à
+calibração que referencia, e calibrações não são editadas: um ensaio novo vale
+para as leituras que chegarem com o seu identificador.
+
+A mudança tornou visível um erro latente. A calibração do nó de bancada havia
+sido cadastrada pela linha de comando com os coeficientes em milivolts ---
+4500 e 40, em vez de 4,5 V e 0,04 V/kPa ---, seguindo uma mensagem de ajuda que
+indicava a unidade errada. Enquanto a interface exibia o valor calculado pelo
+nó, o erro não tinha efeito algum; com a conversão no servidor, todo o
+histórico de bancada passaria a indicar cerca de $-112$ kPa. O registro foi
+corrigido por migração de esquema, e o banco de dados passou a recusar
+coeficientes fora da faixa física, qualquer que seja o caminho de escrita.
+Conferida contra uma cópia do banco, a conversão no servidor reproduz o valor
+reportado pelo nó nas 1161 leituras do nó de bancada e nas 1240 da série
+sintética de demonstração, com diferença máxima de 0,01 kPa --- o
+arredondamento com que o nó reporta.
+
+A correção ratiométrica pela tensão de alimentação não é aplicada. O nó não
+mede a própria alimentação, e o valor que ele envia nesse campo é uma constante
+de configuração. Aplicá-la dividiria a tensão medida no ensaio por um número que
+nunca foi medido, escalando a série inteira sem que nada no dado o acusasse. A
+calibração vale, portanto, para a alimentação em que o ensaio foi realizado.
+
 A @fig-modelo-dados apresenta as entidades e os relacionamentos do modelo.
 
 #figure(
@@ -756,11 +785,11 @@ audível.
 
 === Suíte automatizada
 
-A verificação do serviço de retaguarda é feita por 87 funções de teste, que se
-desdobram em 107 casos executáveis quando os subtestes parametrizados são
+A verificação do serviço de retaguarda é feita por 89 funções de teste, que se
+desdobram em 109 casos executáveis quando os subtestes parametrizados são
 contados individualmente. A distinção é registrada porque os dois números
-descrevem a mesma suíte e divergem por um fator de organização do código: 87 é
-o que se conta lendo os arquivos, 107 é o que a ferramenta reporta ao executar.
+descrevem a mesma suíte e divergem por um fator de organização do código: 89 é
+o que se conta lendo os arquivos, 109 é o que a ferramenta reporta ao executar.
 As funções distribuem-se por três dos oito pacotes do serviço, e são
 executadas contra uma instância real do PostgreSQL, e não contra substitutos
 em memória. A escolha decorre de o comportamento sob verificação depender de
