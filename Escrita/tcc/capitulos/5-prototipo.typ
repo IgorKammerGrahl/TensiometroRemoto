@@ -241,8 +241,10 @@ coerente em forma, porém deslocada, o que ilustra uma característica
 incômoda desse tipo de defeito: um fator de escala errado não produz saída
 inválida, produz saída plausível.
 
-Um capacitor de 100 nF liga o ponto de leitura ao terra, formando um filtro
-passa-baixas com a resistência equivalente vista pelo capacitor. Essa
+Um capacitor de 100 nF liga o ponto de leitura ao terra --- o valor que o
+próprio fabricante do microcontrolador sugere para atenuar o ruído na entrada
+do conversor @espressifadc44 ---, formando um filtro passa-baixas com a
+resistência equivalente vista pelo capacitor. Essa
 resistência é o paralelo entre os dois braços do divisor, 10 k$Omega$ $parallel$ 20 k$Omega$ $approx$ 6,67 k$Omega$,
 o que resulta em constante de tempo $tau approx "0,67"$ ms. Comparada ao tempo de resposta de 2,5 ms
 declarado para o transdutor @cfsensor, a constante de tempo do filtro é
@@ -276,8 +278,9 @@ transdutor.
 Cada leitura publicada é a mediana de 31 amostras consecutivas, substituindo
 uma versão inicial que empregava a média de 50 amostras. A troca responde a
 uma característica documentada do conversor, descrito pelo fabricante como
-sensível a ruído, com discrepâncias expressivas entre leituras sucessivas
-@espressifadc. A média é adequada contra ruído de distribuição simétrica, mas
+sensível a ruído, com grandes discrepâncias entre leituras; o próprio
+fabricante recomenda a multiamostragem para atenuá-lo @espressifadc44. A média
+é adequada contra ruído de distribuição simétrica, mas
 é deslocada por picos espúrios isolados, ao passo que a mediana rejeita ambos
 os efeitos; a redução no número de amostras é possível justamente porque a
 mediana não depende do tamanho da amostra para descartar valores atípicos.
@@ -508,9 +511,8 @@ gargalo.
 A credencial de usuário é tratada de forma oposta, com bcrypt e fator de
 custo 12. Senhas escolhidas por pessoas têm entropia baixa e previsível, o que as
 expõe a ataque de dicionário; a lentidão deixa de ser um custo e passa a ser a
-propriedade desejada, e o fator de custo ajustável permite acompanhar a
-evolução do poder computacional sem alterar o formato armazenado
-@provos1999. O volume de verificações, restrito aos momentos de autenticação,
+propriedade desejada, e o fator de custo ajustável permite aumentar esse
+custo à medida que o hardware evolui @provos1999. O volume de verificações, restrito aos momentos de autenticação,
 torna esse custo irrelevante para o desempenho do sistema.
 
 A autorização segue um princípio estrutural: ela é expressa como cláusula de

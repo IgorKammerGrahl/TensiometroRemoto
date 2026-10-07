@@ -93,12 +93,21 @@ ghazi2025:
   type: article
   title: "Smart Irrigation Systems: A Comprehensive Review of IoT, AI, and Sustainable Agriculture Technologies. A Review Article"
   author:
-    - Ghazi, N. M.
-  date: 2025
+    - Ghazi, Naz Mohammed
+    - Tahir, Hussain Thahir
+    - Othman, Skala Salam
+    - Hawar, Dalya Aydeen
+    - Abdulkadir, Murad Abdullah
+    - Korkmaz, Cem
+  date: 2025-12
   page-range: 266-281
+  serial-number:
+    doi: 10.58928/ku25.16429
   parent:
     type: periodical
     title: Kirkuk University Journal for Agricultural Sciences
+    volume: 16
+    issue: 4
     location: Kirkuk
 
 lakhiar2024:
@@ -106,6 +115,17 @@ lakhiar2024:
   title: A Review of Precision Irrigation Water-Saving Technology under Changing Climate for Enhancing Water Use Efficiency, Crop Yield, and Environmental Footprints
   author:
     - Lakhiar, Imran Ali
+    - Yan, Haofang
+    - Zhang, Chuan
+    - Wang, Guoqing
+    - He, Bin
+    - Hao, Beibei
+    - Han, Yujing
+    - Wang, Biyu
+    - Bao, Rongxuan
+    - Syed, Tabinda Naz
+    - Chauhdary, Junaid Nawaz
+    - Rakibuzzaman, Md.
   date: 2024-07
   page-range: 1141
   serial-number:
@@ -141,9 +161,17 @@ sarr2026:
   type: article
   title: "Agroclimatic Sensing, Communication, and Computational Systems-Based Methods and Technologies for Precision Irrigation Management: Current State and Prospects"
   author:
-    - Sarr, A.
+    - Sarr, Aminata
+    - Chandel, Abhilash K.
+    - Diop, Lamine
+    - Soro, Yrébégnan Moussa
+    - Tossa, Alain K.
+    - Hota, Smrutilipi
+    - Manimozhian, Arunachalam
   date: 2026-02
   page-range: 137
+  serial-number:
+    doi: 10.3390/computers15020137
   parent:
     type: periodical
     title: Computers
@@ -197,6 +225,7 @@ espressifadc:
   type: web
   title: Analog to Digital Converter (ADC) Oneshot Mode Driver
   author: Espressif Systems
+  date: 2026
   parent:
     type: web
     title: ESP-IDF Programming Guide
@@ -204,10 +233,25 @@ espressifadc:
     value: https://docs.espressif.com/projects/esp-idf/en/stable/esp32/api-reference/peripherals/adc/adc_oneshot.html
     date: 2026-08-25
 
+# A advertência sobre ruído do ADC (e a recomendação de 100 nF e de
+# multiamostragem) está nesta versão da documentação, não na atual.
+espressifadc44:
+  type: web
+  title: Analog to Digital Converter (ADC)
+  author: Espressif Systems
+  date: 2022
+  parent:
+    type: web
+    title: ESP-IDF Programming Guide v4.4
+  url:
+    value: https://docs.espressif.com/projects/esp-idf/en/v4.4/esp32/api-reference/peripherals/adc.html
+    date: 2026-10-07
+
 espressifcali:
   type: web
   title: Analog to Digital Converter (ADC) Calibration Driver
   author: Espressif Systems
+  date: 2026
   parent:
     type: web
     title: ESP-IDF Programming Guide
