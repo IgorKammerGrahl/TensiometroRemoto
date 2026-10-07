@@ -34,7 +34,9 @@
     garantida pelo par identificador do nó e número de sequência; e um serviço
     de retaguarda com aplicação web progressiva embarcada no próprio binário,
     que apresenta ao produtor a leitura corrente, o histórico e as faixas de
-    atenção configuráveis. A verificação combinou suíte automatizada de
+    atenção configuráveis. O nó é configurado em campo pelo celular, por portal
+    cativo, sem recompilação, e a calibração registrada pela interface é
+    aplicada pelo servidor a cada leitura. A verificação combinou suíte automatizada de
     testes, ensaio ponta a ponta contra o servidor em execução e dois ensaios
     contínuos de bancada, sem TLS e com o transdutor aberto à atmosfera. No segundo
     deles, de 13 h 36 min e 784 amostras, o sinal apresentou desvio padrão de
@@ -71,7 +73,10 @@
     idempotency guaranteed by the pair node identifier and sequence number;
     and a back-end service with a progressive web application embedded in the
     binary itself, which presents the farmer with the current reading, the
-    history and the configurable attention thresholds. Verification combined
+    history and the configurable attention thresholds. The node is configured
+    in the field from a phone through a captive portal, without recompiling,
+    and the calibration registered through the interface is applied by the
+    server to every reading. Verification combined
     an automated test suite, an end-to-end trial against the running server
     and two continuous bench trials, without TLS and with the transducer open
     to the atmosphere. In the second of these, lasting 13 h 36 min and comprising 784

@@ -295,6 +295,21 @@ padrão de exatidão conhecida e limitada.
 #pendente[REF PENDENTE: valor numérico da tolerância admitida para a classe B
 na ABNT NBR 14105-1 --- a norma é paga e o número não pôde ser confirmado.]
 
+O procedimento da calibração foi preparado, embora o ensaio ainda não tenha
+sido executado. Os níveis de tensão são gerados sem solo e sem bomba de vácuo:
+com a cápsula saturada e retirada da água, a evaporação pela cerâmica eleva a
+tensão gradualmente, e a reimersão a devolve em direção a zero, o que permite,
+em princípio, percorrer a faixa nos dois sentidos e expor eventual histerese.
+A cada patamar, a leitura do vacuômetro é pareada com a mediana das amostras
+do transdutor nos trinta segundos anteriores, por uma ferramenta que registra
+também a série bruta completa; ao final, o ajuste por mínimos quadrados da reta
+entre tensão de saída e pressão fornece os dois coeficientes, o coeficiente de
+determinação e o erro quadrático médio em kPa. O procedimento incorpora as
+lições dos ensaios de bancada relatados no @cap-prototipo: descartar as
+primeiras horas após a energização, medir a alimentação do transdutor em vez
+de assumir o valor nominal, limitar a faixa a cerca de $-70$ kPa, aquém da
+cavitação, e verificar a integridade da cópia dos dados antes de encerrar.
+
 Esses procedimentos estabeleceram a viabilidade técnica da cadeia de aquisição
 e de transmissão de um nó sensor de baixo custo como ferramenta de suporte
 computacional à irrigação de precisão. A exatidão da grandeza medida, que

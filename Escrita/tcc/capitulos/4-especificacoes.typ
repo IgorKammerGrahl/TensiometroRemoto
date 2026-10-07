@@ -193,8 +193,9 @@ irrigação; o *Sistema de Telemetria em Nuvem*; e o *Nó Sensor de Campo*.
 
 - *UC01 -- Cadastrar nó sensor:* o produtor registra um novo dispositivo no
   sistema, associando-o a um talhão e informando um identificador lógico (por
-  exemplo, "Tensiômetro Estufa 1"). Após o cadastro, o backend gera
-  credenciais ou parâmetros de configuração para o firmware do ESP32.
+  exemplo, "Tensiômetro Estufa 1"). Após o cadastro, o backend gera a
+  credencial do dispositivo, exibida uma única vez, que é gravada no nó pelo
+  portal de configuração, sem recompilação do firmware.
 - *UC02 -- Monitorar tensão da água no solo em tempo real:* ao acessar o
   aplicativo, o produtor visualiza a lista de nós ativos e, ao selecionar um
   deles, obtém a leitura atual em kPa e um gráfico com as últimas horas ou
