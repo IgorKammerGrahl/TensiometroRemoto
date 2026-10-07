@@ -35,6 +35,9 @@
   set text(font: "Liberation Serif", size: 12pt, lang: "pt", region: "br")
   set par(leading: 1em, spacing: 1em, justify: true, first-line-indent: (amount: 1.25cm, all: true))
   set heading(numbering: "1.1")
+  // Referência a título de nível 1 é a capítulo: "relatados no Capítulo 5", e
+  // não "no Seção 5", que é o que o suplemento padrão em português produz.
+  show heading.where(level: 1): set heading(supplement: [Capítulo])
 
   // Capítulos: página nova, caixa alta, negrito. Sem número (ex.: Referências) = centralizado.
   show heading.where(level: 1): it => {
