@@ -106,6 +106,7 @@
 #include "capitulos/3-correlatos.typ"
 #include "capitulos/4-especificacoes.typ"
 #include "capitulos/5-prototipo.typ"
+#include "capitulos/6-conclusoes.typ"
 
 #heading(numbering: none, outlined: true)[Referências]
 #bibliography(
