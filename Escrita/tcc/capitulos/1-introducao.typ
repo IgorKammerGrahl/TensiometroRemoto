@@ -21,9 +21,9 @@ para um manejo de precisão orientado a dados @elijah2018.
 
 Apesar desses avanços, a agricultura contemporânea ainda enfrenta o desafio
 de garantir a segurança alimentar global em um cenário de instabilidade
-climática e escassez crescente de recursos hídricos. Atualmente, a
-agricultura irrigada é responsável por aproximadamente 70% a 80% do consumo
-de toda a água doce disponível no planeta @ghazi2025 @lakhiar2024. A
+climática e escassez crescente de recursos hídricos. A agricultura é a maior
+consumidora de água doce do planeta, com cerca de 70% do total utilizado
+@ghazi2025 @lakhiar2024. A
 sustentabilidade desse modelo, no entanto, é severamente ameaçada pela
 ineficiência do uso da água, o que evidencia a necessidade de transição para
 práticas tecnológicas mais eficientes e sustentáveis.
@@ -32,13 +32,12 @@ Nesse contexto, os sistemas de irrigação inteligente (_Smart Irrigation
 Systems_) unem os preceitos da IoT à necessidade hídrica das culturas,
 surgindo como soluções capazes de fornecer água estritamente sob demanda,
 sem a obrigatoriedade de intervenção humana constante @garcia2020 @sarr2026.
-Para que essa automação seja fisiologicamente assertiva para a planta, o
-monitoramento da umidade do solo figura como o parâmetro mais crítico. O uso
-de tensiômetros destaca-se nesse cenário pois, ao contrário de sensores
-volumétricos comuns, eles medem o potencial matricial da água no solo — a
-força exata que o sistema radicular precisa exercer para absorver a água —,
-fornecendo um dado fisiológico direto sobre o nível de estresse hídrico da
-cultura @abdelmoneim2023.
+Nesses sistemas, a umidade do solo é o parâmetro central @ghazi2025. O uso
+de tensiômetros destaca-se nesse cenário pois, em vez da quantidade de água,
+eles medem o potencial matricial da água no solo, grandeza que expressa a
+energia com que a água está retida e, portanto, o esforço necessário para
+extraí-la; abaixo de um limiar próprio de cada combinação de cultura e solo,
+as plantas passam a sofrer estresse hídrico @abdelmoneim2023.
 
 == Problematização
 
@@ -49,14 +48,15 @@ do suprimento de água: o excesso, que desperdiça um recurso cada vez mais
 limitado, e a falta, que leva a cultura ao estresse hídrico, ao murchamento e
 à redução da produtividade @purnama2024.
 
-Embora o tensiômetro seja o instrumento padrão-ouro em termos de resposta
-fisiológica para o agendamento da irrigação, sua versão mecânica tradicional
-exige leituras manuais constantes e manutenção frequente. Essa exigência
-operacional inviabiliza o seu uso em larga escala na agricultura moderna sem
-a devida automação tecnológica @abdelmoneim2023. Além disso, a ausência de
-sistemas integrados e de baixo custo que conectem dados de tensiometria em
-tempo real a plataformas de decisão acessíveis afasta, especialmente, os
-pequenos e médios produtores das vantagens da irrigação de precisão.
+O agendamento da irrigação pelo potencial da água no solo, obtido usualmente
+por tensiômetros, é uma solução prática consolidada para o uso racional da
+água; a versão mecânica do instrumento, porém, exige leituras manuais
+periódicas, e acompanhar muitos instrumentos dessa forma é uma tarefa
+tediosa, que dificulta o seu aproveitamento pleno @abdelmoneim2023. Além
+disso, o alto custo dos sensores comerciais para sistemas de irrigação afasta
+os pequenos produtores dessas soluções @garcia2020, e faltam sistemas
+integrados e de baixo custo que conectem dados de tensiometria a plataformas
+de decisão acessíveis.
 
 Diante desse cenário, formula-se a seguinte pergunta de pesquisa: de que
 maneira é possível desenvolver um nó sensor de telemetria, fundamentado em
@@ -194,8 +194,8 @@ variação mecânica do vácuo interno em um sinal elétrico na faixa de 0,5 V a
 4,5 V, em correspondência inversa: 0,5 V equivale a $-100$ kPa e 4,5 V
 equivale a $0$ kPa @cfsensor.
 
-O sinal foi direcionado a uma das portas analógicas do ESP32
-@abdelmoneim2023 por meio de um divisor resistivo, necessário para
+O sinal foi direcionado a uma das portas analógicas do ESP32 por meio de um
+divisor resistivo, necessário para
 compatibilizar a saída de até 4,5 V do transdutor com a tensão máxima
 tolerada pelo conversor analógico-digital (ADC) do microcontrolador, que
 opera em 3,3 V.

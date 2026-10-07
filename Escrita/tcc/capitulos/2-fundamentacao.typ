@@ -40,12 +40,11 @@ manejo são embasadas em dados estatísticos e contínuos.
 == Sistemas de monitoramento e irrigação inteligente
 
 O setor agrícola é, globalmente, o maior consumidor de água doce, sendo
-responsável por aproximadamente 70% a 80% do uso total desse recurso
-@lakhiar2024. Diante da escassez hídrica impulsionada pelas mudanças
-climáticas, os métodos de manejo convencionais provam-se insustentáveis. O
-excesso de água não apenas desperdiça o recurso, como também lixivia
-nutrientes vitais do solo e favorece o surgimento de doenças fitopatogênicas
-@ghazi2025.
+responsável por cerca de 70% do uso total desse recurso @lakhiar2024. Diante
+da escassez hídrica impulsionada pelas mudanças climáticas, os métodos de
+manejo convencionais provam-se insustentáveis. O manejo inadequado não apenas
+desperdiça água: a irrigação em excesso aumenta as perdas de nutrientes por
+lixiviação e reduz a eficiência no uso de fertilizantes @ghazi2025.
 
 Para combater essa ineficiência, surgem os Sistemas de Irrigação Inteligente
 (_Smart Irrigation Systems_). No escopo do monitoramento e da telemetria
@@ -66,8 +65,9 @@ parte das implementações de baixo custo utiliza sensores de umidade
 volumétrica resistivos ou capacitivos genéricos, que mensuram apenas a
 porcentagem de água presente em um dado volume de terra. Essa abordagem
 apresenta limitações, pois a presença de água no solo não garante que ela
-esteja prontamente disponível para as raízes, uma vez que solos mais
-argilosos, por exemplo, retêm a água com muita força @abdelmoneim2023.
+esteja prontamente disponível para as raízes: a energia com que a água fica
+retida, e portanto o esforço necessário para extraí-la, depende também da
+textura, da estrutura e do teor de matéria orgânica do solo @abdelmoneim2023.
 
 O tensiômetro, por sua vez, atua a partir do princípio do potencial
 matricial. Em vez de medir o volume, ele mensura a força, ou seja, o esforço
@@ -94,25 +94,25 @@ referência contra o qual ela é ajustada.
 == Infraestrutura computacional de hardware e software
 
 A materialização de um nó sensor agrícola requer hardware robusto, de baixo
-consumo energético e custo acessível. O microcontrolador ESP32 tem se
-destacado amplamente em pesquisas de redes de sensores agrícolas devido à sua
-arquitetura _dual-core_ e, principalmente, por possuir módulos nativos de
-conectividade Wi-Fi e Bluetooth @correaquiroz2025, e é empregado em sistemas
-de irrigação de baixo custo @purnama2024. O microcontrolador possui dois
-conversores analógico-digitais de 12 bits. A resolução nominal, contudo, não
-equivale a exatidão: o fabricante descreve o conversor como sensível a ruído
-@espressifadc, e a sua tensão de referência varia entre exemplares
-@espressifcali, o que exige filtragem e correção no firmware, conforme
-detalhado no @cap-prototipo.
+consumo energético e custo acessível. O microcontrolador ESP32 é empregado em
+sistemas agrícolas de baixo custo por integrar, no mesmo módulo, processamento
+e conectividade Wi-Fi e Bluetooth nativas @abdelmoneim2023 @correaquiroz2025
+@purnama2024. O microcontrolador possui dois conversores analógico-digitais de
+12 bits. A resolução nominal, contudo, não equivale a exatidão: o fabricante
+descreve o conversor como sensível a ruído, a ponto de produzir grandes
+discrepâncias entre leituras @espressifadc44, e a sua tensão de referência
+varia entre exemplares @espressifcali, o que exige filtragem e correção no
+firmware, conforme detalhado no @cap-prototipo.
 
 Em relação à camada de software e comunicação, a conexão entre o hardware no
-campo e o usuário é frequentemente mediada por protocolos de transporte leves
-projetados especificamente para IoT, como o MQTT (_Message Queuing Telemetry
-Transport_) ou o HTTP (_Hypertext Transfer Protocol_). Os dados processados
-no microcontrolador são remetidos a plataformas de nuvem ou servidores
-dedicados. No lado do cliente, a construção de um aplicativo móvel atua como
-uma interface humano-computador. Essa interface deve possuir requisitos
-rígidos de usabilidade, fornecendo ao produtor a liberdade de monitorar os
-históricos e os limiares de tensão do solo de forma gráfica e intuitiva,
-caracterizando o acompanhamento remoto e ubíquo do estresse hídrico da
-lavoura para a melhor tomada de decisão @ghazi2025.
+campo e o usuário é frequentemente mediada pelo MQTT (_Message Queuing
+Telemetry Transport_), protocolo de publicação e assinatura concebido para a
+comunicação entre máquinas, ou pelo próprio HTTP (_Hypertext Transfer
+Protocol_), protocolo de requisição e resposta predominante na web
+@naik2017. Os dados processados no microcontrolador são remetidos a
+plataformas de nuvem ou servidores dedicados. No lado do cliente, painéis e
+aplicativos móveis traduzem o estado do sistema em informação acionável,
+permitindo ao produtor acompanhar as tendências da umidade do solo, os
+alarmes e as ações recomendadas @ghazi2025 --- no caso deste trabalho, o
+histórico e os limiares de tensão da água no solo, acompanhados remotamente
+para apoiar a decisão de irrigar.
