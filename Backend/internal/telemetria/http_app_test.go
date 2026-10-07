@@ -1449,3 +1449,90 @@ func TestStoreDeCalibracaoAutorizaPorSi(t *testing.T) {
 		t.Errorf("o vizinho leu %d calibracoes de dev-a1", len(cals))
 	}
 }
+
+// ---------------------------------------- RISCO: kPa exibido sem calibracao
+
+// RISCO: cadastrar a calibracao no app nao muda nada na tela. O kPa exibido
+// precisa sair de raw_mv e dos coeficientes que a leitura referencia, e nao
+// do kpa que o no calculou com as constantes compiladas nele.
+//
+// A leitura e montada para que as tres respostas erradas sejam distinguiveis:
+//
+//	kpa do no                         -> -10    (o que o firmware mandou)
+//	raw_mv pela calibracao            -> -45    (o certo)
+//	idem, corrigido por vdd_mv/vdd_ensaio -> ~-46,8 (vdd_mv 5000 e a constante
+//	                                     VDD_MV_NOMINAL do config.h, nao medida)
+func TestKPaExibidoVemDaCalibracao(t *testing.T) {
+	c := novoCenarioApp(t)
+	ctx := context.Background()
+	if _, err := testPool.Exec(ctx, `
+		INSERT INTO calibrations (id, device_id, v_zero_kpa, k_v_por_kpa, fator_divisor, vdd_ensaio_mv, ensaio_em)
+		VALUES ('cal-teste', 'dev-a1', 4.5, 0.04, 1.5, 4870, current_date)`); err != nil {
+		t.Fatal(err)
+	}
+	// raw 1800 mV no pino -> 2,7 V no sensor -> (2,7 - 4,5) / 0,04 = -45 kPa.
+	// raw 2733 -> 4,0995 V -> -10,0125 kPa, que o servidor arredonda para
+	// -10,01: a resolucao com que o no reporta. Um minuto antes, para que a
+	// ultima leitura continue sendo a de -45; as duas caem no mesmo bucket.
+	quando := time.Now().UTC().Truncate(time.Hour).Add(-30 * time.Minute)
+	if _, err := testPool.Exec(ctx, `
+		INSERT INTO readings (device_id, seq, measured_at, raw_mv, vdd_mv, kpa, calibration_id)
+		VALUES ('dev-a1', 1, $1, 1800, 5000, -10, 'cal-teste'),
+		       ('dev-a1', 2, $2, 2733, 5000, -10, 'cal-teste')`,
+		quando, quando.Add(-time.Minute)); err != nil {
+		t.Fatal(err)
+	}
+	// Leitura sem calibracao (so possivel por escrita direta: a ingestao
+	// exige calibration_id) continua mostrando o kpa do no.
+	semearKPa(t, "dev-a2", time.Now().UTC().Add(-time.Hour), -70)
+	cookie := entrar(t, c.h, emailA)
+
+	var d DeviceApp
+	decodificarResp(t, req(t, c.h, http.MethodGet, "/api/v1/app/devices/dev-a1", cookie, ""), &d)
+	if d.Ultima == nil {
+		t.Fatal("sem ultima leitura")
+	}
+	switch {
+	case d.Ultima.KPa == -10:
+		t.Errorf("kpa = -10: devolveu o valor do no, e nao o da calibracao (-45)")
+	case d.Ultima.KPa != -45:
+		t.Errorf("kpa = %g, quero -45 (perto de -46,8 = corrigiu por vdd_mv, que nao e medido)", d.Ultima.KPa)
+	}
+	// A zona e a do valor calibrado: -10 seria conforto, -45 e alerta.
+	if d.Ultima.Zona == nil || *d.Ultima.Zona != ZonaAlerta {
+		t.Errorf("zona = %v, quero alerta (-45 com faixa -30/-60)", valor(d.Ultima.Zona))
+	}
+
+	var serie struct {
+		Pontos []PontoSerie `json:"pontos"`
+	}
+	decodificarResp(t, req(t, c.h, http.MethodGet,
+		"/api/v1/app/devices/dev-a1/series?bucket=3600", cookie, ""), &serie)
+	if len(serie.Pontos) != 1 || serie.Pontos[0].KPaMin != -45 || serie.Pontos[0].KPaMax != -10.01 {
+		t.Errorf("serie = %+v, quero um ponto com kpa_min -45 e kpa_max -10,01", serie.Pontos)
+	}
+
+	var sem DeviceApp
+	decodificarResp(t, req(t, c.h, http.MethodGet, "/api/v1/app/devices/dev-a2", cookie, ""), &sem)
+	if sem.Ultima == nil || sem.Ultima.KPa != -70 {
+		t.Errorf("leitura sem calibracao = %+v, quero o kpa do no (-70)", sem.Ultima)
+	}
+}
+
+// RISCO: o erro de mil vezes por fora do app. O endpoint recusa coeficiente
+// em milivolts, mas cmd/admin escrevia direto no banco e gravou exatamente
+// isso no no de bancada (4500 e 40). Com o kPa calculado no servidor, o erro
+// deixa de ser latente: a serie inteira iria para -112 kPa. O banco precisa
+// recusar por si, qualquer que seja o caminho de escrita.
+func TestCalibracaoEmMilivoltsNaoEntraNoBanco(t *testing.T) {
+	novoCenarioApp(t)
+	for _, coef := range []struct{ vZero, k float64 }{{4500, 0.04}, {4.5, 40}, {0, 0.04}} {
+		_, err := testPool.Exec(context.Background(), `
+			INSERT INTO calibrations (id, device_id, v_zero_kpa, k_v_por_kpa, fator_divisor, vdd_ensaio_mv, ensaio_em)
+			VALUES ('cal-mv', 'dev-a1', $1, $2, 1.5, 5000, current_date)`, coef.vZero, coef.k)
+		if err == nil {
+			t.Errorf("v_zero=%g k=%g entrou no banco; quero recusa por CHECK", coef.vZero, coef.k)
+			testPool.Exec(context.Background(), `DELETE FROM calibrations WHERE id = 'cal-mv'`)
+		}
+	}
+}

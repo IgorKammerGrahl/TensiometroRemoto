@@ -26,8 +26,9 @@
  * kpa_estresse a BETWEEN -80 AND 0, entao toda fronteira de zona desenhavel
  * cai dentro desta janela, sempre.
  *
- * As LEITURAS tem faixa mais larga -- readings.kpa aceita BETWEEN -100 AND 10
- * (migration 0001; kPaMin/kPaMax em http.go) -- entao leitura fora da escala
+ * As LEITURAS tem faixa mais larga -- o kPa exibido sai de leituras_kpa
+ * (migration 0003), convertido de raw_mv pela calibracao, e vai de cerca de
+ * -112 a +11 kPa com os coeficientes nominais -- entao leitura fora da escala
  * nao e hipotese: e o solo encharcado acima de 0 e o tensiometro cavitado
  * abaixo de -80. Por isso posicao() grampeia E AVISA que grampeou, em vez de
  * deixar o entalhe sair da regua em silencio.

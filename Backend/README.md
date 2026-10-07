@@ -247,10 +247,12 @@ fechar esse ciclo não exija um terminal — é o mesmo registro que
 
 **`v_zero_kpa` e `k_v_por_kpa` estão em VOLTS e V/kPa, não em milivolts.**
 O nome da coluna atrapalha: `v_zero_kpa` é a *tensão* no ponto de 0 kPa. Para
-o XGZP6847A os valores são `4.5` e `0.04`. Informar `4500` e `40` passa por
-todos os `CHECK` do banco e produz uma série inteira de kPa plausíveis e mil
-vezes errados — que é pior que série nenhuma, porque ninguém desconfia dela.
-O endpoint barra isso de duas formas: pela faixa de cada coeficiente e, mais
+o XGZP6847A os valores são `4.5` e `0.04`. Informar `4500` e `40` passava por
+todos os `CHECK` do banco — o nó de bancada foi cadastrado assim — e produz
+uma série inteira de kPa plausíveis e mil vezes errados, que é pior que série
+nenhuma, porque ninguém desconfia dela. Desde a migration 0003 o próprio banco
+recusa (ver "Conversão de kPa a partir de `raw_mv`"). O endpoint barra isso de
+duas formas: pela faixa de cada coeficiente e, mais
 importante, verificando que o ponto de 0 kPa (`v_zero_kpa * 1000 /
 fator_divisor`) cai dentro dos `[0, 3300]` mV que o ADC do nó consegue ler.
 
@@ -417,45 +419,50 @@ esses seria servir interface velha depois do deploy, e um `sw.js` cacheado se
 perpetua sozinho: o service worker desatualizado é quem decide o que buscar
 depois, inclusive a própria atualização.
 
-## Reconstrução de kPa a partir de `raw_mv`
+## Conversão de kPa a partir de `raw_mv`
 
-`readings.kpa` é o valor que o firmware calculou e reportou. Ele **não é a
-fonte de verdade**: os coeficientes em uso hoje são nominais de catálogo, e
-quando a calibração experimental contra o vacuômetro mecânico for feita, o
-histórico inteiro pode ser reprocessado a partir de `raw_mv` + `vdd_mv` + a
-calibração referenciada.
-
-O XGZP6847A100KPGN é ratiométrico — a saída é proporcional à alimentação —
-então os coeficientes do ensaio precisam de correção quando a alimentação
-em campo diverge da de bancada:
+O kPa que o app mostra **é calculado aqui**, pela view `leituras_kpa`
+(migration 0003), a partir de `raw_mv` e dos coeficientes da calibração que a
+leitura referencia:
 
 ```
-Vsensor          = raw_mv * fator_divisor / 1000
-fator_vdd        = vdd_mv / vdd_ensaio_mv
-v_zero_corrigido = v_zero_kpa  * fator_vdd
-k_corrigido      = k_v_por_kpa * fator_vdd
-kPa              = (Vsensor - v_zero_corrigido) / k_corrigido
+Vsensor = raw_mv * fator_divisor / 1000
+kPa     = (Vsensor - v_zero_kpa) / k_v_por_kpa     -- arredondado a 0,01 kPa
 ```
+
+`readings.kpa` é o valor que o firmware calculou com as constantes compiladas
+nele. Continua gravado, como registro do que o nó reportou, e é o que a API de
+dispositivo (`GET /api/v1/devices/{id}/…`) devolve; a lista e a série do app
+não o usam. Consequência prática: registrar a calibração pelo app e gravar o id
+no portal do nó basta para o kPa exibido refletir o ensaio — sem regravar o
+firmware.
+
+**Sem correção ratiométrica.** O XGZP6847A é ratiométrico, e a
+`0001_init.sql` descreve uma correção por `vdd_mv / vdd_ensaio_mv`. Ela não é
+aplicada: o nó não mede a alimentação, e `vdd_mv` é a constante
+`VDD_MV_NOMINAL` do `config.h`. Dividir o VDD medido no ensaio por uma
+constante escalaria a série inteira (2,7% com um ensaio a 4870 mV) sem nada no
+dado acusar. A calibração vale, portanto, para a alimentação em que o ensaio
+foi feito. Quando o nó medir o VDD (segundo divisor no GPIO35), a correção
+entra na view, e só nela.
+
+Cada leitura fica presa à calibração que referencia, e calibrações não são
+editadas: um ensaio novo vale para as leituras que chegarem com o id novo.
+Reprocessar o histórico antigo pelo ensaio novo exigiria reapontar leituras —
+operação que não existe, de propósito.
 
 `fator_divisor` mora em `calibrations` e não em `devices`: trocar os
-resistores do divisor invalida o ensaio — é calibração nova, não device
-novo. Com `vdd_mv` nulo a reconstrução assume `fator_vdd = 1`.
+resistores do divisor invalida o ensaio — é calibração nova, não device novo.
 
-O reprocessamento em si ainda não está implementado; a migration garante que
-todos os insumos estão persistidos. Em SQL:
-
-```sql
-SELECT r.seq, r.kpa AS kpa_do_no,
-       ((r.raw_mv * c.fator_divisor / 1000.0)
-        - c.v_zero_kpa * (COALESCE(r.vdd_mv, c.vdd_ensaio_mv)::real / c.vdd_ensaio_mv))
-       / (c.k_v_por_kpa * (COALESCE(r.vdd_mv, c.vdd_ensaio_mv)::real / c.vdd_ensaio_mv))
-       AS kpa_reconstruido
-  FROM readings r JOIN calibrations c ON c.id = r.calibration_id;
-```
-
-Note que o firmware escala os coeficientes por uma constante de compilação
-(`VDD_SENSOR = 5.00`), enquanto a reconstrução usa o `vdd_mv` **medido** —
-ou seja, o valor reconstruído tende a ser mais preciso que o reportado.
+**Erro de unidade corrigido na migration 0003.** O nó de bancada tinha sido
+cadastrado pelo `admin calibracao` antigo com `4500` e `40` (mV) em vez de
+`4.5` e `0.04`. Com o kPa vindo do firmware o erro era invisível; calculado
+aqui, a série iria a −112 kPa. A migration corrige as linhas em que os dois
+coeficientes estão em mV e acrescenta `CHECK` de faixa
+(`0 < v_zero_kpa ≤ 10`, `|k_v_por_kpa| ≤ 1`), para que nenhum caminho de
+escrita grave mV de novo. Verificado contra uma cópia do banco de bancada: nas
+2401 leituras, o kPa da view difere do reportado pelo nó em no máximo
+0,01 kPa — o histórico aparece igual na tela.
 
 ## Autenticação
 
