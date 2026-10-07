@@ -723,9 +723,11 @@ func (a *API) appCriarCalibracao(w http.ResponseWriter, r *http.Request) {
 	// E a unica checagem que amarra os coeficientes a fisica do circuito em
 	// vez de a uma faixa escolhida a mao, e e ela que pega o erro de unidade:
 	// com 4500 em vez de 4,5 o ponto de 0 kPa cai em 3.000.000 mV no pino.
-	// Todos os CHECK do banco aceitariam, e o resultado seria uma serie de
-	// kPa plausiveis e mil vezes errados -- que e pior que serie nenhuma,
-	// porque ninguem desconfia dela.
+	// Ate a migration 0003 os CHECK do banco aceitavam -- o no de bancada foi
+	// cadastrado assim pela linha de comando --, e o resultado seria uma serie
+	// de kPa plausiveis e mil vezes errados, que e pior que serie nenhuma,
+	// porque ninguem desconfia dela. Hoje o banco tambem recusa; aqui fica a
+	// mensagem que diz em quantos mV o ponto caiu.
 	//
 	// ponytail: so o ponto de 0 kPa, e nao a faixa inteira. Exigir que os dois
 	// extremos coubessem no ADC rejeitaria a calibracao nominal do XGZP6847A,

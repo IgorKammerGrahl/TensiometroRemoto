@@ -508,11 +508,16 @@ gcc -Wall -Wextra -o teste_prov teste_prov.c && ./teste_prov
 - **Sem buffer.** POST que falha perde a leitura. O `seq` avança mesmo assim,
   de propósito: o buraco na sequência é diagnosticável, enquanto reaproveitar
   o `seq` produziria duas leituras diferentes com o mesmo identificador.
-  Medido em 16/09/2026, em cômodo com sinal fraco: de 154 amostras a cada
-  60 s, 123 chegaram — **20% de perda**, quase toda em falhas isoladas, com
-  um trecho de 36 envios consecutivos sem erro no meio. Foi o próprio buraco
-  no `seq` que permitiu medir isso sem instrumentação nenhuma, o que é o
-  argumento a favor da decisão; a perda em si continua sendo o custo dela.
+  Na bancada do portal, em 16/09/2026 (cerca de 9 h, envio a cada 60 s): de
+  523 emissões pelo `seq`, 377 chegaram — **146 perdas, ~28%**. Sessenta
+  num bloco único de pouco mais de 1 h no fim, de causa não determinada; as
+  outras 86 em 46 buracos, quase todos de 1 a 3 leituras, e o trecho íntegro
+  mais longo com 70 envios seguidos. **A perda não é atribuível só ao sinal:**
+  naquele dia o cômodo tinha sinal fraco *e* o servidor tinha duas
+  interfaces na mesma sub-rede (ver "Pegadinhas"), e as duas causas não foram
+  separadas. Foi o próprio buraco no `seq` que permitiu contar as perdas sem
+  instrumentação nenhuma, o que é o argumento a favor da decisão; a perda em
+  si continua sendo o custo dela.
 - **Sem reenvio de configuração pelo ar.** Reconfigurar exige presença
   física: o portal só sobe com a NVS incompleta ou com o gesto do BOOT. É
   requisito de segurança, não omissão — um AP de configuração permanente

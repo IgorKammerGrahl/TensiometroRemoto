@@ -104,10 +104,10 @@ O provisionamento por portal cativo foi validado em hardware real em
 Wi-Fi → NTP → POST autenticado → linha no Postgres.
 
 O ensaio final com tensiômetro físico está **pendente** — o instrumento
-quebrou e o substituto não chegou. As leituras gravadas até aqui são de
-bancada, com o tubo aberto para a atmosfera.
+quebrou; o substituto chegou e os ensaios ainda não foram feitos. As leituras
+gravadas até aqui são de bancada, com o tubo aberto para a atmosfera.
 
 Limitações conhecidas e declaradas como tal no texto, não omissões: sem
-buffer de leituras (20% de perda medidos em sinal fraco), sem deep sleep,
+buffer de leituras (toda falha de envio é perda definitiva), sem deep sleep,
 coeficientes de catálogo à espera da calibração experimental, e a API não
 expõe o período de amostragem do nó. Cada README detalha as suas.
