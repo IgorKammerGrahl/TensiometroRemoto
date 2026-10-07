@@ -24,8 +24,10 @@ leituras, com modelo de autorização por concessão de talhão. O quarto é a
 camada de apresentação, uma aplicação web progressiva embutida no próprio
 binário do serviço, que exibe ao produtor a leitura corrente, o histórico e as
 faixas de atenção. Com ela, o quarto objetivo específico deste trabalho ---
-implementar a infraestrutura de comunicação e desenvolver o aplicativo de
-monitoramento --- está cumprido integralmente.
+implementar a infraestrutura de comunicação em nuvem e desenvolver o aplicativo
+de monitoramento --- está cumprido quanto à construção. A operação, contudo,
+ocorreu sempre com o servidor na rede local: a hospedagem remota não foi
+exercitada.
 
 A derivação física do instrumento foi obtida, e o diagnóstico anterior a
 respeito do vazamento que a acometia foi retificado: a causa era a cápsula
