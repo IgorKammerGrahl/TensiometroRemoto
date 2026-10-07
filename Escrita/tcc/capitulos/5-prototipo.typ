@@ -31,7 +31,9 @@ A derivação física do instrumento foi obtida, e o diagnóstico anterior a
 respeito do vazamento que a acometia foi retificado: a causa era a cápsula
 cerâmica dessaturada, e não a montagem improvisada. Ainda assim, toda a
 experimentação relatada neste capítulo é de bancada, com o transdutor aberto à
-atmosfera ou submetido a sucção manual.
+atmosfera ou submetido a sucção manual. O tensiômetro empregado nessa etapa
+quebrou em meados de setembro; o substituto já foi recebido, e os ensaios
+ainda pendentes serão conduzidos com ele.
 
 Quatro itens previstos permanecem não realizados, e determinam os limites do
 que este capítulo autoriza afirmar.
@@ -392,7 +394,7 @@ binário ocupa 83% da partição de aplicação ---, mas os ensaios relatados na
 @sec-bancada usaram HTTP sem TLS, de modo que o estabelecimento da sessão
 segura contra o servidor não foi exercitado.
 
-== Serviço de retaguarda e modelo de dados
+== Serviço de retaguarda e modelo de dados <sec-retaguarda>
 
 O serviço de retaguarda foi implementado em Go, utilizando a biblioteca padrão
 para o roteamento HTTP e três dependências externas: o driver de acesso ao
@@ -527,6 +529,133 @@ sem exceção, uma vez que a cadeia de junção não se fecha; a adoção de um
 dispositivo órfão só é possível por via administrativa, fora do fluxo comum da
 aplicação. Trata-se de comportamento deliberadamente restritivo: na ausência
 de vínculo explícito, o padrão é negar.
+
+== Provisionamento do nó e registro de calibração <sec-provisionamento>
+
+Instalar um nó exige entregar a ele cinco informações que não podem ser
+conhecidas na compilação: a rede Wi-Fi, o endereço do servidor, a identidade do
+dispositivo, a sua credencial e a calibração vigente. Esta seção descreve como
+cada uma chega ao nó sem recompilar o firmware, e como a última é registrada
+pela interface.
+
+=== Configuração em campo pelo portal cativo
+
+Na especificação inicial, esses parâmetros eram constantes de compilação:
+instalar um nó novo, ou trocar a rede de um nó existente, exigia recompilar e
+regravar o firmware. Eles passaram a ser gravados na memória não volátil do
+próprio ESP32 por um portal cativo. Sem configuração gravada, o nó sobe como
+ponto de acesso, e o celular de quem instala, ao conectar-se a ele, abre a
+página de configuração. O arquivo compilado guarda apenas o que não muda entre
+instalações: a física do circuito, os coeficientes nominais, os intervalos e o
+certificado raiz.
+
+A memória não volátil não oferece transação: cada campo é uma escrita
+independente, e uma gravação interrompida deixaria o nó com parte da
+configuração nova e parte da antiga --- por exemplo, a credencial de uma
+identidade e o identificador de outra, combinação que não falha na
+inicialização, e sim em campo, como recusa de autenticação. O firmware grava,
+por último, uma marca de conclusão, e só confia na configuração quando ela
+está presente; na sua ausência, volta ao portal. *Não existe estado "meio
+configurado".*
+
+O portal sobe em exatamente dois casos: configuração incompleta, ou um gesto
+físico nos botões da placa logo após a reinicialização. Não há retorno
+automático ao modo de configuração quando a rede cai, embora fosse
+conveniente: quem conseguisse derrubar o Wi-Fi do nó passaria a conseguir
+abrir, sozinho, o ponto de acesso de configuração. Sem que se salve nada, o
+ponto de acesso desliga-se em dez minutos.
+
+A credencial do dispositivo nunca é reexibida pela página. Deixar o campo em
+branco ao salvar mantém a credencial já gravada, o que permite trocar a rede em
+campo sem redigitar 43 caracteres na tela de um celular --- mas apenas enquanto
+o endereço do servidor e o identificador do nó permanecem os mesmos. Sem essa
+restrição, quem alcançasse o portal apontaria o nó para um servidor próprio,
+deixaria o campo em branco, e na primeira transmissão o nó entregaria a
+credencial verdadeira no cabeçalho de autenticação: *o segredo sairia sem
+nunca ter aparecido na tela, e sem sintoma algum para o dono.* A comparação
+entre os endereços é literal, sem normalização. Tratar como diferentes dois
+endereços equivalentes custa uma redigitação; normalizá-los por código
+próprio poderia abrir uma brecha que ninguém veria.
+
+Duas exposições permanecem e ficam declaradas. A credencial é armazenada em
+claro na memória não volátil, que não é criptografada por padrão: quem tem
+acesso físico ao ESP32 tem acesso a ela, a mesma exposição que existia quando
+ela era compilada no binário. E a senha do ponto de acesso de configuração
+consta da documentação pública do projeto, de modo que não autentica ninguém;
+o que ela proporciona é criptografia do enlace contra a escuta passiva. Resta,
+como risco residual, a negação de serviço por quem estiver fisicamente ao
+alcance durante os dez minutos do portal e apontar o nó para um destino
+inválido --- falha visível, porque os dados deixam de chegar.
+
+=== Registro de calibração pelo aplicativo
+
+Toda leitura referencia a calibração vigente no nó, e o servidor recusa a
+leitura cuja calibração não existe ou pertence a outro dispositivo. A falha
+decorrente da falta de cadastro é silenciosa: o nó autentica, a requisição de
+ingestão responde com sucesso, e todas as leituras retornam na lista de
+rejeitadas. Na interface, o nó simplesmente nunca reporta, e o sintoma sugere
+defeito de firmware, de antena ou de bateria. O cadastro, que exigia uma
+ferramenta de linha de comando, passou a ser feito pela própria interface, na
+tela do nó; e, sem nenhuma calibração cadastrada, a mensagem de que nenhuma
+leitura chegou deixa de sugerir bateria e sinal e passa a nomear a causa.
+
+As decisões de projeto seguem o mesmo critério das seções anteriores:
+
+- *Identificador sorteado.* O identificador é gerado pelo servidor e é curto,
+  porque precisa ser digitado no celular, no portal do nó. O sufixo é sorteado,
+  e não sequencial, porque os identificadores de calibração formam um espaço
+  global: um contador revelaria a cada usuário quantos ensaios os demais
+  registraram no dia.
+- *Autorização antes do conteúdo.* A autorização é verificada antes da leitura
+  do corpo da requisição, de modo que nenhuma mensagem de validação de
+  coeficiente pode revelar a existência de um nó alheio, e é repetida na
+  própria instrução de gravação, sem intervalo entre verificar e escrever.
+- *Validação ancorada na física.* O ponto de 0 kPa é projetado de volta no pino
+  do conversor e precisa cair dentro da faixa que ele lê. É essa verificação,
+  e não as faixas de cada coeficiente, que distingue o erro de unidade:
+  coeficientes informados em milivolts projetam o ponto de 0 kPa em milhões de
+  milivolts.
+- *Sem edição nem remoção.* Um ensaio novo recebe identificador novo.
+  Sobrescrever coeficientes reescreveria em silêncio o significado de todas as
+  leituras que os referenciam --- consequência que se tornou direta com a
+  conversão do kPa no servidor, descrita na @sec-retaguarda.
+- *Ausente não é zero.* Campos opcionais em branco, como o coeficiente de
+  determinação e o erro quadrático médio, são omitidos, e não zerados: um
+  coeficiente de determinação nulo afirmaria um ajuste péssimo onde a pessoa
+  quis dizer que não mediu.
+
+=== Validação em bancada e o que ela não cobre
+
+Em 16/09/2026, o ciclo de configuração foi exercitado com o protótipo físico,
+sem recompilar o firmware: preenchimento do portal, gravação na memória não
+volátil, reinicialização em modo de telemetria, conexão à rede, sincronização
+do relógio, transmissão autenticada e gravação da leitura no banco de dados. A
+sessão durou cerca de nove horas, com transporte HTTP sem TLS e o transdutor
+aberto à atmosfera.
+
+A série dessa sessão confirma, de passagem, uma limitação já declarada. Pelo
+número de sequência, o nó emitiu 523 leituras, das quais 377 chegaram: 146
+perdas, cerca de 28%. Sessenta delas formam um único bloco no fim da sessão,
+ao longo de pouco mais de uma hora, de causa não determinada. As 86 restantes
+distribuem-se em 46 lacunas, 40 delas de uma a três leituras, entre trechos
+íntegros --- o mais longo, de 70 emissões consecutivas.
+
+Esse número não caracteriza o enlace nem o protocolo, e não deve ser comparado
+com os dois ensaios da @sec-bancada. Naquele dia, ao menos duas causas de perda
+estavam presentes e não foram separadas: a montagem em cômodo de sinal fraco e
+o servidor com duas interfaces de rede na mesma sub-rede, configuração em que o
+sistema operacional descarta em silêncio os pacotes que chegam pela interface
+que não é a da rota de volta, de modo que o nó acerta ou erra conforme a
+interface que lhe respondeu. O bloco final pode ter uma terceira causa. O que a
+sessão estabelece é mais restrito e independe da causa: *sem armazenamento
+local, cada perda é definitiva* (@sec-estado), e foi o próprio número de
+sequência, que avança mesmo quando o envio falha, que permitiu contá-las sem
+instrumentação adicional.
+
+O ciclo que encadeia as duas partes desta seção --- registrar uma calibração
+pelo aplicativo, gravar o seu identificador no portal e ter a leitura aceita
+--- foi verificado contra o servidor pela suíte automatizada, mas não com o nó
+físico. Vale como implementado, e não como validado em bancada.
 
 == Faixas de atenção e tratamento do sinal <sec-faixas>
 
