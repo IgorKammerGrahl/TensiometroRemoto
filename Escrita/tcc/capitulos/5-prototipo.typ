@@ -1428,12 +1428,15 @@ Incluí-las na estatística agregada contamina a média com um transitório que
 não descreve o regime de operação --- no segundo ensaio, a acomodação sozinha
 responde por toda a amplitude entre o máximo e o mínimo das médias horárias.
 
-=== Reprodutibilidade entre corridas
+=== Precisão intermediária entre corridas
 
 Os dois ensaios mediram a mesma grandeza física --- a pressão atmosférica,
 com o transdutor aberto --- com a mesma montagem, em dias diferentes. As
 médias obtidas foram 3010,3 mV e 3012,24 mV, uma diferença de *1,94 mV, ou
-aproximadamente 0,073 kPa*.
+aproximadamente 0,073 kPa*. No vocabulário do VIM, a condição é de precisão
+intermediária, e não de reprodutibilidade: procedimento, local e montagem
+foram os mesmos, e o que variou foram o período e as condições entre as
+sessões (@sec-metrologia).
 
 Essa diferença é uma métrica distinta do desvio padrão de cada ensaio, e não
 deve ser confundida com ele. O desvio padrão descreve a dispersão interna de
@@ -1447,7 +1450,7 @@ A consequência deve ser declarada: *a incerteza real do sistema é maior que o
 desvio padrão medido dentro de um único ensaio.* Isso é esperado e não
 constitui defeito; o que seria defeito é apresentar o desvio padrão intra-ensaio
 como se fosse a incerteza do instrumento. Duas corridas, contudo, não permitem
-estimar um intervalo de confiança para a reprodutibilidade --- apenas
+estimar um intervalo de confiança para a precisão intermediária --- apenas
 constatar que ela é da ordem de 2 mV, e que qualquer calibração futura deve
 ser avaliada contra essa escala, e não contra a dispersão interna.
 
