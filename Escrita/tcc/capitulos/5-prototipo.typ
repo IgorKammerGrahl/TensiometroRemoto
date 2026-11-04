@@ -34,17 +34,19 @@ respeito do vazamento que a acometia foi retificado: a causa era a cápsula
 cerâmica dessaturada, e não a montagem improvisada. Ainda assim, toda a
 experimentação relatada neste capítulo é de bancada, com o transdutor aberto à
 atmosfera ou submetido a sucção manual. O tensiômetro empregado nessa etapa
-quebrou em meados de setembro; o substituto já foi recebido, e os ensaios
-ainda pendentes serão conduzidos com ele.
+quebrou em meados de setembro. Com o substituto, as tentativas de calibração
+de outubro não produziram nenhum ponto válido: o instrumento não sustenta
+vácuo, e a entrada de ar foi localizada no próprio tensiômetro, sem que a
+derivação tenha sido descartada como caminho adicional (@sec-substituto).
 
 Quatro itens previstos permanecem não realizados, e determinam os limites do
 que este capítulo autoriza afirmar.
 
-A *calibração experimental* não foi conduzida. Os coeficientes de conversão em
+A *calibração experimental* não foi concluída. Os coeficientes de conversão em
 uso são os valores nominais de catálogo, e nenhuma métrica de ajuste ---
 coeficiente de determinação, erro quadrático médio, erro percentual --- pode
-ser apresentada. Com a retenção de vácuo restabelecida, esse ensaio deixou de
-estar bloqueado, mas não foi realizado a tempo.
+ser apresentada. O ensaio foi tentado em outubro com o tensiômetro substituto,
+que não sustentou vácuo, e nenhum ponto válido foi gravado (@sec-substituto).
 
 A *validação em solo* não foi conduzida. Os ensaios mantiveram o transdutor
 aberto à atmosfera, condição que exercita a cadeia de aquisição, de conversão
@@ -1090,7 +1092,7 @@ caminho aberto para o ar entrar. O tensiômetro não estava vazando pela
 derivação; estava vazando pela função que a cápsula deixara de exercer. Após
 submersão prolongada da cápsula, com a ressaturação do material poroso, o
 sistema passou a reter vácuo, e a derivação por septo perfurado mostrou-se
-adequada.
+adequada naquele instrumento.
 
 O registro desta retificação tem valor metodológico independente do seu
 desfecho favorável. A montagem improvisada era o componente novo do arranjo, e
@@ -1100,9 +1102,61 @@ ao elemento cujo estado não havia sido verificado, adiou o diagnóstico
 correto. Verificar a saturação da cápsula antes de qualquer ensaio hidráulico
 passa a integrar o procedimento.
 
-Com a retenção de vácuo restabelecida, a derivação deixa de ser o impedimento
-à calibração experimental. Esta permanece não realizada, mas por não ter sido
-conduzida, e não por estar bloqueada.
+Com a retenção de vácuo restabelecida no primeiro instrumento, a derivação
+deixou de ser o impedimento à calibração experimental. Esse instrumento,
+porém, quebrou antes do ensaio, e o substituto trouxe outro impedimento,
+relatado a seguir.
+
+=== Tentativa de calibração com o tensiômetro substituto <sec-substituto>
+
+O ensaio de calibração foi tentado em 20 e 21 de outubro, com o tensiômetro
+substituto e o roteiro preparado para o primeiro. Os valores em quilopascais
+citados nesta seção são os nominais do firmware, calculados pela curva de
+catálogo, e a alimentação do transdutor foi assumida em 5,00 V, sem
+verificação por instrumento.
+
+Na primeira sessão, após cerca de uma hora de aquecimento, o sinal estabilizou
+em torno de 3012 mV no pino do conversor. Um primeiro ponto chegou a ser
+gravado, mas é inválido: a altura da coluna foi estimada sem medição, com erro
+de uma ordem de grandeza, e a agulha estava obstruída. Dez minutos de secagem
+da cápsula não alteraram a leitura, e ao retirar a agulha encontrou-se um
+miolo da borracha da tampa preso em seu canhão. O achado indica que a agulha
+removeu material do septo ao perfurá-lo, o que põe em dúvida, para este
+instrumento, a premissa de que o septo volta a vedar quando a agulha é
+retirada.
+
+Na segunda sessão, com a agulha desobstruída, a sucção aplicada pela própria
+agulha passou a alcançar o transdutor, com leituras de até cerca de
+$-"8,8"$ kPa. Os testes de vazamento da derivação, com sucção pela boca e
+vedação pela mão, foram inconclusivos: a pressão se sustentou por alguns
+segundos em duas tentativas e retornou à base nas demais, e a vedação manual
+varia mais do que o efeito procurado. A geometria foi então medida com trena,
+com $Delta h = 7$ cm entre o septo e a tomada do vacuômetro e $H = 48$ cm
+entre a superfície da água do balde e essa tomada, o que fixa o primeiro ponto
+esperado, com a cápsula em água livre, em $-"4,7"$ kPa no vacuômetro.
+
+Esse ponto não foi alcançado. Com o tubo cheio de água fervida e resfriada, a
+agulha espetada e a cápsula imersa no balde, a leitura permaneceu na base,
+entre 3003 e 3011 mV, durante cerca de uma hora; o vacuômetro ficou em zero, e
+a água desceu até sair do trecho transparente do tubo. O transdutor e o
+vacuômetro concordaram, portanto, em que não havia vácuo: o defeito não
+estava na leitura, e sim na retenção.
+
+Para separar a derivação do instrumento, o tubo foi enchido e tampado sem a
+agulha, com a cápsula no balde, e deixado assim por alguns dias. A água voltou
+a descer, mais devagar, e o vacuômetro não saiu do zero. Pelo critério
+preparado de antemão, a entrada de ar está no próprio tensiômetro, acima da
+linha da água: na tampa e no septo, na rosca do vacuômetro ou nas emendas do
+tubo --- os mesmos pontos que a literatura aponta como causas comuns de
+vazamento (@sec-estanqueidade). A diferença de velocidade, de cerca de uma
+hora com a agulha para alguns dias sem ela, indica que a perfuração agrava a
+entrada de ar, mas não é o único caminho. A observação tem limites: o
+transdutor não estava ligado nesse teste, e a sensibilidade do vacuômetro
+perto do zero não foi conferida.
+
+Nenhum ponto de calibração válido foi gravado. O impedimento à calibração
+deixou de ser a derivação e passou a ser a estanqueidade do instrumento, de
+natureza hidráulica.
 
 == Resultados de bancada e limites da interpretação <sec-bancada>
 
