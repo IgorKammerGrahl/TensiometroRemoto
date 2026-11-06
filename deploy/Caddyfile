@@ -6,6 +6,13 @@
 #
 # X-Forwarded-For: sem trusted_proxies o Caddy SUBSTITUI o cabecalho que o
 # cliente mandou pelo IP real da conexao. A API le esse valor (PROXY_CONFIAVEL).
+{
+	# So Let's Encrypt. O no confia apenas nas raizes do LE (CA_RAIZ_PEM, no
+	# firmware); se o Caddy caisse em outra CA quando o LE falhasse, o site
+	# abriria no navegador e o ESP32 recusaria o certificado.
+	cert_issuer acme
+}
+
 {$DOMINIO} {
 	{$TLS_LOCAL}
 	reverse_proxy api:8080
