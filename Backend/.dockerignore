@@ -1,0 +1,9 @@
+# O .env acima de tudo: config.Carregar le o primeiro .env que achar subindo
+# do diretorio corrente, e uma imagem com ele dentro carregaria o segredo do
+# HMAC e a senha do banco de desenvolvimento para onde a imagem for.
+.env
+dump-*.sql
+api
+admin
+devtoken
+.idea/
