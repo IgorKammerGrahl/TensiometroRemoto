@@ -1,0 +1,12 @@
+# Proxy reverso com HTTPS automatico (Let's Encrypt). DOMINIO vem do .env.
+#
+# TLS_LOCAL fica vazio em producao e vale "tls internal" no modo local
+# (compose.local.yaml). O Caddy expande {$VAR} antes de ler o arquivo, entao
+# vazio some e "tls internal" vira a diretiva.
+#
+# X-Forwarded-For: sem trusted_proxies o Caddy SUBSTITUI o cabecalho que o
+# cliente mandou pelo IP real da conexao. A API le esse valor (PROXY_CONFIAVEL).
+{$DOMINIO} {
+	{$TLS_LOCAL}
+	reverse_proxy api:8080
+}

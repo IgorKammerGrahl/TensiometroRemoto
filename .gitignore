@@ -6,6 +6,10 @@ Circuito/sketch/config.h
 # Nunca versionar. Ver Backend/.env.example.
 Backend/.env
 
+# Configuracao do deploy: senha do banco e segredo do HMAC de producao.
+# Nunca versionar. Ver deploy/.env.example.
+deploy/.env
+
 # Artefatos de compilacao
 Circuito/sketch/build/
 Circuito/teste/teste_payload

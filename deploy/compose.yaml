@@ -1,0 +1,141 @@
+# Deploy: Postgres + migrations + API + Caddy (HTTPS) + backup diario.
+#
+# Passo a passo em docs/DEPLOY.md. Configuracao no .env ao lado deste arquivo
+# (copie de .env.example). Modo local, sem dominio:
+#
+#   docker compose -f compose.yaml -f compose.local.yaml up -d --build
+#
+# O compose de desenvolvimento (so o banco, API com `go run`) continua em
+# Backend/compose.yaml; os dois nao dividem nome, volume nem porta.
+name: tensiometro
+
+# IP fixo do Caddy na rede `borda`. E o unico peer cujo X-Forwarded-For a API
+# le (PROXY_CONFIAVEL; ver Backend/README.md, "Limite de tentativas no login").
+# Se a faixa colidir com a rede da VM, troque a subnet e este IP juntos.
+x-ip-caddy: &ip_caddy 10.250.250.2
+
+x-backend: &backend
+  build: ../Backend
+  image: tensiometro-api
+  # Senha em hex (ver .env.example): entra na URL sem escapar nada.
+  environment: &backend-env
+    DATABASE_URL: postgres://tcc:${POSTGRES_PASSWORD:?defina no .env}@db:5432/telemetria?sslmode=disable
+
+services:
+  db:
+    image: docker.io/library/postgres:16.15-alpine3.24
+    environment:
+      POSTGRES_USER: tcc
+      POSTGRES_DB: telemetria
+      # So vale na criacao do volume. Trocar depois no .env NAO muda a senha
+      # do banco, e a API deixa de conectar.
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?defina no .env}
+    volumes:
+      - pgdados:/var/lib/postgresql/data
+    networks: [dados]
+    # Sem `ports`: o banco nao sai da maquina. Acesso: docker compose exec db psql -U tcc telemetria
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "tcc", "-d", "telemetria"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    restart: unless-stopped
+
+  # Roda a cada `up` e sai. goose so aplica o que falta, entao repetir e
+  # inocuo; e a API so sobe depois que ele terminar com sucesso.
+  migrate:
+    <<: *backend
+    command: ["api", "-migrate"]
+    networks: [dados]
+    depends_on:
+      db: { condition: service_healthy }
+    restart: "no"
+
+  api:
+    <<: *backend
+    environment:
+      <<: *backend-env
+      TELEMETRIA_TOKEN_SECRET: ${TELEMETRIA_TOKEN_SECRET:?defina no .env}
+      PROXY_CONFIAVEL: *ip_caddy
+    networks: [borda, dados]
+    depends_on:
+      db: { condition: service_healthy }
+      migrate: { condition: service_completed_successfully }
+    healthcheck:
+      # / e a PWA embarcada: 200 prova que o servidor esta de pe. O banco ja
+      # foi pingado no boot -- sem ele o processo nem chega a escutar.
+      test: ["CMD", "wget", "-q", "--spider", "http://127.0.0.1:8080/"]
+      interval: 10s
+      timeout: 3s
+      retries: 6
+    restart: unless-stopped
+
+  caddy:
+    image: docker.io/library/caddy:2.11.9-alpine
+    ports:
+      - "${PORTA_HTTP:-80}:80"
+      - "${PORTA_HTTPS:-443}:443"
+    environment:
+      DOMINIO: ${DOMINIO:?defina no .env}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data # certificados e chave da conta ACME
+      - caddy_config:/config
+    networks:
+      borda: { ipv4_address: *ip_caddy }
+    depends_on:
+      api: { condition: service_healthy }
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:2019/config/"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+    restart: unless-stopped
+
+  # Dump diario com retencao. Mesma imagem do banco, para o pg_dump ter a
+  # versao do servidor. Restauracao em docs/DEPLOY.md.
+  backup:
+    image: docker.io/library/postgres:16.15-alpine3.24
+    entrypoint: ["/bin/sh", "/backup.sh"]
+    environment:
+      PGHOST: db
+      PGUSER: tcc
+      PGDATABASE: telemetria
+      PGPASSWORD: ${POSTGRES_PASSWORD:?defina no .env}
+      RETENCAO_DIAS: 14
+    volumes:
+      - ./backup.sh:/backup.sh:ro
+      - backups:/backups
+    networks: [dados]
+    depends_on:
+      db: { condition: service_healthy }
+    healthcheck:
+      # unhealthy quando o dump mais novo passa de 26 h: o backup parou.
+      test: ["CMD-SHELL", "find /backups -name 'telemetria-*.dump' -mmin -1560 | grep -q ."]
+      interval: 10m
+      start_period: 5m
+    restart: unless-stopped
+
+networks:
+  dados: {}
+  # So Caddy e API. Faixa fixa porque o IP do Caddy precisa ser fixo; o
+  # ip_range manda o IP dinamico (o da API) para .8-.15. Sem ele, a API, que
+  # sobe antes, pegava o .2 e o Caddy morria com "Address already in use".
+  borda:
+    ipam:
+      config:
+        - subnet: 10.250.250.0/28
+          ip_range: 10.250.250.8/29
+
+volumes:
+  # EXTERNOS de proposito: `docker compose down -v` apaga os volumes do
+  # projeto, e estes dois sao o resultado do TCC e a copia dele. Criados uma
+  # vez, a mao (docs/DEPLOY.md); sem eles o compose recusa subir.
+  pgdados:
+    external: true
+    name: tensiometro-pgdados
+  backups:
+    external: true
+    name: tensiometro-backups
+  caddy_data:
+  caddy_config:
