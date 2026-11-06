@@ -262,8 +262,12 @@ contra a raiz embutida em `CA_RAIZ_PEM`.
 // #define DEV_SEM_TLS
 ```
 
-O `config.h.example` já traz a **ISRG Root X1** (Let's Encrypt), que cobre
-a maioria dos hosts com certificado gratuito. Para outra CA:
+O `config.h.example` já traz as quatro raízes do Let's Encrypt — **ISRG Root
+X1**, **X2**, **Root YR** e **Root YE** —, com as impressões digitais no
+comentário. Desde maio de 2026 o LE emite pela hierarquia "Generation Y" (YR,
+YE), que hoje chega à X1 por assinatura cruzada; com as quatro, o nó continua
+validando quando o LE tirar as cruzadas da cadeia padrão. Conferir a cadeia que
+o servidor entrega: `docs/DEPLOY.md`. Para outra CA:
 
 ```bash
 openssl s_client -showcerts -connect SEU_HOST:443 </dev/null
