@@ -69,9 +69,6 @@
 // assinatura cruzada (root-yr-by-x1, root-ye-by-x2) sobre a mesma chave. Como
 // conferir a cadeia que o servidor entrega: docs/DEPLOY.md.
 //
-// Teste local contra o Caddy com `tls internal`: acrescente ao fim a raiz
-// local do Caddy (docs/DEPLOY.md, "Modo local").
-//
 // A validacao compara a validade do certificado contra o relogio, e por
 // isso o NTP sincroniza ANTES do primeiro POST -- com o clock em 1970
 // qualquer certificado valido e recusado como ainda nao emitido.

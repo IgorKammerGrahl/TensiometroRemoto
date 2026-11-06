@@ -3,9 +3,9 @@
 #
 #   docker compose -f compose.yaml -f compose.local.yaml up -d --build
 #
-# No .env: DOMINIO=localhost. Para o ESP32 da bancada alcancar o notebook,
-# acrescente o IP da rede local: DOMINIO=localhost 192.168.0.10 (ver
-# docs/DEPLOY.md, "Modo local").
+# No .env: DOMINIO=localhost. O ESP32 nao entra neste modo: na bancada ele
+# segue com DEV_SEM_TLS contra o `make dev`, e o teste com TLS e contra a VM
+# (docs/DEPLOY.md).
 services:
   caddy:
     environment:
