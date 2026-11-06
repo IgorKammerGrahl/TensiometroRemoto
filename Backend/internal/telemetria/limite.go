@@ -3,7 +3,9 @@ package telemetria
 import (
 	"net"
 	"net/http"
+	"net/netip"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 )
@@ -137,18 +139,33 @@ func (l *limitador) esperaPorFicha() time.Duration {
 	return time.Duration(float64(time.Second) / l.recarga)
 }
 
-// chaveOrigem identifica o cliente pelo endereco da conexao TCP.
+// ConfiarNoProxy passa a ler o X-Forwarded-For das conexoes que vem de ip --
+// e so delas. Ver chaveOrigem.
 //
-// X-Forwarded-For NAO e lido aqui, e isso e deliberado: o cabecalho vem do
-// cliente e pode dizer qualquer coisa. Confiar nele entrega um balde novo por
-// tentativa -- o limitador some, e ainda por cima enche o mapa. RemoteAddr e o
-// peer real da conexao.
+// Sem isto, atras do Caddy o RemoteAddr de toda requisicao e o proprio Caddy:
+// a internet inteira divide um balde de 10 tentativas, e quem errar a senha
+// dez vezes tranca o login de todo mundo.
+func (a *API) ConfiarNoProxy(ip netip.Addr) {
+	a.proxyConfiavel = ip.Unmap()
+	a.log.Info("limite de login lendo X-Forwarded-For do proxy", "proxy", a.proxyConfiavel.String())
+}
+
+// chaveOrigem identifica o cliente pelo endereco da conexao TCP -- ou, quando
+// a conexao vem do proxy configurado em ConfiarNoProxy, pelo IP que ELE anotou.
 //
-// A consequencia e conhecida e aceita: atras de um proxy reverso, todos os
-// clientes compartilham um balde. Para este trabalho o binario atende direto.
-// Quem puser um proxy na frente precisa passar a ler o cabecalho DELE, com o
-// numero de saltos confiaveis fixado -- e nao "se vier, use".
-func chaveOrigem(r *http.Request) string {
+// X-Forwarded-For de qualquer outro peer NAO e lido, e isso e deliberado: o
+// cabecalho vem do cliente e pode dizer qualquer coisa. Confiar nele entrega
+// um balde novo por tentativa -- o limitador some, e ainda por cima enche o
+// mapa.
+//
+// Do proxy, so vale o item MAIS A DIREITA do ultimo cabecalho: e o que o
+// proprio proxy escreveu, o peer que ele viu. Tudo a esquerda veio do cliente.
+// O Caddy sem trusted_proxies ja descarta o cabecalho recebido, mas esta regra
+// nao depende disso. E um salto so: nao ha CDN na frente do Caddy.
+//
+// proxy e um IP, e nao uma faixa: na rede do compose o gateway do host cai
+// dentro da faixa, e ele nao e o Caddy.
+func chaveOrigem(r *http.Request, proxy netip.Addr) string {
 	ip, _, err := net.SplitHostPort(r.RemoteAddr)
 	if err != nil {
 		// Formato inesperado (RemoteAddr vazio em teste, socket unix): a
@@ -156,7 +173,25 @@ func chaveOrigem(r *http.Request) string {
 		// limite, nunca o afrouxa.
 		return r.RemoteAddr
 	}
-	return ip
+	if !proxy.IsValid() {
+		return ip
+	}
+	if peer, err := netip.ParseAddr(ip); err != nil || peer.Unmap() != proxy {
+		return ip
+	}
+
+	// Cabecalho ausente ou ilegivel cai no IP do proxy: todos dividem um
+	// balde. Mesma regra de cima -- aperta, nunca afrouxa.
+	xff := r.Header.Values("X-Forwarded-For")
+	if len(xff) == 0 {
+		return ip
+	}
+	ultimo := xff[len(xff)-1]
+	cliente, err := netip.ParseAddr(strings.TrimSpace(ultimo[strings.LastIndexByte(ultimo, ',')+1:]))
+	if err != nil {
+		return ip
+	}
+	return cliente.Unmap().String()
 }
 
 // recusarPorLimite responde 429 com a MESMA mensagem para os dois limitadores.

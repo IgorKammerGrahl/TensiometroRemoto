@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"net/netip"
 	"os"
 	"strconv"
 	"strings"
@@ -68,6 +69,10 @@ type API struct {
 	// Dois limitadores para o login, por chaves diferentes. Ver limite.go.
 	loginPorIP    *limitador
 	loginPorEmail *limitador
+
+	// proxyConfiavel e o unico peer cujo X-Forwarded-For e lido. Zero (o
+	// padrao) e nenhum. Ver ConfiarNoProxy, em limite.go.
+	proxyConfiavel netip.Addr
 }
 
 // PermitirCookieInseguro desliga o atributo Secure do cookie de sessao.

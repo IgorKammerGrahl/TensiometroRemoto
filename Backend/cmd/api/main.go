@@ -5,6 +5,7 @@ import (
 	"flag"
 	"log/slog"
 	"net/http"
+	"net/netip"
 	"os"
 	"time"
 
@@ -72,6 +73,16 @@ func main() {
 	// origem http://192.168.x.x faz o navegador descartar o cookie Secure.
 	if os.Getenv("SESSAO_COOKIE_INSEGURO") == "true" {
 		api.PermitirCookieInseguro()
+	}
+	// Ver ConfiarNoProxy. Valor invalido derruba o boot: subir ignorando-o
+	// deixaria o login atras do Caddy com um balde so para todo mundo, calado.
+	if v := os.Getenv("PROXY_CONFIAVEL"); v != "" {
+		ip, err := netip.ParseAddr(v)
+		if err != nil {
+			log.Error("PROXY_CONFIAVEL invalido: precisa ser um IP so, sem faixa nem porta", "valor", v, "erro", err)
+			os.Exit(1)
+		}
+		api.ConfiarNoProxy(ip)
 	}
 
 	srv := &http.Server{

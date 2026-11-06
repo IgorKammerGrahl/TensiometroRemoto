@@ -293,10 +293,19 @@ Estourou, `429` com `Retry-After` e **a mesma mensagem nos dois casos**:
 distinguir "seu IP estourou" de "esta conta estourou" responderia "essa conta
 existe" a quem contasse respostas.
 
-O IP vem de `RemoteAddr`, nunca de `X-Forwarded-For` — o cabeçalho é do
-cliente e confiar nele daria um balde novo por tentativa. Atrás de um proxy
-reverso, todos compartilham um balde; quem puser um proxy na frente precisa
-passar a ler o cabeçalho *dele*, com o número de saltos confiáveis fixado.
+O IP vem de `RemoteAddr`. `X-Forwarded-For` é do cliente, e confiar nele
+daria um balde novo por tentativa — com **uma** exceção: a conexão que vem do
+IP em `PROXY_CONFIAVEL`. No deploy (`deploy/compose.yaml`) esse IP é o do
+Caddy, fixo na rede interna do compose. Sem a exceção, atrás do Caddy todo
+cliente teria o mesmo `RemoteAddr` e a internet inteira dividiria um balde:
+dez senhas erradas de qualquer um trancariam o login de todos.
+
+Mesmo do Caddy, só vale o item **mais à direita** do último cabeçalho, que é
+o que o próprio Caddy escreveu; o que estiver à esquerda veio do cliente.
+Cabeçalho ausente ou que não seja IP cai no balde do próprio Caddy — apertar,
+nunca afrouxar. É um IP e não uma faixa: o gateway do host fica dentro da
+faixa da rede e não é o Caddy. Valor inválido em `PROXY_CONFIAVEL` impede o
+boot.
 
 `POST /api/v1/readings` fica **fora do limite**, de propósito: o nó não tem
 buffer, então uma leitura recusada com `429` está perdida para sempre, e o que

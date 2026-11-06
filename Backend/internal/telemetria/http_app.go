@@ -163,7 +163,7 @@ func (a *API) appLogin(w http.ResponseWriter, r *http.Request) {
 	// O limite por IP vem antes de decodificar: e a unica checagem que nao
 	// depende de nada que o corpo diga, entao e a unica que pode custar menos
 	// que o ataque. Sair daqui e ler zero byte do corpo.
-	if espera, ok := a.loginPorIP.permitir(chaveOrigem(r)); !ok {
+	if espera, ok := a.loginPorIP.permitir(chaveOrigem(r, a.proxyConfiavel)); !ok {
 		recusarPorLimite(w, espera)
 		return
 	}
