@@ -868,6 +868,29 @@ lacuna responderia "não há lacuna" e a linha seria ligada. *O modo de falha
 escolhido é um gráfico fragmentado, que é visível, em vez de uma reta
 inventada, que não é.*
 
+=== A lista com centenas de nós
+
+A lista de nós foi desenhada para poucos aparelhos: um cartão por nó, do mais
+seco para o mais úmido. Com os nós simulados da @sec-escala, ela virou
+rolagem, e a pergunta que a tela existe para responder --- de qual talhão
+cuidar agora --- passou a exigir a leitura de cartão por cartão. A lista foi
+então agrupada por talhão, sem reordenar nada: como o servidor já entrega os
+nós do mais seco para o mais úmido, preservar essa ordem ao agrupar põe
+primeiro o talhão do nó mais seco e, dentro dele, o nó mais seco, e a regra do
+sinal continua tendo uma única implementação.
+
+Cada talhão com mais nós do que os três cartões exibidos ganha um resumo: a
+régua do detalhe, deitada, com as mesmas faixas e hachuras, e um traço por nó
+com leitura atual na posição da sua tensão. Os traços são semitransparentes,
+de modo que a sobreposição escurece onde há muitos nós, e a distribuição do
+talhão se lê de relance, sem histograma calculado. Abaixo da tira, a contagem
+por estado vem escrita, na ordem de gravidade. Nó sem leitura atual não ganha
+traço --- um traço afirma onde o solo está agora --- e aparece só na contagem.
+Com todos os cartões à vista, o resumo não aparece, porque apenas repetiria o
+que está logo abaixo. Uma busca por nome, código ou talhão completa a tela.
+Verificado com 160 nós simulados em quatro talhões, um deles sem faixa
+configurada.
+
 === Três defeitos que só apareceram contra o sistema real
 
 Os três defeitos a seguir passaram pela suíte automatizada e pela verificação
