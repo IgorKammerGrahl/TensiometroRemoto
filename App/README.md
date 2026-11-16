@@ -158,6 +158,29 @@ janelas.
 
 **Status do `RF07`: atendido.**
 
+## Lista agrupada por talhão, para centenas de nós (16/11/2026)
+
+A lista plana servia para três nós. Com 160 (a vitrine do simulador), virava
+rolagem, e "como está este talhão?" só se respondia lendo cartão por cartão.
+
+- **Agrupada por talhão, sem `.sort()`** (`src/talhoes.ts`). O servidor manda
+  do mais seco para o mais úmido; agrupar preservando a ordem põe primeiro o
+  talhão do nó mais seco e, dentro dele, o nó mais seco. Ver o cabeçalho de
+  `telas/Nos.tsx` sobre por que esta tela não ordena nada.
+- **A tira do talhão** (`componentes/TiraTalhao.tsx`): a régua do detalhe
+  deitada, 0 a −80 kPa, com as mesmas faixas e hachuras, e um traço por nó com
+  leitura **atual**. Os traços são semitransparentes, então a sobreposição
+  escurece onde há muitos nós: a densidade sai do navegador. Abaixo, a
+  contagem por estado, em texto, na ordem de gravidade.
+- **O resumo só aparece quando há nós escondidos** (mais de 3 no talhão). Com
+  todos os cartões à vista, a tira e a contagem só repetiriam o que está logo
+  abaixo — e uma tira vazia sobre um nó parado ocuparia meia tela para nada.
+- **Busca** por descrição, código ou talhão, sem acento e sem caixa, a partir
+  de 9 nós; até 50 cartões, na mesma ordem.
+
+Verificado no navegador com 160 nós simulados em 4 talhões (um sem faixa) e
+com o banco de dev (3 nós parados).
+
 ## `RF10` — verificado ponta a ponta contra o servidor
 
 O caminho inteiro do RF10 foi exercido contra o backend em execução, pela

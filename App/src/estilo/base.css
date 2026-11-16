@@ -834,3 +834,131 @@ a.cartao:hover {
   gap: var(--e3);
   margin: calc(-1 * var(--e2)) 0 var(--e4);
 }
+
+/* -------------------------------------------------------------- talhoes
+ *
+ * A lista agrupada por talhao. Cada grupo e separado do seguinte pela mesma
+ * linha grossa de tinta do cabecalho da pagina: o talhao e a unidade de
+ * manejo, e e ele que a linha anuncia. Sem cartao em volta do grupo -- cartao
+ * dentro de cartao confundiria o que se toca (o no) com o que se le (o
+ * talhao). */
+.busca {
+  margin: var(--e4) 0 var(--e2);
+}
+.talhoes {
+  display: flex;
+  flex-direction: column;
+  margin-top: var(--e4);
+}
+.talhao {
+  display: flex;
+  flex-direction: column;
+  gap: var(--e4);
+  padding: var(--e5) 0 var(--e6);
+  border-top: var(--borda-grossa) solid var(--tinta);
+}
+.talhao__cabecalho {
+  display: flex;
+  flex-direction: column;
+  gap: var(--e1);
+}
+
+/* ----------------------------------------------------------------- tira
+ *
+ * A regua deitada. Tres camadas de cima para baixo: os tracos dos nos sobre o
+ * fundo afundado (neutro, para que a tinta dos tracos leia contra qualquer
+ * coisa); a faixa de estados, fina, com as mesmas cores e hachuras da regua;
+ * e o eixo. Canto vivo, como a regua: e instrumento graduado. */
+.tira {
+  display: flex;
+  flex-direction: column;
+  gap: var(--e3);
+}
+.tira__figura {
+  margin: 0;
+}
+.tira__tracos {
+  position: relative;
+  height: 2.75rem;
+  border: var(--borda-grossa) solid var(--tinta);
+  border-bottom: 0;
+  background: var(--superficie-afundada);
+}
+.tira__tracos--sem-faixa {
+  border-style: dashed;
+  border-color: var(--borda-forte);
+}
+/* Semitransparente de proposito: onde ha muitos nos, os tracos se somam e a
+   faixa escurece. A densidade sai do navegador, nao de um histograma. */
+.tira__traco {
+  position: absolute;
+  top: var(--e2);
+  bottom: 0;
+  width: 2px;
+  margin-left: -1px;
+  background: var(--tinta);
+  opacity: 0.45;
+}
+/* Os limiares atravessam a area dos tracos, como as linhas tracejadas do
+   grafico: e contra eles que se le de que lado cada no esta. */
+.tira__limiar {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  border-left: var(--borda-fina) dashed var(--tinta-2);
+}
+.tira__faixas {
+  position: relative;
+  height: 0.875rem;
+  border: var(--borda-grossa) solid var(--tinta);
+  background: var(--superficie-afundada);
+}
+.tira__faixas--sem-faixa {
+  border-style: dashed;
+  border-color: var(--borda-forte);
+}
+.tira__faixa {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+}
+.tira__eixo {
+  position: relative;
+  display: flex;
+  justify-content: space-between;
+  margin-top: var(--e1);
+  font-size: var(--texto-xs);
+  color: var(--tinta-2);
+}
+.tira__eixo-limiar {
+  position: absolute;
+  top: 0;
+  transform: translateX(-50%);
+  color: var(--tinta-3);
+}
+.tira__contagem {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(11rem, 1fr));
+  gap: var(--e2) var(--e4);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.tira__contagem .numero {
+  min-width: 2ch;
+  text-align: right;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  /* O unico movimento da tela: os tracos chegam com a resposta do servidor.
+     Uma vez, curto, e so porque diz "isto acabou de ser medido". */
+  .tira__traco {
+    animation: tira-chega 420ms ease-out both;
+  }
+  @keyframes tira-chega {
+    from {
+      transform: scaleY(0);
+      transform-origin: bottom;
+    }
+  }
+}
