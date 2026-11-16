@@ -209,8 +209,8 @@ sudo docker compose exec backup dropdb restore_teste
   sem ele, o Caddy poderia cair em outra CA, e o ESP32 recusaria.
 - Depois de corrigir, `sudo docker compose restart caddy` tenta na hora.
 - `up` falhando com `Pool overlaps`: a faixa `10.250.250.0/28` da rede `borda`
-  colide com a da VM. Troque `subnet`, `ip_range` e `x-ip-caddy` em
-  `compose.yaml`, os três juntos.
+  colide com a da VM. Troque `REDE_OCTETO` no `.env` (250 → outro valor de 0
+  a 255): a faixa, o IP do Caddy e o `PROXY_CONFIAVEL` mudam juntos.
 
 ## Atualizar
 
@@ -219,6 +219,71 @@ git pull
 sudo docker compose restart backup     # dump antes de mexer
 sudo docker compose up -d --build      # migrate roda de novo; o goose só aplica o que falta
 ```
+
+## Réplicas da API
+
+A API não guarda estado entre requisições: sessão, leituras e idempotência
+estão no banco. Mais de uma cópia atrás do Caddy serve o mesmo sistema, e a
+parada de uma delas não derruba o serviço.
+
+```sh
+# no .env: API_REPLICAS=3   (até 7: é o que cabe na faixa .8–.14 da rede borda)
+sudo docker compose up -d
+sudo docker compose ps api           # api-1, api-2, api-3 healthy
+```
+
+O Caddy acha as réplicas pelo DNS do Docker a cada 5 s (`dynamic a` no
+`Caddyfile`) e reparte em rodízio. Réplica que sai do ar: a conexão recusada
+é tentada em outra por até 5 s, o que é seguro para o `POST /readings`, porque
+o Caddy só repete o que não chegou a ser enviado. Ao receber `SIGTERM`, a API
+fecha a porta e termina o que já entrou (até 8 s) antes de sair.
+
+Duas coisas mudam com N > 1:
+
+- **Login:** vai sempre para a mesma réplica por IP (hash), para o limite de
+  tentativas por IP continuar valendo. O limite por e-mail, contra ataque de
+  muitos IPs, fica N vezes mais folgado. Ver `Backend/README.md`, "Limite de
+  tentativas no login".
+- **`exec`:** `docker compose exec api ...` cai na réplica 1. Para o `admin`
+  tanto faz, porque ele fala com o banco.
+
+Conferido em 16/11/2026, modo local, 3 réplicas (registro em
+`Registros/replicas-2026-11-16/`): 200 nós simulados a 1 envio/s por HTTPS,
+uma réplica parada e religada no meio da carga, 18 000 envios e nenhuma perda;
+sessão válida nas três; a mesma leitura em 6 POSTs simultâneos gravada uma
+vez. **Não testado:** atualização sem interrupção (`up -d --build` recria as
+réplicas e pode cortar alguns segundos).
+
+## Mais de uma instalação na mesma máquina
+
+Cada instalação (uma propriedade, uma cooperativa) tem banco, segredo,
+usuários e nós próprios. O natural é **uma por VM**, com o próprio domínio:
+basta repetir este guia. Na mesma máquina, só uma pode ocupar as portas 80 e
+443, que o Let's Encrypt exige; a segunda serve para teste em modo local ou
+precisa de um proxy na frente das duas, que este compose não traz.
+
+Para pôr uma segunda ao lado da primeira, um `.env` próprio com quatro
+diferenças, além de segredos novos:
+
+```sh
+cp .env .env.fazenda-b && chmod 600 .env.fazenda-b
+# no .env.fazenda-b:
+#   INSTANCIA=fazenda-b        -> projeto e volumes fazenda-b-*
+#   REDE_OCTETO=251            -> rede 10.250.251.0/28
+#   PORTA_HTTP / PORTA_HTTPS   -> outras portas
+#   POSTGRES_PASSWORD e TELEMETRIA_TOKEN_SECRET novos (passo 2)
+docker volume create fazenda-b-pgdados
+docker volume create fazenda-b-backups
+docker compose --env-file .env.fazenda-b -f compose.yaml -f compose.local.yaml up -d
+```
+
+Todo comando dessa instalação leva o mesmo `--env-file`; sem ele, o compose
+fala com a primeira.
+
+Conferido em 16/11/2026 com duas instalações lado a lado: o token de um nó
+da primeira e o login de um usuário da primeira são recusados (`401`) pela
+segunda, cada uma tem a própria CA local, e 120 leituras enviadas à segunda
+não alteraram a contagem da primeira.
 
 ## Modo local (sem domínio)
 

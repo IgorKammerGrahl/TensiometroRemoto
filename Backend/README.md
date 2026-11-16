@@ -370,6 +370,15 @@ nunca afrouxar. É um IP e não uma faixa: o gateway do host fica dentro da
 faixa da rede e não é o Caddy. Valor inválido em `PROXY_CONFIAVEL` impede o
 boot.
 
+**Com réplicas** (`API_REPLICAS` no `deploy/.env`), cada uma tem os seus
+baldes, na memória dela. Por isso o `Caddyfile` manda `/api/v1/app/login` por
+hash do IP do cliente: o mesmo IP cai sempre na mesma réplica, e o limite por
+IP continua o de uma só (conferido em 16/11/2026 com 3 réplicas: o `429` veio
+na 11ª tentativa). O limite **por e-mail** contra ataque distribuído não se
+recupera assim: IPs diferentes caem em réplicas diferentes, e a conta alvo
+ganha uma cota por réplica. Fechar isso pede os baldes no Postgres; com poucas
+réplicas, ficou como está.
+
 `POST /api/v1/readings` fica **fora do limite**, de propósito: o nó não tem
 buffer, então uma leitura recusada com `429` está perdida para sempre, e o que
 se protegeria custa um `SELECT` por índice único, não um bcrypt.
