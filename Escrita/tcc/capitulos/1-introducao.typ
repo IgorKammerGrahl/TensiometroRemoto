@@ -378,4 +378,6 @@ segundo, instalações independentes, uma por propriedade ou cooperativa, com
 banco, segredo e usuários próprios, verificadas lado a lado quanto ao
 isolamento. O método de implantação --- subir uma instalação nova e
 acrescentar um nó a ela --- é descrito como roteiro reprodutível. A ferramenta,
-os resultados e o método estão na @sec-escala.
+os resultados e o método estão na @sec-escala. Outros tipos de sensor e um
+concentrador local de nós são tratados como pontos de extensão, analisados
+mas não implementados (@sec-extensao).

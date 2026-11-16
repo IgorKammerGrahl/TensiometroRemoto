@@ -145,6 +145,11 @@ As limitações acima apontam, em grande parte, os próprios trabalhos futuros:
 - limitador de tentativas de login no banco de dados, compartilhado pelas
   cópias do serviço, e atualização do serviço sem interrupção, uma cópia por
   vez;
+- tipo de sensor como entidade do sistema, generalizando o armazenamento, as
+  faixas de atenção e a apresentação, que hoje assumem o tensiômetro
+  (@sec-extensao);
+- concentrador local de nós por ESP-NOW ou LoRa, que guarde as leituras
+  durante a falta de conexão (@sec-extensao);
 - armazenamento local das leituras com retransmissão, e suspensão profunda
   entre aquisições; como o servidor já descarta retransmissões por
   idempotência, a mudança restringe-se ao nó;

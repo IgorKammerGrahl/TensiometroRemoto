@@ -233,6 +233,21 @@ espressifadc:
     value: https://docs.espressif.com/projects/esp-idf/en/stable/esp32/api-reference/peripherals/adc/adc_oneshot.html
     date: 2026-08-25
 
+# Lida em 16/11/2026 (ESP-IDF v6.1.1, versão "stable"): protocolo sem
+# conexão, quadro de ação específico do fabricante, CCMP, até 20 pares e até
+# 17 cifrados (7 por padrão), canal do par igual ao canal atual.
+espressifespnow:
+  type: web
+  title: ESP-NOW
+  author: Espressif Systems
+  date: 2026
+  parent:
+    type: web
+    title: ESP-IDF Programming Guide
+  url:
+    value: https://docs.espressif.com/projects/esp-idf/en/stable/esp32/api-reference/network/esp_now.html
+    date: 2026-11-16
+
 # A advertência sobre ruído do ADC (e a recomendação de 100 nF e de
 # multiamostragem) está nesta versão da documentação, não na atual.
 espressifadc44:

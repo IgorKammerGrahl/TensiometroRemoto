@@ -1868,3 +1868,99 @@ da tabela de leituras ao longo de meses não foi medido.
 
 *Só a ingestão foi medida.* As consultas do aplicativo --- a lista de nós e as
 séries agregadas --- não estiveram sob carga.
+
+== Pontos de extensão <sec-extensao>
+
+A visão geral da arquitetura, no Capítulo 4, afirma que a organização em
+camadas permite incluir novos tipos de sensor sem alterar o núcleo de
+aquisição de dados. Esta seção confere essa afirmação contra o sistema
+construído e descreve, para duas extensões --- outros tipos de sensor e um
+concentrador local de nós ---, o que já é genérico e o que precisaria mudar.
+*Nenhuma das duas foi implementada*: o que segue é análise do código e
+proposta de projeto.
+
+=== Outros tipos de sensor
+
+Uma parte do sistema não depende da grandeza medida. O cadastro do nó, a
+credencial própria de cada um, a autenticação de cada envio, a idempotência
+pelo par formado pelo nó e pelo número de sequência, a autorização por
+concessão de talhão, a marcação do dado simulado e a operação com várias
+cópias e instalações tratam a leitura como um registro de um nó, num instante,
+com um número de sequência. Nada disso muda com o tipo de sensor. Também é
+genérica a decisão central do armazenamento: guardar o sinal bruto, em
+milivolts no pino do conversor, junto do identificador da calibração que o
+interpreta, e converter no servidor (@sec-retaguarda). Um sensor capacitivo de
+umidade ou um termistor de temperatura do solo também entregam uma tensão
+analógica que uma calibração converte numa grandeza.
+
+O tensiômetro, por sua vez, está embutido em quatro lugares:
+
+- *no armazenamento:* a leitura tem uma coluna em kPa, com a faixa física de
+  $-100$ a 10 kPa verificada pelo banco e pela API; a calibração é uma reta de
+  tensão para kPa, com coeficientes nomeados e limitados nessa unidade; e o
+  valor exibido é definido numa única visão do banco, que aplica essa reta;
+- *nas faixas de atenção:* os limiares de alerta e de estresse pertencem ao
+  talhão e são expressos em kPa, entre $-80$ e 0, de modo que um segundo tipo
+  de sensor no mesmo talhão não teria onde guardar os seus;
+- *na apresentação:* a régua de 0 a $-80$ kPa, a convenção de que mais
+  negativo é mais seco, as zonas e o gráfico estão espalhados por cerca de uma
+  dezena de arquivos do aplicativo;
+- *no nó:* o firmware converte a leitura com a curva de catálogo do transdutor
+  e a envia num campo nomeado em kPa.
+
+A extensão proposta reúne essas dependências numa entidade nova, o tipo de
+sensor, com a grandeza, a unidade, a faixa física válida, o sentido da escala
+--- no tensiômetro, mais negativo é mais seco; na umidade volumétrica, é o
+contrário --- e o modelo de conversão. O nó passa a referenciar o seu tipo; a
+calibração passa a guardar os parâmetros do modelo daquele tipo, uma reta ou
+outra função quando a resposta não for linear; a faixa da leitura é conferida
+contra a do tipo; os limiares passam a pertencer ao par talhão e tipo; e o
+aplicativo escolhe escala, unidade e sentido pelo tipo do nó. O contrato de
+envio quase não muda, porque já carrega o sinal bruto e o identificador da
+calibração: só o campo do valor convertido, hoje nomeado em kPa, precisaria de
+um nome genérico, com o nome antigo aceito durante a transição para não exigir
+a regravação dos nós instalados.
+
+Um nó com mais de um sensor pode ser cadastrado, de imediato, como nós
+distintos que compartilham o mesmo hardware, cada um com credencial e
+sequência próprias. Um conceito de canal dentro do nó evitaria multiplicar as
+credenciais, ao custo de levar a idempotência do par nó e sequência para o
+trio nó, canal e sequência.
+
+A afirmação do Capítulo 4 se confirma, portanto, para o transporte e a
+identidade, e não para o armazenamento e a apresentação. Um tipo novo de
+sensor não toca no núcleo de aquisição e de transmissão, mas exige migração do
+esquema, uma conversão nova e trabalho no aplicativo.
+
+=== Concentrador local de nós
+
+Uma propriedade com muitos nós pode preferir que eles não falem diretamente
+com a internet, e sim com um concentrador local, que encaminhe as leituras ao
+servidor. Uma opção que dispensa rádio adicional é o ESP-NOW, protocolo de
+comunicação Wi-Fi sem conexão definido pela Espressif, que transporta os dados
+da aplicação em quadros de ação específicos do fabricante @espressifespnow. O
+concentrador seria outro ESP32, ligado aos nós por ESP-NOW e ao servidor pela
+rede da propriedade. A documentação impõe duas restrições a esse arranjo. O
+canal de cada par precisa coincidir com o canal em que o dispositivo opera
+@espressifespnow, e um concentrador ligado também ao roteador opera no canal
+deste, de modo que os nós ficam presos ao canal do roteador; esse convívio não
+foi testado. E o número de pares por dispositivo é limitado --- até 20, dos
+quais no máximo 17 com cifragem, 7 na configuração padrão @espressifespnow ---,
+o que limita o número de nós cifrados por concentrador.
+
+Do lado do servidor, o contrato atual comporta o concentrador sem mudança se
+ele repassar as leituras de cada nó com a credencial do próprio nó: um envio
+já admite até 500 leituras de um mesmo nó, e a aceitação de uma leitura não
+depende do endereço de origem. O custo dessa opção está no enlace local. A
+credencial de cada nó passaria pelo rádio até o concentrador, protegida apenas
+pela segurança desse enlace, quando hoje ela só trafega dentro do HTTPS. A
+alternativa é dar ao concentrador uma credencial própria, autorizada a enviar
+em nome de um conjunto de nós, o que exige uma entidade nova no servidor e
+desloca para o concentrador a confiança hoje depositada em cada nó.
+
+O concentrador é também o lugar natural do armazenamento local que falta ao
+nó, o RNF04 (@sec-estado). Com memória e alimentação de rede, ele pode guardar
+as leituras durante a falta de conexão e reenviá-las depois, e a idempotência
+do servidor já descarta as que chegarem em dobro. A implementação dependia de
+um segundo ESP32, que não esteve disponível, e fica como trabalho futuro, assim
+como o LoRa, outra tecnologia de rádio, como alternativa ao ESP-NOW.
