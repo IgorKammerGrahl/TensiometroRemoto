@@ -292,6 +292,25 @@ func (s *Store) AtualizarTalhao(ctx context.Context, usuarioID, talhaoID string,
 	return t, err
 }
 
+// RemoverFaixa zera os dois limiares juntos, como o CHECK exige. Mesma
+// autorizacao de AtualizarTalhao: sem concessao, zero linhas e 404.
+func (s *Store) RemoverFaixa(ctx context.Context, usuarioID, talhaoID string) (Talhao, error) {
+	var t Talhao
+	err := s.pool.QueryRow(ctx, `
+		UPDATE talhoes AS t
+		   SET kpa_alerta = NULL, kpa_estresse = NULL
+		 WHERE t.id = $2
+		   AND EXISTS (SELECT 1 FROM usuario_talhoes
+		                WHERE usuario_id = $1 AND talhao_id = t.id)
+		RETURNING t.id, t.nome, t.cultura, t.kpa_alerta, t.kpa_estresse`,
+		usuarioID, talhaoID,
+	).Scan(&t.ID, &t.Nome, &t.Cultura, &t.KPaAlerta, &t.KPaEstresse)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return Talhao{}, ErrNaoEncontrado
+	}
+	return t, err
+}
+
 // --------------------------------------------------------------- devices
 
 // selecaoDeviceApp e a unica projecao de device do plano de usuario.

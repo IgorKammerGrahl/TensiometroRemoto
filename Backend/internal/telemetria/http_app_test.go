@@ -1159,6 +1159,72 @@ func TestPatchTalhaoDeOutroUsuario(t *testing.T) {
 	}
 }
 
+// RF08, a direcao que faltava: DELETE da faixa devolve o talhao a
+// nao-configurado, e a zona dos nos dele volta a ser nula.
+func TestRemoverFaixaDoTalhao(t *testing.T) {
+	c := novoCenarioApp(t)
+	semearKPa(t, "dev-a1", time.Now().UTC().Add(-time.Hour), -40)
+	cookie := entrar(t, c.h, emailA)
+
+	var d DeviceApp
+	decodificarResp(t, req(t, c.h, http.MethodGet, "/api/v1/app/devices/dev-a1", cookie, ""), &d)
+	if d.Ultima.Zona == nil || *d.Ultima.Zona != ZonaAlerta {
+		t.Fatalf("zona antes = %v, quero alerta (-40 com -30/-60)", valor(d.Ultima.Zona))
+	}
+
+	var tl Talhao
+	decodificarResp(t, req(t, c.h, http.MethodDelete, "/api/v1/app/talhoes/"+c.talhaoA+"/faixa", cookie, ""), &tl)
+	if tl.KPaAlerta != nil || tl.KPaEstresse != nil {
+		t.Fatalf("talhao depois do DELETE = %+v, quero os dois limiares nulos", tl)
+	}
+	if tl.Cultura == nil || *tl.Cultura != "Soja" {
+		t.Errorf("cultura = %v, quero Soja intacta: o DELETE e so da faixa", valor(tl.Cultura))
+	}
+
+	decodificarResp(t, req(t, c.h, http.MethodGet, "/api/v1/app/devices/dev-a1", cookie, ""), &d)
+	if d.Ultima.Zona != nil {
+		t.Errorf("zona depois = %q, quero nula", *d.Ultima.Zona)
+	}
+
+	// Idempotente: remover de novo e o mesmo 200 com a faixa nula.
+	rec := req(t, c.h, http.MethodDelete, "/api/v1/app/talhoes/"+c.talhaoA+"/faixa", cookie, "")
+	if rec.Code != http.StatusOK {
+		t.Errorf("segundo DELETE: status = %d, quero 200; corpo: %s", rec.Code, rec.Body.String())
+	}
+}
+
+// A mesma autorizacao do PATCH: talhao do vizinho, uuid inexistente e uuid
+// malformado sao o mesmo 404, e nada muda no banco.
+func TestRemoverFaixaDeTalhaoAlheio(t *testing.T) {
+	c := novoCenarioApp(t)
+	cookie := entrar(t, c.h, emailA)
+
+	alheio := req(t, c.h, http.MethodDelete, "/api/v1/app/talhoes/"+c.talhaoB+"/faixa", cookie, "")
+	if alheio.Code != http.StatusNotFound {
+		t.Fatalf("status = %d, quero 404; corpo: %s", alheio.Code, alheio.Body.String())
+	}
+	for _, id := range []string{"00000000-0000-0000-0000-000000000000", "nao-e-uuid"} {
+		rec := req(t, c.h, http.MethodDelete, "/api/v1/app/talhoes/"+id+"/faixa", cookie, "")
+		if rec.Code != http.StatusNotFound || rec.Body.String() != alheio.Body.String() {
+			t.Errorf("%s: %d %s, quero o mesmo 404 do talhao alheio", id, rec.Code, rec.Body.String())
+		}
+	}
+
+	var alerta *float32
+	if err := testPool.QueryRow(context.Background(),
+		`SELECT kpa_alerta FROM talhoes WHERE id = $1`, c.talhaoB).Scan(&alerta); err != nil {
+		t.Fatal(err)
+	}
+	if alerta == nil || *alerta != -30 {
+		t.Errorf("faixa do vizinho = %v, quero -30 intacta", alerta)
+	}
+
+	// Sem sessao: 401, como todo /app/*.
+	if rec := req(t, c.h, http.MethodDelete, "/api/v1/app/talhoes/"+c.talhaoA+"/faixa", "", ""); rec.Code != http.StatusUnauthorized {
+		t.Errorf("sem cookie: status = %d, quero 401", rec.Code)
+	}
+}
+
 // ------------------------------------------------------------------ me
 
 func TestMe(t *testing.T) {

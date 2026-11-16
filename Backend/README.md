@@ -299,6 +299,7 @@ que o recurso existe; `404` não distingue "não existe" de "não é seu".
 | `POST /app/devices/{id}/calibracoes` | `{v_zero_kpa, k_v_por_kpa, fator_divisor, vdd_ensaio_mv, r2?, rmse_kpa?, nota?}` → `201` `{calibracao, aviso}`. `400` coeficiente fora da faixa física, `404` nó fora do alcance |
 | `GET /app/talhoes` | Talhões concedidos, com os limiares |
 | `PATCH /app/talhoes/{id}` | `{cultura?, kpa_alerta?, kpa_estresse?}` |
+| `DELETE /app/talhoes/{id}/faixa` | Zera os dois limiares → `200` talhão. Único jeito de apagar a faixa: no `PATCH`, `null` e ausente são a mesma coisa (mantenha). `404` sem concessão. Idempotente |
 
 ### Calibração pelo app
 

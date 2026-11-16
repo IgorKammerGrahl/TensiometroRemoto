@@ -4,7 +4,7 @@ import { api, ErroAPI, SEM_REDE, type Talhao } from '../api';
 import { FUNDO_KPA, textoKpa, TOPO_KPA } from '../escala';
 import { aparencia } from '../zona';
 
-// Configuracao dos limiares do talhao (RF07/UC04).
+// Configuracao dos limiares do talhao (RF08/UC04).
 //
 // A INVERSAO NAO E DETECTADA AQUI. ELA E INEXPRIMIVEL.
 //
@@ -50,15 +50,13 @@ export function Faixa({ talhao }: { talhao: Talhao }) {
   const idAlerta = useId();
   const idEstresse = useId();
   const [aberto, setAberto] = useState(false);
+  const [confirmandoRemocao, setConfirmandoRemocao] = useState(false);
   const [rascunho, setRascunho] = useState<Rascunho>({
     alerta: talhao.kpa_alerta === null ? '' : String(talhao.kpa_alerta),
     estresse: talhao.kpa_estresse === null ? '' : String(talhao.kpa_estresse),
   });
 
-  const salvar = useMutation({
-    mutationFn: (corpo: { kpa_alerta: number | null; kpa_estresse: number | null }) =>
-      api.patchTalhao(talhao.id, corpo),
-    onSuccess: () => {
+  const invalidar = () => {
       // Os limiares mudam a zona de TODO no do talhao, nao so o que esta na
       // tela. Quem recalcula e o servidor -- aqui so se joga fora o que ficou
       // velho, incluindo a lista, que e ordenada por kpa mas rotulada por zona.
@@ -77,7 +75,28 @@ export function Faixa({ talhao }: { talhao: Talhao }) {
        * (achado na etapa 5); qualquer refatoracao que "limpe" esta linha por
        * parecer redundante com ['device'] o traz de volta do mesmo jeito. */
       void cliente.invalidateQueries({ queryKey: ['serie'] });
+  };
+
+  const salvar = useMutation({
+    mutationFn: (corpo: { kpa_alerta: number; kpa_estresse: number }) =>
+      api.patchTalhao(talhao.id, corpo),
+    onSuccess: () => {
+      invalidar();
       setAberto(false);
+    },
+  });
+
+  const remover = useMutation({
+    mutationFn: () => api.removerFaixa(talhao.id),
+    onSuccess: (t) => {
+      invalidar();
+      setConfirmandoRemocao(false);
+      // O rascunho e semeado na montagem; sem isto, reabrir o formulario
+      // depois de remover traria de volta os numeros que acabaram de sair.
+      setRascunho({
+        alerta: t.kpa_alerta === null ? '' : String(t.kpa_alerta),
+        estresse: t.kpa_estresse === null ? '' : String(t.kpa_estresse),
+      });
     },
   });
 
@@ -85,30 +104,75 @@ export function Faixa({ talhao }: { talhao: Talhao }) {
   const estresseNum = paraNumero(rascunho.estresse);
   const configurado = talhao.kpa_alerta !== null && talhao.kpa_estresse !== null;
 
-  // NAO EXISTE BOTAO DE REMOVER A FAIXA, PORQUE O PATCH NAO SABE APAGAR.
-  //
-  // Ele existiu, foi testado contra o servidor de verdade e devolveu 200 sem
-  // mudar nada. A causa esta no Go: os campos sao `*float32`, e `json.Unmarshal`
-  // deixa o ponteiro nil tanto para `null` explicito quanto para chave ausente
-  // -- os dois casos ficam indistinguiveis. `AtualizarTalhao` entao faz
-  // `COALESCE($4, t.kpa_alerta)`, que le nil como "mantenha o que esta la".
-  // Enviar {null, null} e, para aquele endpoint, o mesmo que enviar {}.
-  //
-  // Um botao que devolve sucesso e nao faz nada e pior que botao nenhum: a
-  // interface afirma um fato falso, que e o erro que este projeto persegue no
-  // grafico e no indicador. Entao ele saiu. Voltar a faixa para nao-configurada
-  // hoje so pelo banco.
-  //
-  // Conserto e do backend, e e pequeno: distinguir ausente de nulo (ponteiro
-  // duplo, json.RawMessage ou um sentinela) e trocar o COALESCE. Fora do escopo
-  // da PWA, registrado no README.
+  /* REMOVER A FAIXA TEM ENDPOINT PROPRIO (DELETE /talhoes/{id}/faixa).
+   *
+   * O botao ja existiu mandando {null, null} no PATCH, foi testado contra o
+   * servidor de verdade e devolveu 200 sem mudar nada: em Go, `*float32` deixa
+   * o ponteiro nil tanto para `null` quanto para chave ausente, e o COALESCE
+   * le nil como "mantenha". Saiu, porque um botao que afirma sucesso e nao faz
+   * nada e pior que botao nenhum. Voltou quando o servidor ganhou um verbo
+   * que so serve para apagar -- ver appRemoverFaixa. */
 
   if (!aberto) {
     return (
       <div className="painel painel--fechado">
-        <button type="button" className="botao botao--contorno" onClick={() => setAberto(true)}>
-          {configurado ? 'Alterar os limites do talhão' : 'Definir os limites deste talhão'}
-        </button>
+        <div className="painel__acoes">
+          <button type="button" className="botao botao--contorno" onClick={() => setAberto(true)}>
+            {configurado ? 'Alterar os limites do talhão' : 'Definir os limites deste talhão'}
+          </button>
+          {configurado && !confirmandoRemocao && (
+            <button
+              type="button"
+              className="botao botao--contorno"
+              onClick={() => setConfirmandoRemocao(true)}
+            >
+              Remover os limites
+            </button>
+          )}
+        </div>
+
+        {confirmandoRemocao && (
+          /* Inline, como a desativacao do no em Gerenciar.tsx, e pelo mesmo
+             motivo: nao tira o foco de onde ele esta. O texto diz a
+             CONSEQUENCIA -- o que deixa de aparecer na tela --, nao "tem
+             certeza?". */
+          <div className="painel__confirma" role="group" aria-label="Confirmar remoção dos limites">
+            <p>
+              <strong>Remover os limites de {talhao.nome}?</strong> Os nós deste talhão continuam
+              mostrando o valor em kPa, mas deixam de ser classificados: a régua, a lista e o
+              gráfico passam a dizer “{aparencia(null).rotulo.toLowerCase()}”.
+            </p>
+            {remover.isError && (
+              <p className="painel__erro" role="alert">
+                <strong>Os limites não foram removidos.</strong>{' '}
+                {remover.error instanceof ErroAPI && remover.error.status === SEM_REDE
+                  ? 'Sem conexão com o servidor.'
+                  : 'Tente de novo em alguns instantes.'}
+              </p>
+            )}
+            <div className="painel__acoes">
+              <button
+                type="button"
+                className="botao"
+                disabled={remover.isPending}
+                onClick={() => remover.mutate()}
+              >
+                {remover.isPending ? 'Removendo…' : 'Remover mesmo assim'}
+              </button>
+              <button
+                type="button"
+                className="botao botao--contorno"
+                disabled={remover.isPending}
+                onClick={() => {
+                  setConfirmandoRemocao(false);
+                  remover.reset();
+                }}
+              >
+                Manter os limites
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     );
   }
@@ -119,7 +183,7 @@ export function Faixa({ talhao }: { talhao: Talhao }) {
       onSubmit={(e) => {
         e.preventDefault();
         // O `required` ja barra o par incompleto; esta linha existe porque
-        // {null, null} seria aceito com 200 e nao mudaria nada (ver acima), e
+        // {null, null} seria aceito com 200 e nao mudaria nada (ver api.ts), e
         // "sucesso que nao fez nada" e o unico desfecho inaceitavel aqui.
         if (alertaNum === null || estresseNum === null) return;
         salvar.mutate({ kpa_alerta: alertaNum, kpa_estresse: estresseNum });

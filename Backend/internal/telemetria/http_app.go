@@ -79,6 +79,8 @@ func (a *API) registrarApp(mux *http.ServeMux) {
 
 	mux.Handle("GET /api/v1/app/talhoes", a.sessao(a.appTalhoes))
 	mux.Handle("PATCH /api/v1/app/talhoes/{id}", a.sessao(a.appPatchTalhao))
+	// A faixa como sub-recurso: e o unico jeito de APAGA-LA. Ver appRemoverFaixa.
+	mux.Handle("DELETE /api/v1/app/talhoes/{id}/faixa", a.sessao(a.appRemoverFaixa))
 }
 
 // ---------------------------------------------------------- middleware
@@ -530,6 +532,39 @@ func (a *API) appPatchTalhao(w http.ResponseWriter, r *http.Request) {
 	}
 	if err != nil {
 		a.erroInterno(w, "atualizacao de talhao", err)
+		return
+	}
+	escreverJSON(w, http.StatusOK, t)
+}
+
+// appRemoverFaixa devolve o talhao a nao-configurado (RF08, a direcao que o
+// PATCH nao alcanca).
+//
+// POR QUE UM DELETE, E NAO `null` NO PATCH. No PATCH, `*float32` deixa o
+// ponteiro nil tanto para `"kpa_alerta": null` quanto para a chave ausente,
+// e o COALESCE le nil como "mantenha". As tres saidas dentro do PATCH --
+// ponteiro duplo, json.RawMessage ou um valor sentinela -- mudam o que um
+// campo do contrato significa conforme a forma de escrever o JSON, e um
+// cliente que mande `null` achando que "nao mexe" passaria a apagar. Aqui a
+// operacao tem nome proprio: o PATCH continua so configurando, e apagar e um
+// verbo que nao se confunde com ele. Tambem casa com o CHECK
+// talhoes_faixas_ck, para o qual a faixa e um par -- nao ha "apagar so o
+// alerta", entao nao ha campo a campo.
+//
+// Idempotente: remover uma faixa que nao existe e o mesmo 200.
+func (a *API) appRemoverFaixa(w http.ResponseWriter, r *http.Request) {
+	talhaoID := r.PathValue("id")
+	if !uuidValido(talhaoID) {
+		erroJSON(w, http.StatusNotFound, "talhao nao encontrado")
+		return
+	}
+	t, err := a.store.RemoverFaixa(r.Context(), usuarioDoCtx(r.Context()), talhaoID)
+	if errors.Is(err, ErrNaoEncontrado) {
+		erroJSON(w, http.StatusNotFound, "talhao nao encontrado")
+		return
+	}
+	if err != nil {
+		a.erroInterno(w, "remocao de faixa", err)
 		return
 	}
 	escreverJSON(w, http.StatusOK, t)
