@@ -70,6 +70,8 @@
   show figure.where(kind: image): set figure.caption(position: top)
   set figure.caption(separator: [ – ])
   show figure.caption: set text(size: 10pt)
+  // Sem isto a linha de fonte pode cair sozinha no topo da página seguinte.
+  show figure: set block(sticky: true)
   show table: set par(justify: false, first-line-indent: 0cm)
   show table: set text(size: 10pt, hyphenate: false)
 

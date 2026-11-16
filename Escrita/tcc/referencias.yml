@@ -318,6 +318,17 @@ neumann2021:
 # Referências acrescentadas na fundamentação teórica (novembro de 2026)
 # ---------------------------------------------------------------------------
 
+# Guia do fabricante do tensiômetro substituto (2 páginas, sem data impressa).
+# A data vem dos metadados do PDF (criado em 21/02/2025); ABNT pediria [2025].
+hidrosense2025:
+  type: report
+  title: "Guia rápido de uso: tensiômetro analógico Hidrosense"
+  author: Hidrosense
+  date: 2025
+  page-total: 2
+  publisher:
+    name: Hidrosense
+
 marouelli2008:
   type: report
   title: Tensiômetros para o controle de irrigação em hortaliças

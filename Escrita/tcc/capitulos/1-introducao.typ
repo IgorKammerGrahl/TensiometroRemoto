@@ -74,9 +74,9 @@ ESP32 DevKit) integrado ao transdutor de pressão analógico
 XGZP6847A100KPGN, acoplado, por meio de uma mangueira de silicone, à câmara de ar
 de um tensiômetro analógico de campo. No escopo de software, foram
 implementadas a leitura elétrica do transdutor, a sua conversão matemática
-para unidades de tensão (kPa), a transmissão de dados para um servidor em
-nuvem e a visualização em um aplicativo móvel (ou painel de controle
-digital).
+para unidades de tensão (kPa), a transmissão de dados para um servidor,
+projetado para hospedagem em nuvem e operado em rede local (@sec-estado), e a
+visualização em um aplicativo móvel (ou painel de controle digital).
 
 Foge ao escopo deste trabalho a automação do acionamento hídrico físico
 (acionamento de relés, eletroválvulas ou bombas de água, caracterizando uma
@@ -121,13 +121,14 @@ cumprir um papel social, ao oferecer ao pequeno e médio produtor uma
 ferramenta de monitoramento remoto que dispensa a leitura manual do
 tensiômetro.
 
-== Objetivos
+== Objetivos <sec-objetivos>
 
 === Objetivo geral
 
-Desenvolver um protótipo IoT de telemetria para o monitoramento da tensão da
-água no solo, integrando a tensiometria eletrônica a um microcontrolador
-ESP32 e a um aplicativo móvel para a visualização remota dos dados, visando o
+Desenvolver um sistema IoT de telemetria para o monitoramento da tensão da
+água no solo, que integre a tensiometria eletrônica a nós sensores baseados no
+microcontrolador ESP32, a um serviço de retaguarda e a um aplicativo para a
+visualização remota dos dados, e que opere com múltiplos nós, visando o
 suporte à decisão no manejo da irrigação.
 
 === Objetivos específicos
@@ -146,21 +147,39 @@ específicos:
   no solo (kPa);
 + Implementar a infraestrutura de comunicação em nuvem e desenvolver o
   aplicativo de monitoramento para exibir o histórico hídrico do solo em
-  tempo real;
-+ Avaliar o funcionamento operacional do sistema prototipado, mensurando a
-  precisão da conversão dos sinais elétricos em relação ao vácuo gerado e a
-  estabilidade da transmissão IoT.
+  tempo real, organizados para atender a múltiplos nós, talhões e usuários;
++ Avaliar em bancada o funcionamento do nó físico, quanto à estabilidade do
+  sinal e à confiabilidade da transmissão IoT;
++ Avaliar a operação do sistema com múltiplos nós, por meio de nós simulados
+  que se comunicam com o servidor pela mesma interface do nó físico, e
+  descrever o método empregado.
+
+Estes objetivos refletem o recorte definido com o orientador em novembro
+de 2026. Na proposta original, o quinto objetivo incluía mensurar a precisão da
+conversão em relação ao vácuo gerado, o que exige calibrar o transdutor contra
+o vacuômetro mecânico. Essa calibração depende da estanqueidade do
+tensiômetro, problema de natureza hidráulica e alheio ao escopo de um trabalho
+de Ciência da Computação, e o instrumento disponível não reteve vácuo
+(@sec-substituto). A calibração passou, assim, a esforço secundário: o
+procedimento e as tentativas estão registrados (@sec-validacao), e a sua
+conclusão fica como trabalho futuro. Em seu lugar, o trabalho passou a avaliar
+a operação do sistema com múltiplos nós, objeto do sexto objetivo, de modo
+que o esforço se concentre no nó, no serviço de retaguarda e no aplicativo.
 
 == Procedimentos metodológicos
 
 A metodologia deste trabalho caracteriza-se como uma pesquisa aplicada e de
-natureza experimental, estruturada em três etapas principais que delineiam a
+natureza experimental, estruturada em quatro etapas principais que delineiam a
 construção e a validação do sistema proposto: (a) especificação e montagem do
-hardware; (b) desenvolvimento de software e integração em nuvem; e (c)
-validação experimental e coleta de dados.
+hardware; (b) desenvolvimento de software e integração em nuvem; (c)
+validação experimental e coleta de dados; e (d) avaliação da operação com
+múltiplos nós, acrescentada com o recorte descrito na @sec-objetivos.
 
-As duas primeiras etapas foram executadas integralmente, e a terceira, apenas
-em parte. O nó sensor foi montado em matriz de contatos, o firmware do ESP32
+A primeira etapa foi executada. A segunda foi construída, mas operada apenas
+em rede local e com os requisitos parcialmente atendidos que o @cap-prototipo
+declara, e a terceira foi cumprida apenas em parte. A quarta foi executada com
+nós simulados, numa única instância do serviço. O nó sensor foi montado em
+matriz de contatos, o firmware do ESP32
 foi escrito e a cadeia de telemetria, o serviço de retaguarda e a interface do
 produtor foram construídos e verificados. Da validação experimental foram
 realizados os ensaios funcionais e de confiabilidade da telemetria, em
@@ -230,7 +249,8 @@ operacionais previstas tiveram destinos distintos:
 - *Precisão da calibração analógica:* avaliação da correspondência entre o
   sinal de tensão (V) lido pelo ESP32 a partir do sensor XGZP6847A e a
   leitura visual apontada no vacuômetro mecânico acoplado ao sistema. Esse
-  ensaio não foi realizado. Os coeficientes de conversão empregados
+  ensaio não foi concluído: a tentativa de outubro não produziu nenhum ponto
+  válido (@sec-substituto). Os coeficientes de conversão empregados
   permanecem os valores nominais de catálogo, e nenhuma métrica de ajuste
   pode ser apresentada.
 - *Confiabilidade da telemetria IoT:* monitoramento da estabilidade e
@@ -241,7 +261,7 @@ operacionais previstas tiveram destinos distintos:
 
 A submissão do sistema a dinâmicas de secagem do solo, prevista para gerar
 diferentes níveis de tensão na cápsula do tensiômetro, permanece por realizar.
-Os ensaios executados mantiveram o transdutor aberto à atmosfera, condição que
+Os ensaios contínuos mantiveram o transdutor aberto à atmosfera, condição que
 exercita a cadeia de aquisição e de transmissão, mas não a resposta do
 instrumento ao solo.
 
@@ -272,6 +292,15 @@ aplicada. Empregar a forma subtrativa sobre uma leitura já negativa deslocaria
 o resultado do exemplo acima para $-"45,9"$ kPa, um erro de 11,8 kPa na direção
 oposta à correta.
 
+O guia do fabricante do tensiômetro substituto (@sec-substituto) prescreve a
+mesma correção em valores arredondados --- descontar da leitura 2 kPa num
+instrumento de 20 cm e 6 kPa num de 60 cm @hidrosense2025 --- e também a
+enuncia como subtração, embora o vacuômetro que acompanha o instrumento seja
+graduado de 0 a $-100$ kPa. Aplicada ao pé da letra sobre o número negativo
+do mostrador, a instrução produz exatamente o erro de sinal descrito acima: ela
+vale sobre a magnitude da leitura, como a forma $T_"as" = L - "0,098" h$ do
+parágrafo anterior.
+
 A correção converte uma leitura no topo em tensão no solo, e por isso não entra
 na comparação entre o transdutor e o vacuômetro. O transdutor é acoplado pelo
 septo, no topo do instrumento, e lê a mesma câmara que o vacuômetro: os dois
@@ -300,7 +329,7 @@ exatidão conhecida e limitada; e, com um padrão dessa classe, essa
 concordância só pode ser afirmada na escala de alguns quilopascais.
 
 O procedimento da calibração foi preparado, embora o ensaio ainda não tenha
-sido executado. Os níveis de tensão são gerados sem solo e sem bomba de vácuo:
+sido concluído. Os níveis de tensão são gerados sem solo e sem bomba de vácuo:
 com a cápsula saturada e retirada da água, a evaporação pela cerâmica eleva a
 tensão gradualmente, e a reimersão a devolve em direção a zero, o que permite,
 em princípio, percorrer a faixa nos dois sentidos e expor eventual histerese.
@@ -319,3 +348,24 @@ e de transmissão de um nó sensor de baixo custo como ferramenta de suporte
 computacional à irrigação de precisão. A exatidão da grandeza medida, que
 depende da calibração contra o padrão de referência, permanece fora do que os
 ensaios executados autorizam afirmar.
+
+=== Operação com múltiplos nós
+
+A quarta etapa avalia o sistema na escala para a qual foi projetado: vários
+nós por área monitorada, e um mesmo produtor com áreas em lugares diferentes,
+como prevê o requisito de escalabilidade (RNF06, no Capítulo 4). Como apenas um nó físico foi construído, a escala foi
+obtida com nós simulados, sob três regras.
+
+A primeira é que cada nó simulado percorre o mesmo caminho do nó físico:
+cadastro pelo aplicativo, calibração registrada, credencial própria e envio
+das leituras pela mesma interface do servidor, no mesmo ritmo e com o mesmo
+formato de mensagem do firmware. O que se mede é, portanto, o serviço real, e
+não um atalho até o banco de dados. A segunda é que o dado gerado é marcado
+como simulado no cadastro do nó, de forma permanente, e o aplicativo o
+identifica como tal, para que nunca se confunda com leitura de campo. A
+terceira é que a carga é aplicada a um banco descartável, separado do que
+guarda as leituras de bancada.
+
+A medição parte de dez nós e chega a mil na cadência do firmware; em seguida,
+com os mil nós, o intervalo entre envios é reduzido até 250 ms, para observar
+a saturação do serviço. A ferramenta e os resultados estão na @sec-escala.
