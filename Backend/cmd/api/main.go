@@ -7,6 +7,8 @@ import (
 	"net/http"
 	"net/netip"
 	"os"
+	"os/signal"
+	"syscall"
 	"time"
 
 	"github.com/igorkg/tcc/backend/internal/config"
@@ -96,9 +98,43 @@ func main() {
 		WriteTimeout:      30 * time.Second,
 	}
 
-	log.Info("escutando", "porta", porta)
-	if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+	// ENCERRAMENTO SEM CORTAR LEITURA.
+	//
+	// O no nao retransmite: uma leitura cuja requisicao e cortada no meio esta
+	// perdida. Com replicas atras do Caddy (deploy/compose.yaml), parar uma
+	// delas -- deploy novo, `docker compose up --scale`, reinicio da VM --
+	// precisa deixar terminar o que ja entrou. Shutdown fecha o listener
+	// primeiro, entao conexao nova e recusada e o Caddy tenta outra replica
+	// (lb_try_duration no Caddyfile); as requisicoes em andamento terminam.
+	//
+	// 8 s, e nao mais: o Docker manda SIGKILL 10 s depois do SIGTERM. Um
+	// POST /readings leva milissegundos; o prazo so estoura com o banco
+	// travado, e ai nao ha o que esperar.
+	ctxSinal, pararSinal := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
+	defer pararSinal()
+
+	falhou := make(chan error, 1)
+	go func() {
+		log.Info("escutando", "porta", porta)
+		falhou <- srv.ListenAndServe()
+	}()
+
+	select {
+	case err := <-falhou:
+		// Antes de Shutdown, ListenAndServe so volta com erro (porta ocupada).
 		log.Error("servidor encerrou", "erro", err)
 		os.Exit(1)
+	case <-ctxSinal.Done():
 	}
+	// Um segundo Ctrl-C mata na hora, como sem o NotifyContext.
+	pararSinal()
+
+	log.Info("sinal recebido: esperando as requisicoes em andamento")
+	ctxFim, cancelar := context.WithTimeout(context.Background(), 8*time.Second)
+	defer cancelar()
+	if err := srv.Shutdown(ctxFim); err != nil {
+		log.Error("prazo de encerramento estourou com requisicoes abertas", "erro", err)
+		return
+	}
+	log.Info("encerrado sem requisicoes pendentes")
 }
