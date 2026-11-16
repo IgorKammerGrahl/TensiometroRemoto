@@ -139,6 +139,69 @@ make test
 O `compose.yaml` já cria `telemetria_test` num banco separado, para que
 `go test` possa truncar tabelas sem levar junto os dados de bancada.
 
+### Nós simulados e ensaio de carga
+
+`cmd/simulador` faz N nós enviarem leituras pela API real, do jeito que o
+firmware envia: **uma leitura por POST, conexão nova a cada envio, a cada
+60 s, timeout de 10 s** (`Circuito/sketch/config.h.example`). Tudo passa pela
+API, inclusive o cadastro: login, `POST /app/devices`, calibração e, por fim,
+`POST /readings` com o token de cada nó. O `cmd/seed`, ao contrário, grava
+direto no banco.
+
+**O dado é simulado e fica marcado.** Os nós nascem com
+`devices.simulado = true` (migration `0004`), a API devolve o campo e o
+aplicativo mostra o selo *Simulado* na lista e no detalhe. A marca é fixada
+no cadastro: o `PATCH` não a altera em nenhuma direção. O `tensio-demo` do
+seed também é marcado.
+
+**O simulador nunca escreve na série de um nó real.** Ele só envia com tokens
+que ele mesmo recebeu ao cadastrar, guardados em `simulador-estado.json`
+(0600, fora do git). Antes de cada execução, confere pela API que todos os
+nós estão marcados, visíveis e ativos. Um único nó errado aborta a execução
+inteira, antes do primeiro envio.
+
+```sh
+SIMULADOR_SENHA=... go run ./cmd/simulador -email=demo@tcc.local \
+  -talhao=<uuid>[,<uuid>...] -nos=20 -duracao=8h
+```
+
+| Flag | Padrão | |
+|---|---|---|
+| `-nos` | — | quantos nós enviam; os que faltam no estado são cadastrados |
+| `-talhao` | — | talhões dos nós novos, em rodízio |
+| `-intervalo` | `60s` | entre envios do mesmo nó |
+| `-duracao` | `5m` | da execução |
+| `-reusar-conexao` | `false` | o firmware **não** reaproveita |
+| `-relatorio` | — | grava o resultado em JSON |
+| `-semente` | relógio | repita para reproduzir o sinal |
+
+O `seq` segue a regra do firmware ("avança e persiste antes de enviar"): o
+bloco da execução inteira é reservado e gravado antes do primeiro envio. Se
+o processo morrer, a próxima execução começa depois do bloco. O que sobrar
+vira buraco na sequência, nunca um `seq` reaproveitado.
+
+**Ensaio de carga:** `make carga` (`scripts/carga.sh`) recria o banco
+descartável `telemetria_carga`, **nunca** o `telemetria`, e cria nele
+usuário e talhões próprios. Depois sobe a API em `:8081` e roda a varredura:
+
+- 10, 100 e 1000 nós na cadência do firmware;
+- 1000 nós com intervalos de 5 s a 250 ms.
+
+Os relatórios ficam em `../Registros/carga-<data>/`, junto com `maquina.txt`.
+
+O que o relatório mede e o que não mede:
+
+- **Agenda fixa**, não "espera depois de cada envio" como o `loop()` do
+  firmware. Um servidor lento não consegue frear a carga que recebe, então
+  a carga simulada é um teto da real.
+- **`atraso_agenda_ms`** mede quanto o próprio simulador atrasou sobre a
+  agenda. Se crescer, o gargalo foi o cliente, e a latência daquela rodada
+  não vale como medida do servidor.
+- **`latencia_ms`** conta só envios que tiveram resposta HTTP. Timeout e
+  conexão recusada aparecem em `erros_de_transporte`.
+- **Loopback e HTTP sem TLS.** O nó real fala HTTPS com o Caddy por Wi-Fi,
+  então o número mede o backend e o banco, não a rede de campo.
+
 ## API de dispositivo — `/api/v1/*`
 
 Todas as rotas exigem `Authorization: Bearer <token do dispositivo>`.
@@ -228,7 +291,7 @@ que o recurso existe; `404` não distingue "não existe" de "não é seu".
 | `POST /app/logout` | Apaga a sessão e expira o cookie |
 | `GET /app/me` | `{usuario, talhoes}` — só os talhões concedidos |
 | `GET /app/devices` | `{count, devices}`, **pior primeiro** |
-| `POST /app/devices` | `{id, descricao, talhao_id}` → `201` `{device, token, aviso}`. `404` talhão sem concessão, `409` id repetido |
+| `POST /app/devices` | `{id, descricao, talhao_id, simulado?}` → `201` `{device, token, aviso}`. `404` talhão sem concessão, `409` id repetido. `simulado` só é gravado aqui; ver [Nós simulados](#nós-simulados-e-ensaio-de-carga) |
 | `GET /app/devices/{id}` | Um nó, com talhão e última leitura |
 | `PATCH /app/devices/{id}` | `{descricao?, talhao_id?, ativo?}` |
 | `GET /app/devices/{id}/series?from=&to=&bucket=` | Série agregada no servidor |

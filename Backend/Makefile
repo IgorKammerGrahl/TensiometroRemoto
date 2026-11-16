@@ -13,7 +13,7 @@ COMPOSE := $(ENGINE) compose
 # configuracao real do dono da maquina.
 TEST_DATABASE_URL ?= postgres://tcc:tcc@localhost:55432/telemetria_test?sslmode=disable
 
-.PHONY: dev up down logs migrate seed psql test dump restore
+.PHONY: dev up down logs migrate seed psql test dump restore carga
 
 ## dev: sobe o banco, aplica migrations e roda a API em primeiro plano
 dev: up migrate
@@ -53,6 +53,12 @@ psql:
 ## test: a suite pula os testes de integracao sem TEST_DATABASE_URL
 test:
 	TEST_DATABASE_URL='$(TEST_DATABASE_URL)' go test ./...
+
+## carga: ensaio de carga do cmd/simulador num banco DESCARTAVEL (telemetria_carga),
+##        nunca no telemetria. ~20 min; relatorios em ../Registros/carga-<data>/.
+##        Ver scripts/carga.sh para o que roda e por que nesse banco.
+carga:
+	ENGINE=$(ENGINE) ./scripts/carga.sh
 
 ## dump: backup datado. As leituras de bancada so existem no volume.
 dump:

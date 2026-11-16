@@ -23,5 +23,10 @@ Backend/devtoken
 # ficam no disco, nunca no repositorio.
 Backend/dump-*.sql
 
+# Estado do cmd/simulador: tokens dos nos simulados (credenciais, ainda que
+# de nos que so existem em software) e o seq de cada um.
+Backend/simulador-estado*.json
+Backend/.simulador-estado-*
+
 # Configuracao de IDE
 Backend/.idea/
