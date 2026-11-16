@@ -3,8 +3,9 @@ import type { ReactNode } from 'react';
 import { Navigate, useLocation } from 'react-router';
 import { ErroAPI, SEM_REDE, api } from './api';
 import type { RespostaMe } from './api';
+import { CHAVE_SESSAO, limparAoSair } from './clienteQuery';
 
-export const CHAVE_SESSAO = ['sessao'] as const;
+export { CHAVE_SESSAO };
 
 /** A sessao inteira: quem esta logado e a quais talhoes tem acesso.
  *
@@ -43,7 +44,7 @@ export function useLogout() {
     // nao ter sido derrubado no servidor. Limpar o cache dos dois jeitos evita
     // o pior caso, que e a tela seguir mostrando os talhoes de alguem depois de
     // um "Sair" que a pessoa acredita ter funcionado.
-    onSettled: () => clienteQuery.clear(),
+    onSettled: () => limparAoSair(clienteQuery),
   });
 }
 

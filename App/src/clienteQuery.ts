@@ -1,7 +1,10 @@
 import { MutationCache, QueryCache, QueryClient } from '@tanstack/react-query';
 import type { Query } from '@tanstack/react-query';
 import { ErroAPI, SEM_REDE } from './api';
-import { CHAVE_SESSAO } from './sessao';
+
+/** A query de /me: quem esta logado. Aqui, e nao em sessao.tsx, para que
+ *  sessao.tsx possa importar este modulo sem ciclo. */
+export const CHAVE_SESSAO = ['sessao'] as const;
 
 /** O cliente de consultas do aplicativo inteiro. Fabrica, e nao constante de
  *  modulo, para que cada teste tenha o seu (clienteQuery.test.ts). */
@@ -55,6 +58,20 @@ export function criarClienteQuery(): QueryClient {
   return cliente;
 }
 
+/** O que o "Sair" faz no cache. Ver useLogout em sessao.tsx.
+ *
+ *  RESET, E NAO clear(). O clear() tira as queries do cache, mas o porteiro
+ *  (ExigeSessao) ja montado continua inscrito na query removida, com o dado
+ *  da sessao: nao fica sabendo do 401 e nao redireciona -- a tela ficava em
+ *  "Nos" com erro de carga. O reset zera o estado das MESMAS queries, avisa
+ *  quem esta inscrito e refaz as ativas: o /me volta 401 e o porteiro manda
+ *  para o login. O dado de quem saiu some do mesmo jeito.
+ *
+ *  Ver clienteQuery.test.ts. */
+export function limparAoSair(cliente: QueryClient) {
+  void cliente.resetQueries();
+}
+
 /** Sessao vencida volta para o login, venha o 401 de uma leitura ou de uma
  *  escrita. Uma funcao so para as duas porque a regra e do transporte: ver a
  *  condicao escrita duas vezes seria o comeco de ela divergir em uma delas.
@@ -71,7 +88,7 @@ export function criarClienteQuery(): QueryClient {
  *  3. Havia sessao e ela acabou: reset, nao invalidate. O invalidate guarda o
  *     dado velho junto do erro novo, e com os dois ao mesmo tempo ExigeSessao
  *     manda para /entrar e SemSessao devolve para /, sem fim. O reset e de
- *     TODAS as consultas pelo mesmo motivo do clear() do logout: os talhoes
+ *     TODAS as consultas, como no logout (limparAoSair): os talhoes
  *     de quem saiu nao ficam no cache para o proximo login no aparelho. As
  *     consultas ainda na tela refazem e voltam 401, e param na saida 2.
  *

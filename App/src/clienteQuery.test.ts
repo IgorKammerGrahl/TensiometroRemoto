@@ -2,8 +2,7 @@ import { MutationObserver, QueryObserver } from '@tanstack/react-query';
 import type { QueryClient } from '@tanstack/react-query';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { ErroAPI, SEM_REDE } from './api';
-import { criarClienteQuery } from './clienteQuery';
-import { CHAVE_SESSAO } from './sessao';
+import { CHAVE_SESSAO, criarClienteQuery, limparAoSair } from './clienteQuery';
 
 /* O LOOP QUE ESTES TESTES PRENDEM.
  *
@@ -112,6 +111,26 @@ describe('sessao vencida no cliente de consultas', () => {
     expect(fim.data).toBeUndefined();
     // Os talhoes de quem saiu nao ficam no cache para o proximo login.
     expect(cliente.getQueryData(['devices'])).toBeUndefined();
+  });
+
+  it('logout: o porteiro ja montado ve a sessao acabar, e o dado vai junto', async () => {
+    vivo = true;
+    const sessao = observarSessao();
+    const lista = observarLista(() => (vivo ? null : recusa(401, '/devices')));
+    await assentar();
+    expect(sessao.getCurrentResult().data).toBeDefined();
+
+    vivo = false; // o POST /logout derrubou o cookie
+    limparAoSair(cliente);
+    await assentar();
+
+    // Com clear(), o observador do porteiro ficava preso a query removida,
+    // ainda com o dado da sessao: a tela nao voltava para o login.
+    const fim = sessao.getCurrentResult();
+    expect(fim.status).toBe('error');
+    expect(fim.data).toBeUndefined();
+    expect(lista.getCurrentResult().data).toBeUndefined();
+    expect(chamadasMe).toBe(2);
   });
 
   it.each([
