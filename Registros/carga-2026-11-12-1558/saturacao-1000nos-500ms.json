@@ -1,0 +1,48 @@
+{
+  "inicio": "2026-11-12T19:15:22.590187227Z",
+  "fim": "2026-11-12T19:16:22.59425669Z",
+  "alvo": "http://localhost:8081",
+  "nos": 1000,
+  "intervalo_s": 0.5,
+  "duracao_s": 60,
+  "timeout_s": 10,
+  "reusar_conexao": false,
+  "taxa_planejada_rps": 2000,
+  "taxa_obtida_rps": 1999.8643605996474,
+  "ingestao_lps": 1999.8643605996474,
+  "envios": 120000,
+  "por_status": {
+    "200": 120000
+  },
+  "erros_de_transporte": {},
+  "leituras": {
+    "aceitas": 120000,
+    "duplicadas": 0,
+    "rejeitadas": 0,
+    "perdidas": 0
+  },
+  "latencia_ms": {
+    "n": 120000,
+    "media": 7.119,
+    "p50": 5.471,
+    "p90": 7.651,
+    "p99": 74.522,
+    "max": 200.471
+  },
+  "atraso_agenda_ms": {
+    "n": 120000,
+    "media": 0.192,
+    "p50": 0.103,
+    "p90": 0.479,
+    "p99": 0.966,
+    "max": 4.127
+  },
+  "ambiente": {
+    "go_version": "go1.27.3-X:nodwarf5",
+    "goos": "linux",
+    "goarch": "amd64",
+    "num_cpu": 16,
+    "gomaxprocs": 16
+  },
+  "semente": 20261112
+}

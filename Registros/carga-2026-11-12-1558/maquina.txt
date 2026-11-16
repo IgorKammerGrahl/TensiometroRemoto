@@ -1,0 +1,9 @@
+data        : 2026-11-12T15:58:17-03:00
+kernel      : Linux 7.3.3-1-cachyos
+cpu         : 13th Gen Intel(R) Core(TM) i7-13620H (16 threads)
+memoria     : 15.3 GiB
+go          : go1.27.3-X:nodwarf5 linux/amd64
+postgres    : postgres (PostgreSQL) 16.14
+engine      : docker
+rede        : loopback, HTTP sem TLS (o no real fala HTTPS com o Caddy)
+commit      : 5506575 + alteracoes nao commitadas
