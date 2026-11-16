@@ -29,7 +29,8 @@ de monitoramento --- está cumprido quanto à construção. A operação, contud
 ocorreu sempre com o servidor na rede local: a hospedagem remota não foi
 exercitada. Além do nó físico, o serviço foi exercitado com até mil nós
 simulados, marcados como tais, que falam com ele pela mesma interface do
-firmware (@sec-escala).
+firmware, e com três cópias atrás do proxy reverso, uma delas parada no meio da
+carga (@sec-escala).
 
 A derivação física do instrumento foi obtida, e o diagnóstico anterior a
 respeito do vazamento que a acometia foi retificado: a causa era a cápsula
@@ -1746,25 +1747,121 @@ Quanto ao RNF06, o resultado sustenta a parte do requisito que o ensaio
 exercita: o cadastro de múltiplos nós em mais de um talhão e a recepção das
 suas leituras sem alteração da arquitetura, na escala de mil nós. O ensaio
 usou uma única conta; a separação entre usuários é a do modelo de autorização
-(@sec-autorizacao), que não esteve sob carga. A escalabilidade horizontal em
-sentido estrito, com várias instâncias do serviço, também não foi exercitada
-por este ensaio.
-#pendente[EM ANDAMENTO: várias instâncias do serviço e método de implantação
-de um servidor novo e de um nó novo.]
+(@sec-autorizacao), que não esteve sob carga. A escalabilidade horizontal, com
+várias cópias do serviço, é o objeto da subseção seguinte.
 
-=== Limites do ensaio
+=== Várias cópias do serviço <sec-replicas>
 
-*O transporte não é o do campo.* O ensaio usou _loopback_ e HTTP sem TLS. O
-nó real fala HTTPS com o servidor de implantação e, como não reaproveita
-conexão, negocia o TLS a cada envio, custo que o ensaio não inclui; o enlace
-Wi-Fi, a latência de rede e as perdas que ele provoca (@sec-bancada) também
-ficaram de fora. O ensaio mede o serviço e o banco de dados, não a rede.
+O serviço de retaguarda não guarda estado entre requisições: a sessão do
+usuário, as leituras e a regra de idempotência --- a unicidade do par formado
+pelo nó e pelo número de sequência --- estão no banco de dados. Várias cópias
+do mesmo binário, ligadas ao mesmo banco, servem portanto o mesmo sistema, e a
+parada de uma delas não interrompe o serviço. A implantação passou a receber o
+número de cópias como parâmetro. O proxy reverso descobre as cópias em
+execução pelo serviço de nomes da plataforma de contêineres, a cada cinco
+segundos, e reparte as requisições entre elas em rodízio. Uma conexão recusada
+por uma cópia que saiu do ar é tentada em outra, o que é seguro para o envio de
+leituras porque o proxy só repete uma requisição que não chegou a ser enviada.
+
+Dois ajustes foram necessários. O primeiro é a parada sem corte. Como o nó não
+retransmite, uma requisição cortada no meio é uma leitura perdida; o serviço
+passou a tratar o sinal de término, fechando a porta para conexões novas e
+deixando terminar, por até 8 s, as requisições que já haviam entrado. O
+segundo é o limitador de tentativas de login, o único estado mantido em
+memória, uma cópia por réplica. Em rodízio, quem ataca a partir de um único
+endereço teria uma cota por cópia. O proxy passou, então, a encaminhar o login
+pelo _hash_ do endereço do cliente, de modo que o mesmo endereço caia sempre na
+mesma cópia e o limite por endereço continue o de uma só. O limite por conta,
+que protege contra ataques distribuídos por muitos endereços, não se recupera
+assim: endereços diferentes caem em cópias diferentes, e a conta alvo passa a
+ter uma cota por cópia. Fechar essa folga exige levar o limitador para o banco
+de dados, e fica como trabalho futuro.
+
+A verificação foi feita em modo local, com três cópias, e está registrada no
+repositório. Duzentos nós simulados enviaram uma leitura por segundo cada,
+durante 90 s, por HTTPS e com conexão nova a cada envio, como o firmware; aos
+30 s, uma das cópias foi parada, e aos 60 s, religada. Os 18 000 envios foram
+todos aceitos, sem nenhuma perda, com mediana de 7,3 ms, p99 de 16,8 ms e
+máximo de 257,5 ms. A cópia parada registrou ter encerrado sem requisições
+pendentes e, religada, voltou ao rodízio. As três dividiram a carga por igual,
+com cerca de 4% de processador cada, e o componente mais exigido foi o proxy
+reverso, entre 47% e 60%, por causa do aperto de mão TLS a cada envio --- custo
+que o ensaio de carga anterior, sem TLS, não tinha como mostrar. Três
+propriedades foram conferidas à parte. A sessão aberta em uma cópia valeu nas
+demais: trinta consultas em rodízio, todas aceitas. A mesma leitura, enviada
+em seis requisições simultâneas, foi gravada uma única vez, com as outras
+cinco reconhecidas como duplicadas. E logins errados a partir do mesmo
+endereço foram recusados a partir da décima primeira tentativa, exatamente o
+limite de uma cópia.
+
+O ensaio não mostra ganho de vazão: as três cópias dividiram o processador da
+mesma máquina, e o que ele estabelece é a correção do sistema com várias cópias
+e a tolerância à parada de uma delas. Tampouco isola a contribuição da parada
+sem corte: com cerca de meia requisição em andamento por cópia, um corte
+abrupto perderia de zero a poucas leituras, o que uma execução não separa do
+acaso; a garantia vem da construção, e o registro da cópia parada a confirma. A
+atualização do serviço sem interrupção, uma cópia por vez, não foi testada.
+
+=== Instalações independentes e método de implantação <sec-implantacao>
+
+"Várias instâncias" tem um segundo sentido: uma instalação por propriedade ou
+cooperativa, cada uma com banco de dados, segredo, usuários e nós próprios. A
+implantação está descrita no repositório como roteiro reprodutível, da máquina
+virtual limpa ao sistema em funcionamento: os serviços sobem juntos --- banco
+de dados, aplicação das migrações, serviço de retaguarda, proxy reverso com
+HTTPS automático e cópia de segurança diária ---, e o roteiro inclui a
+conferência da cadeia de certificados que o firmware aceita. O método se
+resume em duas partes.
+
+Para subir uma instalação nova:
+
++ preparar a máquina e o domínio, com as portas 80 e 443 acessíveis;
++ gerar a configuração: domínio, senha do banco e chave dos tokens de nó e,
+  para uma segunda instalação na mesma máquina, nome da instalação, faixa de
+  rede interna e portas;
++ criar os volumes do banco e das cópias de segurança e subir os serviços;
++ cadastrar o produtor, os talhões e a concessão de acesso, pela ferramenta
+  administrativa.
+
+Para acrescentar um nó a uma instalação:
+
++ cadastrar o nó pelo aplicativo, que exibe a credencial uma única vez, e
+  registrar a sua calibração;
++ configurar o nó pelo portal cativo, com o endereço do servidor, o
+  identificador, a credencial e a calibração, sem recompilar o firmware
+  (@sec-provisionamento);
++ conferir a primeira leitura no aplicativo.
+
+O nome da instalação, a faixa de rede e as portas são os únicos parâmetros que
+separam duas instalações na mesma máquina, e a separação foi verificada com
+duas delas lado a lado, em modo local. A credencial de um nó da primeira e o
+login de um usuário da primeira foram recusados pela segunda, cada uma emitiu
+os próprios certificados, e 120 leituras enviadas à segunda não alteraram a
+contagem da primeira. Na mesma máquina, porém, só uma instalação pode ocupar as
+portas 80 e 443, que a validação do certificado exige; em produção, o natural é
+uma instalação por máquina virtual.
+
+O método foi exercitado em modo local, com a autoridade certificadora interna
+do proxy. Como a máquina virtual de implantação ainda não está disponível, a
+emissão do certificado por uma autoridade pública e a validação dessa cadeia
+pelo ESP32 seguem sem verificação. Da segunda parte do método, a configuração
+pelo portal foi validada em bancada contra o servidor de desenvolvimento, sem
+TLS, e o encadeamento com a calibração registrada vale como implementado, não
+como validado com o nó físico (@sec-provisionamento).
+
+=== Limites destes ensaios
+
+*O transporte não é o do campo.* O ensaio de carga usou _loopback_ e HTTP sem
+TLS; o das cópias usou HTTPS, mas também pela própria máquina. O nó real fala
+HTTPS com o servidor de implantação por Wi-Fi, e a latência de rede e as perdas
+que o enlace provoca (@sec-bancada) ficaram de fora dos dois. Os ensaios medem
+o serviço, o proxy e o banco de dados, não a rede.
 
 *Cliente e serviço disputaram a mesma máquina.* Os números valem para essa
 máquina, sob essa disputa, e não se transferem para o servidor de implantação,
 cuja configuração ainda não é conhecida.
 
-*O ensaio é curto.* Foram cinco minutos por ponto na cadência real e um minuto
+*Os ensaios são curtos.* No de carga, foram cinco minutos por ponto na cadência real e um minuto
 na saturação, e as 437 550 leituras do total são menos de um terço do que mil
 nós produzem em um único dia na cadência do firmware. O efeito do crescimento
 da tabela de leituras ao longo de meses não foi medido.

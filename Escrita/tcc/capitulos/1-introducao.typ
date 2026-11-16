@@ -178,7 +178,8 @@ múltiplos nós, acrescentada com o recorte descrito na @sec-objetivos.
 A primeira etapa foi executada. A segunda foi construída, mas operada apenas
 em rede local e com os requisitos parcialmente atendidos que o @cap-prototipo
 declara, e a terceira foi cumprida apenas em parte. A quarta foi executada com
-nós simulados, numa única instância do serviço. O nó sensor foi montado em
+nós simulados, em modo local, com até três cópias do serviço e duas
+instalações independentes na mesma máquina. O nó sensor foi montado em
 matriz de contatos, o firmware do ESP32
 foi escrito e a cadeia de telemetria, o serviço de retaguarda e a interface do
 produtor foram construídos e verificados. Da validação experimental foram
@@ -368,4 +369,13 @@ guarda as leituras de bancada.
 
 A medição parte de dez nós e chega a mil na cadência do firmware; em seguida,
 com os mil nós, o intervalo entre envios é reduzido até 250 ms, para observar
-a saturação do serviço. A ferramenta e os resultados estão na @sec-escala.
+a saturação do serviço.
+
+"Várias instâncias" do servidor foi tratado nos dois sentidos possíveis. No
+primeiro, várias cópias do serviço atrás do proxy reverso, no mesmo banco de
+dados, verificadas sob carga e com uma das cópias parada no meio dela. No
+segundo, instalações independentes, uma por propriedade ou cooperativa, com
+banco, segredo e usuários próprios, verificadas lado a lado quanto ao
+isolamento. O método de implantação --- subir uma instalação nova e
+acrescentar um nó a ela --- é descrito como roteiro reprodutível. A ferramenta,
+os resultados e o método estão na @sec-escala.

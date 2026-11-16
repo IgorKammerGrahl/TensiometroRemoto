@@ -23,7 +23,8 @@ removida a condição de rede responsável pelas perdas iniciais. Na escala para
 a qual foi projetado, o serviço recebeu as leituras de mil nós simulados na
 cadência do firmware sem nenhuma perda, com p99 de 7,5 ms, e continuou sem
 perdas a 4000 requisições por segundo, numa única instância e em rede local
-(@sec-escala).
+(@sec-escala). Com três cópias do serviço atrás do proxy reverso, a parada de
+uma delas no meio da carga não custou nenhuma leitura (@sec-replicas).
 
 A segunda parte permanece em aberto: se o valor exibido corresponde à tensão
 da água no solo com exatidão útil ao manejo. Responder a ela exige a
@@ -63,8 +64,8 @@ A @tab-objetivos resume a situação de cada objetivo específico.
     [Cumprido em bancada, com o transdutor aberto à atmosfera e sem TLS],
     [@sec-bancada],
     [Avaliar a operação com múltiplos nós e descrever o método],
-    [Em parte: ingestão com até mil nós simulados, numa instância; várias instâncias pendentes],
-    [@sec-escala],
+    [Cumprido com nós simulados, em modo local: mil nós, três cópias do serviço e duas instalações independentes],
+    [@sec-escala; @sec-replicas; @sec-implantacao],
   )],
 ) <tab-objetivos>
 #fonte[Elaborado pelo autor (2026).]
@@ -80,7 +81,9 @@ armazenamento local durante a indisponibilidade da rede ---, e a operação
 ocorreu sempre com o servidor na rede local. No quinto, a estabilidade da
 transmissão foi medida em dois ensaios contínuos, sem transporte cifrado e sem
 condição adversa controlada. No sexto, os nós são simulados, e cliente e
-serviço dividiram a mesma máquina, sem TLS (@sec-escala). A precisão da
+serviço dividiram a mesma máquina, em modo local; a implantação em servidor
+remoto, com certificado de autoridade pública, não foi exercitada
+(@sec-implantacao). A precisão da
 conversão, que a proposta original incluía no quinto objetivo, saiu dos
 objetivos com o recorte descrito na @sec-objetivos: depende do ensaio de
 calibração, cujo procedimento está descrito na @sec-validacao, e o RNF03, que
@@ -125,8 +128,10 @@ reunidas:
 - o ciclo de registro de calibração, gravação no portal e aceitação da leitura
   não foi exercitado com o nó físico (@sec-provisionamento);
 - a operação com múltiplos nós foi avaliada com nós simulados, que não
-  exercitam o rádio nem o TLS, numa única instância do serviço e na mesma
+  exercitam o rádio, com o serviço, as cópias e as instalações na mesma
   máquina do cliente, e apenas quanto à ingestão (@sec-escala);
+- com mais de uma cópia do serviço, o limite de tentativas de login por conta
+  fica mais folgado, uma cota por cópia (@sec-replicas);
 - não foram realizados testes com usuários representativos do produtor rural.
 
 == Trabalhos futuros
@@ -137,6 +142,9 @@ As limitações acima apontam, em grande parte, os próprios trabalhos futuros:
   vacuômetro mecânico pelo procedimento da @sec-validacao (@sec-substituto);
 - ensaio de carga com cliente e serviço em máquinas distintas, com TLS, longa
   duração e as consultas do aplicativo sob carga;
+- limitador de tentativas de login no banco de dados, compartilhado pelas
+  cópias do serviço, e atualização do serviço sem interrupção, uma cópia por
+  vez;
 - armazenamento local das leituras com retransmissão, e suspensão profunda
   entre aquisições; como o servidor já descarta retransmissões por
   idempotência, a mudança restringe-se ao nó;
