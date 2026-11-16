@@ -197,9 +197,11 @@ func garantirDeviceDemo(ctx context.Context, pool *pgxpool.Pool, store *telemetr
 		return err
 	}
 	token := base64.RawURLEncoding.EncodeToString(bruto)
+	// simulado = true: a serie inteira deste no sai de gerarSerie. Ver
+	// migrations/0004_simulado.sql, que marca o tensio-demo ja existente.
 	_, err = pool.Exec(ctx, `
-		INSERT INTO devices (id, descricao, talhao_id, token_hash)
-		VALUES ($1, $2, $3, $4)`,
+		INSERT INTO devices (id, descricao, talhao_id, token_hash, simulado)
+		VALUES ($1, $2, $3, $4, true)`,
 		deviceDemoID, deviceDemoDescricao, talhaoID, telemetria.HashToken(segredo, token))
 	return err
 }

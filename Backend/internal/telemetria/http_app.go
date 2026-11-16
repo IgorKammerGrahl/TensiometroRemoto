@@ -298,6 +298,12 @@ func (a *API) appCriarDevice(w http.ResponseWriter, r *http.Request) {
 		ID        string `json:"id"`
 		Descricao string `json:"descricao"`
 		TalhaoID  string `json:"talhao_id"`
+		// Ausente e false: a tela de cadastro (RF10) nao oferece o campo, e
+		// quem o envia e o cmd/simulador. Nao e controle de acesso -- marcar o
+		// proprio no como simulado so muda como ele aparece para o proprio
+		// usuario. O risco que importa e o contrario, serie gerada sem a
+		// marca, e esse o simulador fecha do lado dele.
+		Simulado bool `json:"simulado"`
 	}
 	if !decodificar(w, r, &in) {
 		return
@@ -322,7 +328,7 @@ func (a *API) appCriarDevice(w http.ResponseWriter, r *http.Request) {
 
 	usuarioID := usuarioDoCtx(r.Context())
 	err = a.store.CriarDevice(r.Context(), usuarioID, in.ID, in.Descricao, in.TalhaoID,
-		HashToken(a.segredo, token))
+		HashToken(a.segredo, token), in.Simulado)
 	switch {
 	case errors.Is(err, ErrNaoEncontrado):
 		// Talhao inexistente e talhao nao concedido sao a mesma resposta.

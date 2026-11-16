@@ -803,3 +803,23 @@ a.cartao:hover {
   font-size: var(--texto-sm);
   font-weight: 700;
 }
+
+/* ------------------------------------------------------- no simulado
+ *
+ * Procedencia, nao estado: so tinta e contorno tracejado, nenhuma cor. Ver
+ * componentes/Simulado.tsx. Caixa alta e espacamento aberto, como a marca do
+ * aplicativo, para ler como rotulo e nao como parte do nome do no. */
+.selo-simulado {
+  display: inline-block;
+  margin-left: var(--e2);
+  padding: 0 var(--e1);
+  border: var(--borda-fina) dashed var(--borda-forte);
+  border-radius: var(--raio);
+  color: var(--tinta-2);
+  font-size: var(--texto-xs);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  vertical-align: middle;
+  white-space: nowrap;
+}

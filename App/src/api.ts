@@ -46,6 +46,9 @@ export type DeviceApp = {
   id: string;
   descricao: string;
   ativo: boolean;
+  /** Serie gerada por software (cmd/seed, cmd/simulador), nao medida. Fixado
+   *  no cadastro; nao ha PATCH que o mude. Ver migrations/0004_simulado.sql. */
+  simulado: boolean;
   talhao: Talhao;
   /** null = no cadastrado que nunca reportou. Terceiro estado, distinto de
    *  "leitura velha" e de "leitura atual". */

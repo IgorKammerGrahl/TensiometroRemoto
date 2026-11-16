@@ -8,6 +8,7 @@ import { Faixa } from '../componentes/Faixa';
 import { Gerenciar } from '../componentes/Gerenciar';
 import { Grafico } from '../componentes/Grafico';
 import { Regua } from '../componentes/Regua';
+import { SeloSimulado } from '../componentes/Simulado';
 import { textoKpa } from '../escala';
 import { type Ancora, JANELAS, JANELA_PADRAO, parametros } from '../janela';
 import { situacao, textoDeIdade } from '../leitura';
@@ -99,11 +100,19 @@ export function No() {
       {dev && s && (
         <div className="pilha conteudo">
           <div>
-            <h1>{dev.descricao || dev.id}</h1>
+            <h1>
+              {dev.descricao || dev.id}
+              {dev.simulado && <SeloSimulado />}
+            </h1>
             <p className="secundario">
               {dev.talhao.nome}
               {dev.talhao.cultura ? ` · ${dev.talhao.cultura}` : ''}
             </p>
+            {dev.simulado && (
+              <p className="secundario">
+                As leituras deste nó são geradas por software, não medidas por um sensor em campo.
+              </p>
+            )}
           </div>
 
           <section className="agora">

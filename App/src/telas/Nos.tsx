@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router';
 import { api, ErroAPI, SEM_REDE } from '../api';
 import { MarcaSituacao } from '../componentes/Estado';
+import { SeloSimulado } from '../componentes/Simulado';
 import { textoKpa } from '../escala';
 import { situacao, textoDeIdade } from '../leitura';
 import { useAgora } from '../relogio';
@@ -80,7 +81,10 @@ export function Nos() {
                 <li key={d.id}>
                   <Link to={`/no/${encodeURIComponent(d.id)}`} className={`cartao cartao--enfase-${enfase}`}>
                     <span className="cartao__corpo">
-                      <strong>{d.descricao || d.id}</strong>
+                      <strong>
+                        {d.descricao || d.id}
+                        {d.simulado && <SeloSimulado />}
+                      </strong>
                       <span className="secundario">
                         {d.talhao.nome}
                         {d.talhao.cultura ? ` · ${d.talhao.cultura}` : ''}

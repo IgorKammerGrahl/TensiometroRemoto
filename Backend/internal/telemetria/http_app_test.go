@@ -730,6 +730,50 @@ func TestCadastroDeDevice(t *testing.T) {
 	if rec.Code != http.StatusConflict {
 		t.Errorf("id duplicado: status = %d, quero 409; corpo: %s", rec.Code, rec.Body.String())
 	}
+
+	// Cadastro sem o campo e no real: a tela de RF10 nao o envia.
+	if resp.Device.Simulado {
+		t.Error("device cadastrado sem `simulado` nasceu simulado")
+	}
+}
+
+// RISCO: serie gerada por software aparecendo como medida, ou um no que
+// deixa de ser simulado e reescreve a procedencia do que ja gravou.
+func TestDeviceSimulado(t *testing.T) {
+	c := novoCenarioApp(t)
+	cookie := entrar(t, c.h, emailA)
+
+	rec := req(t, c.h, http.MethodPost, "/api/v1/app/devices", cookie,
+		fmt.Sprintf(`{"id":"sim-0001","descricao":"no simulado","talhao_id":%q,"simulado":true}`, c.talhaoA))
+	var resp struct {
+		Device DeviceApp `json:"device"`
+	}
+	decodificarResp(t, rec, &resp)
+	if !resp.Device.Simulado {
+		t.Fatal("cadastro com simulado=true devolveu simulado=false")
+	}
+
+	// A marca chega na lista e no detalhe -- e o que a tela le.
+	var lista respDevices
+	decodificarResp(t, req(t, c.h, http.MethodGet, "/api/v1/app/devices", cookie, ""), &lista)
+	for _, d := range lista.Devices {
+		if d.Simulado != (d.ID == "sim-0001") {
+			t.Errorf("lista: %s com simulado=%v", d.ID, d.Simulado)
+		}
+	}
+
+	// PATCH nao e caminho de escrita da marca, em nenhuma direcao.
+	rec = req(t, c.h, http.MethodPatch, "/api/v1/app/devices/sim-0001", cookie, `{"simulado":false}`)
+	var d DeviceApp
+	decodificarResp(t, rec, &d)
+	if !d.Simulado {
+		t.Error("PATCH desmarcou um no simulado")
+	}
+	rec = req(t, c.h, http.MethodPatch, "/api/v1/app/devices/dev-a1", cookie, `{"simulado":true}`)
+	decodificarResp(t, rec, &d)
+	if d.Simulado {
+		t.Error("PATCH marcou como simulado um no real")
+	}
 }
 
 // ------------------------------------------------------- RISCO: sinal
