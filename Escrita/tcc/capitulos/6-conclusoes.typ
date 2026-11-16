@@ -73,11 +73,10 @@ A @tab-objetivos resume a situação de cada objetivo específico.
 Três ressalvas acompanham a tabela. No terceiro objetivo, o firmware converte
 a leitura com os coeficientes nominais de catálogo e entrega a pressão no topo
 do instrumento, e não ainda o potencial matricial no nível da cápsula
-(@sec-lacunas). No quarto, a construção está completa, mas quatro requisitos
+(@sec-lacunas). No quarto, a construção está completa, mas dois requisitos
 não foram atendidos integralmente --- o RF04, cujo transporte HTTPS não foi
-exercitado; o RF07, que oferece períodos fixos de consulta em vez da seleção
-de datas; o RF08, cumprido apenas na direção de configurar; e o RNF04, sem
-armazenamento local durante a indisponibilidade da rede ---, e a operação
+exercitado pelo nó físico, e o RNF04, sem armazenamento local durante a
+indisponibilidade da rede ---, e a operação
 ocorreu sempre com o servidor na rede local. No quinto, a estabilidade da
 transmissão foi medida em dois ensaios contínuos, sem transporte cifrado e sem
 condição adversa controlada. No sexto, os nós são simulados, e cliente e
@@ -117,8 +116,8 @@ reunidas:
 
 - a calibração experimental e a validação em solo não foram realizadas, e o
   RNF03 segue sem verificação (@sec-bancada);
-- o RF07 oferece apenas períodos fixos de consulta, o RF08 está cumprido
-  apenas na direção de configurar, e o RNF04 não está atendido (@sec-estado);
+- o RNF04 não está atendido: sem armazenamento local, a leitura cujo envio
+  falha se perde (@sec-estado);
 - a alimentação do transdutor não é medida, de modo que a calibração vale para
   a alimentação em que o ensaio for feito (@sec-retaguarda);
 - o valor exibido é a pressão no topo do instrumento, sem a correção de coluna
@@ -157,8 +156,6 @@ As limitações acima apontam, em grande parte, os próprios trabalhos futuros:
   correção ratiométrica aplicada na conversão feita pelo servidor;
 - registro da profundidade de instalação no cadastro do nó, para que o servidor
   converta a leitura no topo em tensão no solo;
-- remoção da faixa de atenção pela interface, o que exige distinguir, no
-  contrato da API, a chave ausente do valor nulo;
 - hospedagem em servidor remoto com transporte cifrado, compatibilizando o
   certificado raiz embutido no firmware com a autoridade certificadora do
   servidor;

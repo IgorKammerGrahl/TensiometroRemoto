@@ -42,7 +42,7 @@ de outubro não produziram nenhum ponto válido: o instrumento não sustenta
 vácuo, e a entrada de ar foi localizada no próprio tensiômetro, sem que a
 derivação tenha sido descartada como caminho adicional (@sec-substituto).
 
-Cinco itens previstos permanecem não realizados, e determinam os limites do
+Três itens previstos permanecem não realizados, e determinam os limites do
 que este capítulo autoriza afirmar.
 
 A *calibração experimental* não foi concluída. Os coeficientes de conversão em
@@ -69,19 +69,13 @@ atendida, mas a evolução para bateria, prevista no próprio requisito, exigir�
 esse recurso. Ambos têm precedente direto na literatura @abdelmoneim2023 e
 ficam registrados como trabalho futuro.
 
-O *RF08 está cumprido apenas na direção de configurar.* A interface permite
-definir e alterar os limiares de atenção de um talhão, mas não removê-los: o
-controle que fazia isso reportava sucesso sem produzir efeito, pela razão
-técnica detalhada na @sec-apresentacao, e foi retirado em vez de mantido.
-Devolver um talhão ao estado não configurado exige, hoje, intervenção direta
-no banco de dados. O requisito não está atendido, e o conserto, que é de
-pequeno porte e pertence ao serviço de retaguarda, fica registrado como
-trabalho futuro.
-
-O *RF07 está cumprido em parte.* A interface oferece três períodos fixos de
-consulta ao histórico --- 24 horas, 7 dias e 30 dias ---, e não a seleção de
-intervalos de datas prevista no requisito, embora a API já aceite o início e o
-fim da consulta.
+O RF07 e o RF08 foram os últimos requisitos completados. A consulta ao
+histórico passou a oferecer, além dos três períodos fixos --- 24 horas, 7 dias
+e 30 dias ---, a seleção de um intervalo de datas; e a configuração dos
+limiares de atenção passou a permitir também removê-los, devolvendo o talhão ao
+estado não configurado, o que exigiu uma decisão sobre o contrato da API
+(@sec-apresentacao). Os dois foram verificados pela interface, contra o
+servidor em execução.
 
 A @fig-montagem mostra o circuito do nó sensor, montado em matriz de contatos.
 
@@ -908,10 +902,20 @@ atualização interpreta o ponteiro nulo como "preserve o valor atual", de modo
 que pedir a remoção equivale a não pedir nada. *O controle foi removido, e não
 mantido.* O princípio é o mesmo que governa o gráfico e o indicador de estado:
 uma interface que afirma um fato falso é pior que uma funcionalidade ausente,
-porque a ausência é percebida e a falsidade não. O conserto pertence ao
-serviço de retaguarda, é pequeno e está registrado; enquanto não for feito, o
-RF08 está cumprido apenas na direção de configurar, e essa limitação está
-declarada na @sec-estado.
+porque a ausência é percebida e a falsidade não.
+
+O conserto, feito depois, não alterou a atualização parcial. Dentro dela, há
+três formas de distinguir a chave ausente do valor nulo --- um ponteiro duplo,
+a leitura do documento bruto antes da conversão ou um valor sentinela ---, e as
+três fazem o significado de um campo do contrato depender da forma de escrever
+o documento: um cliente que enviasse o valor nulo supondo "não altere" passaria
+a apagar. A remoção ganhou, em vez disso, uma operação própria: o método
+DELETE do HTTP sobre a faixa, tratada como recurso subordinado ao talhão, que
+apaga os dois limiares juntos, como a restrição do banco já exige, e que é
+idempotente, como o protocolo define o método @rfc9110. A atualização parcial
+continua apenas configurando, e o controle voltou à interface, com a
+confirmação na própria tela, sem janela modal. Verificado contra o servidor em
+execução, o RF08 passou a ser atendido nas duas direções.
 
 *Invalidação de cache incompleta, visível apenas por leitor de tela.* O resumo
 textual do gráfico --- o texto alternativo que um leitor de tela anuncia ---
