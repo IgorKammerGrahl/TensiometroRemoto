@@ -23,11 +23,14 @@
 //                    NTP, sem POST e sem nenhuma escrita na NVS.
 //   (padrao)         telemetria: mede, carimba em UTC e envia ao backend.
 //
-// ETAPA 1 (esta): POST direto, sem resiliencia. Falha de rede perde a
-// leitura. Buffer em LittleFS e deep sleep vem na etapa 2.
+// RESILIENCIA (RNF04): a leitura entra numa fila em RAM e sai dela quando o
+// servidor responde. Rede fora, a fila cresce; rede de volta, ela drena em
+// lotes, da mais antiga para a mais nova. Ver fila.h para as decisoes. Ficam
+// para depois: fila em LittleFS (sobreviver a falta de energia) e deep sleep.
 
 #include "config.h"
 #include "payload.h"
+#include "fila.h"
 
 const int PINO_SENSOR = 34;
 
@@ -275,19 +278,46 @@ bool sincronizarNTP() {
   return true;
 }
 
-bool enviar(const Leitura &l, time_t medidoEm, long long seq) {
-  char leitura[256];
-  if (!montarLeitura(leitura, sizeof leitura, seq, medidoEm,
-                     (int) lroundf(l.mvPino), VDD_MV_NOMINAL, l.kPa,
-                     cfg.calibracao.c_str())) {
-    Serial.println("# ERRO: falha ao montar o JSON da leitura.");
-    return false;
-  }
+// ---- Fila de pendentes (RNF04) ----
+//
+// Padroes aqui, e nao no config.h, para que um config.h antigo continue
+// compilando: quem quiser outro valor define no config.h e ganha.
+//
+// 720 leituras de 24 bytes = ~17 KB de RAM estatica. Cobrem 12 h com o
+// intervalo de bancada (60 s) e dias com o de campo (dezenas de minutos).
+#ifndef FILA_CAPACIDADE
+#define FILA_CAPACIDADE 720
+#endif
+// Leituras por POST. O servidor aceita 500; 20 mantem o corpo em ~4 KB, que
+// cabe num buffer estatico sem apertar a RAM que o TLS precisa.
+#ifndef LOTE_MAX
+#define LOTE_MAX 20
+#endif
+// Lotes por ciclo: com a fila cheia, drena 200 leituras por ciclo, sem
+// segurar a proxima medicao por mais que alguns segundos de TLS.
+#ifndef LOTES_POR_CICLO
+#define LOTES_POR_CICLO 10
+#endif
 
-  char corpo[384];
-  if (!montarLote(corpo, sizeof corpo, cfg.deviceId.c_str(), leitura)) {
-    Serial.println("# ERRO: falha ao montar o lote.");
-    return false;
+LeituraPendente pendentes[FILA_CAPACIDADE];
+Fila fila;
+
+// Envia ate `n` leituras num POST. Em `enviadas`, quantas de fato entraram
+// no corpo (o resto, se o buffer acabou, fica para o proximo lote).
+Resultado enviarLote(const LeituraPendente *ls, size_t n, size_t *enviadas) {
+  // Estaticos: ~8 KB na pilha da tarefa do loop (8 KB ao todo) a estourariam.
+  static char leituras[3584];
+  static char corpo[4096];
+
+  *enviadas = montarLeituras(leituras, sizeof leituras, ls, n, VDD_MV_NOMINAL,
+                             cfg.calibracao.c_str());
+  if (*enviadas == 0 ||
+      !montarLote(corpo, sizeof corpo, cfg.deviceId.c_str(), leituras)) {
+    // So acontece com um campo absurdo (id de calibracao gigante). Essa
+    // leitura nunca vai caber; descarta-la impede que trave a fila inteira.
+    Serial.println("# ERRO: leitura nao coube no lote; descartada.");
+    *enviadas = 1;
+    return RECUSADO;
   }
 
 #ifdef DEV_SEM_TLS
@@ -301,7 +331,7 @@ bool enviar(const Leitura &l, time_t medidoEm, long long seq) {
   if (!http.begin(cliente, cfg.url)) {
     Serial.println("# ERRO: URL invalida na configuracao gravada pelo "
                    "portal. Reabra o portal e corrija a URL da API.");
-    return false;
+    return FALHOU;
   }
   http.setTimeout(HTTP_TIMEOUT_MS);
   http.addHeader("Content-Type", "application/json");
@@ -311,7 +341,8 @@ bool enviar(const Leitura &l, time_t medidoEm, long long seq) {
   String resposta = (codigo > 0) ? http.getString() : String();
   http.end();
 
-  if (codigo != 200) {
+  Resultado r = resultadoDoStatus(codigo);
+  if (r != ENTREGUE) {
     Serial.print("# ERRO no POST. Codigo: ");
     Serial.print(codigo);
     if (codigo > 0) {
@@ -324,22 +355,39 @@ bool enviar(const Leitura &l, time_t medidoEm, long long seq) {
       Serial.print(")");
     }
     Serial.println();
-    return false;
+    if (r == RECUSADO) {
+      Serial.printf("# %u leitura(s) descartada(s): o servidor recusou o lote.\n",
+                    (unsigned) *enviadas);
+    }
+    return r;
   }
 
   int aceitas = lerCampoInteiro(resposta.c_str(), "accepted", -1);
   int duplicadas = lerCampoInteiro(resposta.c_str(), "duplicates", -1);
   int rejeitadas = lerCampoInteiro(resposta.c_str(), "rejected", -1);
 
-  Serial.printf("# HTTP 200  accepted=%d duplicates=%d rejected=%d\n",
-                aceitas, duplicadas, rejeitadas);
+  Serial.printf("# HTTP 200  lote=%u accepted=%d duplicates=%d rejected=%d\n",
+                (unsigned) *enviadas, aceitas, duplicadas, rejeitadas);
 
   if (rejeitadas > 0) {
     // O servidor recusou por validacao. Reenviar seria loop infinito.
     Serial.print("# ALERTA: leitura rejeitada pelo servidor -> ");
     Serial.println(resposta);
   }
-  return true;
+  return ENTREGUE;
+}
+
+// Drena a fila em lotes, da mais antiga para a mais nova, ate esvaziar, ate
+// LOTES_POR_CICLO ou ate a primeira falha. Na falha, para: se a rede caiu no
+// meio, insistir so atrasaria a proxima medicao.
+void drenar() {
+  static LeituraPendente lote[LOTE_MAX];
+  for (int i = 0; i < LOTES_POR_CICLO && fila.tamanho > 0; i++) {
+    size_t n = filaEspiar(&fila, lote, LOTE_MAX);
+    size_t enviadas = 0;
+    if (enviarLote(lote, n, &enviadas) == FALHOU) return;
+    filaDescartar(&fila, enviadas);
+  }
 }
 
 void setup() {
@@ -411,45 +459,57 @@ void setup() {
     Serial.println("#          o backend vai descarta-las como duplicatas.");
   }
 
+  filaIniciar(&fila, pendentes, FILA_CAPACIDADE);
+
   if (!conectarWiFi() || !sincronizarNTP()) {
-    // Etapa 1 nao tem buffer: sem rede ou sem hora nao ha o que fazer com a
-    // leitura. Reinicia para tentar de novo. A etapa 2 substitui isso por
-    // bufferizar em LittleFS e seguir medindo.
+    // A fila guarda leituras CARIMBADAS, e o carimbo depende do NTP: o ESP32
+    // nao tem relogio de bateria e boota em 1970. Sem a primeira hora valida
+    // nao ha o que guardar, entao o boot continua exigindo rede. Depois dela,
+    // o relogio interno segue contando, e uma queda de rede passa a encher a
+    // fila em vez de perder a leitura.
     Serial.println("# Reiniciando em 10 s...");
     delay(10000);
     ESP.restart();
   }
 
+  Serial.printf("# Fila de pendentes: ate %d leituras em RAM.\n", FILA_CAPACIDADE);
   Serial.println("#");
-  Serial.println("# seq,mv_pino,v_sensor,kpa,enviado");
+  Serial.println("# seq,mv_pino,v_sensor,kpa,pendentes");
 }
 
 void loop() {
   Leitura l = medir();
   time_t medidoEm = time(nullptr);
 
-  // Carimba no momento da medicao, nao no do envio. Na etapa 2, com buffer,
-  // e essa distincao que faz a leitura offline chegar ao banco com a hora
-  // em que foi medida.
+  // Carimba no momento da medicao, nao no do envio: e isso que faz a leitura
+  // que esperou na fila chegar ao banco com a hora em que foi medida.
   long long seq = proximoSeq;
 
-  // Avanca e persiste ANTES de enviar. Se o POST falhar, o seq nao e
-  // reaproveitado: uma leitura perdida vira um buraco na sequencia, que e
-  // diagnostico. Reaproveitar produziria duas leituras diferentes com o
-  // mesmo seq, e a segunda seria descartada como duplicata.
+  // Avanca e persiste ANTES de enfileirar. O seq nunca e reaproveitado: uma
+  // leitura que sai da fila sem ser enviada (fila cheia, reinicio) vira um
+  // buraco na sequencia, que e diagnostico. Reaproveitar produziria duas
+  // leituras diferentes com o mesmo seq, e a segunda seria descartada como
+  // duplicata.
   proximoSeq++;
   prefs.putLong64("seq", proximoSeq);
 
+  LeituraPendente p = {seq, medidoEm, (int) lroundf(l.mvPino), l.kPa};
+  if (filaEmpurrar(&fila, p)) {
+    Serial.printf("# ALERTA: fila cheia. A leitura mais antiga saiu sem ser "
+                  "enviada (%lu desde o boot).\n", fila.descartadas);
+  }
+
   // O Wi-Fi nao volta sozinho depois de uma queda: conectarWiFi() so roda
-  // no setup. Sem isto o no fica amostrando e falhando ate alguem apertar
+  // no setup. Sem isto o no fica amostrando e enfileirando ate alguem apertar
   // RESET -- e ninguem esta no talhao para apertar. Falhar aqui nao e fatal:
-  // o envio erra, o seq vira buraco, e a proxima volta tenta de novo.
+  // a leitura fica na fila, e a proxima volta tenta de novo.
   if (WiFi.status() != WL_CONNECTED) {
     Serial.println("# Wi-Fi caiu. Reconectando.");
     conectarWiFi();
   }
-
-  bool ok = enviar(l, medidoEm, seq);
+  if (WiFi.status() == WL_CONNECTED) {
+    drenar();
+  }
 
   Serial.print((long) seq);
   Serial.print(",");
@@ -459,7 +519,7 @@ void loop() {
   Serial.print(",");
   Serial.print(l.kPa, 2);
   Serial.print(",");
-  Serial.print(ok ? "sim" : "NAO");
+  Serial.print((unsigned) fila.tamanho);
   if (foraDaFaixaFisica(l)) {
     Serial.print("   <-- FORA DA FAIXA");
   }
