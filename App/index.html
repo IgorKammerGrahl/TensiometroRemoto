@@ -8,6 +8,11 @@
       name="viewport"
       content="width=device-width, initial-scale=1, viewport-fit=cover"
     />
+    <!-- Opta pelo tamanho de texto do sistema (Chrome 146+). Sem isto o Chrome
+         do Android ignora o "Tamanho da fonte" do aparelho dentro da pagina --
+         justamente o ajuste que quem enxerga mal ja fez. Funciona porque o CSS
+         e todo em rem e NAO fixa font-size no html (ver base.css). -->
+    <meta name="text-scale" content="scale" />
     <!-- Uma theme-color por esquema: a barra do navegador acompanha a
          superficie do aplicativo em vez de brigar com ela. -->
     <meta name="theme-color" media="(prefers-color-scheme: light)" content="#f7f5f0" />
