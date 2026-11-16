@@ -823,3 +823,14 @@ a.cartao:hover {
   vertical-align: middle;
   white-space: nowrap;
 }
+
+/* ------------------------------------------------------------- intervalo
+ *
+ * As duas datas do RF07, lado a lado quando cabem. Logo abaixo do seletor de
+ * periodo e acima do grafico: e o grafico que elas mudam. */
+.intervalo {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
+  gap: var(--e3);
+  margin: calc(-1 * var(--e2)) 0 var(--e4);
+}

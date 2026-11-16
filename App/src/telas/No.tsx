@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { useRef, useState } from 'react';
+import { useId, useRef, useState } from 'react';
 import { Link, useParams } from 'react-router';
 import { api, ErroAPI, SEM_REDE } from '../api';
 import { Calibracao, useCalibracoes } from '../componentes/Calibracao';
@@ -10,7 +10,18 @@ import { Grafico } from '../componentes/Grafico';
 import { Regua } from '../componentes/Regua';
 import { SeloSimulado } from '../componentes/Simulado';
 import { textoKpa } from '../escala';
-import { type Ancora, JANELAS, JANELA_PADRAO, parametros } from '../janela';
+import {
+  type Ancora,
+  diaLocal,
+  type Intervalo,
+  intervaloInicial,
+  intervaloValido,
+  JANELAS,
+  JANELA_PADRAO,
+  parametros,
+  parametrosIntervalo,
+  tituloIntervalo,
+} from '../janela';
 import { situacao, textoDeIdade } from '../leitura';
 import { useAgora } from '../relogio';
 import { aparencia } from '../zona';
@@ -30,6 +41,14 @@ export function No() {
   const { id = '' } = useParams();
   const agora = useAgora();
   const [janela, setJanela] = useState(JANELA_PADRAO);
+  /* RF07: com intervalo, o historico e o das datas escolhidas, e as janelas
+   * relativas ficam de lado; sem, vale a janela. Um estado so de "modo" em vez
+   * de dois evitaria nada: a janela continua lembrada para quando o produtor
+   * voltar a ela. */
+  const [intervalo, setIntervalo] = useState<Intervalo | null>(null);
+  const hoje = diaLocal(agora);
+  const idDe = useId();
+  const idAte = useId();
 
   const qDev = useQuery({
     queryKey: ['device', id],
@@ -52,9 +71,14 @@ export function No() {
   const ancora = useRef<Ancora>(null);
 
   const qSerie = useQuery({
-    queryKey: ['serie', id, janela.chave],
+    queryKey: intervalo
+      ? ['serie', id, 'datas', intervalo.de, intervalo.ate]
+      : ['serie', id, janela.chave],
     queryFn: async ({ signal }) => {
-      const r = await api.serie(id, parametros(janela, ancora.current), signal);
+      const q = intervalo
+        ? parametrosIntervalo(intervalo, hoje)
+        : parametros(janela, ancora.current);
+      const r = await api.serie(id, q, signal);
       const t = Date.parse(r.to);
       // Carimbo malformado nao vira ancora: um NaN aqui viraria RangeError na
       // proxima troca de janela, la dentro do toISOString().
@@ -75,6 +99,18 @@ export function No() {
 
   const dev = qDev.data;
   const s = dev ? situacao(dev.ativo, dev.ultima, qDev.dataUpdatedAt, agora) : null;
+
+  /* Onde a escolha de datas abre: na semana da ultima leitura. Para o no que
+   * reporta, e a semana de hoje; para o que parou ha meses, e a ultima semana
+   * em que ainda havia dado -- que nenhuma das janelas relativas alcanca. */
+  const abrirDatas = () =>
+    setIntervalo(intervaloInicial(dev?.ultima ? Date.parse(dev.ultima.measured_at) : agora));
+  const mudarIntervalo = (novo: Intervalo) => {
+    // O min/max dos campos ja impede o par invertido no seletor; isto cobre o
+    // que for digitado. Valor invalido nao vira consulta: o servidor
+    // responderia 400 e o grafico sumiria por um erro de digitacao.
+    if (intervaloValido(novo, hoje)) setIntervalo(novo);
+  };
   const zonaAtual = s?.tipo === 'atual' ? aparencia(s.zona) : null;
 
   return (
@@ -128,10 +164,18 @@ export function No() {
               </>
             )}
             {s.tipo === 'velha' && (
-              <p className="secundario">
-                O nó parou de reportar. O histórico abaixo mostra até onde ele chegou; o estado
-                atual do solo é desconhecido.
-              </p>
+              <>
+                <p className="secundario">
+                  O nó parou de reportar, e o estado atual do solo é desconhecido. O histórico
+                  mostra até onde ele chegou.
+                </p>
+                {/* Sem este atalho, um no parado ha mais de 30 dias abre com o
+                    grafico vazio nas tres janelas, e "o historico mostra ate onde
+                    ele chegou" seria uma promessa que a tela nao cumpre. */}
+                <button type="button" className="botao botao--contorno" onClick={abrirDatas}>
+                  Ver a semana da última leitura
+                </button>
+              </>
             )}
             {s.tipo === 'nunca' &&
               (semCalibracao ? (
@@ -177,21 +221,66 @@ export function No() {
           <Calibracao dev={dev} />
 
           <section>
-            <h2>{janela.titulo}</h2>
+            <h2>{intervalo ? tituloIntervalo(intervalo) : janela.titulo}</h2>
 
             <div className="janelas" role="group" aria-label="Período do histórico">
-              {JANELAS.map((j) => (
-                <button
-                  key={j.chave}
-                  type="button"
-                  className={`janelas__opcao${j.chave === janela.chave ? ' janelas__opcao--ativa' : ''}`}
-                  aria-pressed={j.chave === janela.chave}
-                  onClick={() => setJanela(j)}
-                >
-                  {j.rotulo}
-                </button>
-              ))}
+              {JANELAS.map((j) => {
+                const ativa = !intervalo && j.chave === janela.chave;
+                return (
+                  <button
+                    key={j.chave}
+                    type="button"
+                    className={`janelas__opcao${ativa ? ' janelas__opcao--ativa' : ''}`}
+                    aria-pressed={ativa}
+                    onClick={() => {
+                      setIntervalo(null);
+                      setJanela(j);
+                    }}
+                  >
+                    {j.rotulo}
+                  </button>
+                );
+              })}
+              <button
+                type="button"
+                className={`janelas__opcao${intervalo ? ' janelas__opcao--ativa' : ''}`}
+                aria-pressed={intervalo !== null}
+                onClick={() => (intervalo ? undefined : abrirDatas())}
+              >
+                Escolher datas
+              </button>
             </div>
+
+            {intervalo && (
+              /* min/max cruzados, como os limiares em Faixa.tsx: o fim nao
+                 escolhe dia antes do inicio, o inicio nao escolhe dia depois
+                 do fim, e nenhum dos dois escolhe o futuro. */
+              <div className="intervalo">
+                <div className="campo">
+                  <label htmlFor={idDe}>De</label>
+                  <input
+                    id={idDe}
+                    type="date"
+                    required
+                    value={intervalo.de}
+                    max={intervalo.ate}
+                    onChange={(e) => mudarIntervalo({ ...intervalo, de: e.target.value })}
+                  />
+                </div>
+                <div className="campo">
+                  <label htmlFor={idAte}>Até</label>
+                  <input
+                    id={idAte}
+                    type="date"
+                    required
+                    value={intervalo.ate}
+                    min={intervalo.de}
+                    max={hoje}
+                    onChange={(e) => mudarIntervalo({ ...intervalo, ate: e.target.value })}
+                  />
+                </div>
+              </div>
+            )}
 
             {qSerie.isPending && <p className="secundario">Carregando o histórico…</p>}
             {qSerie.isError && (
@@ -202,7 +291,7 @@ export function No() {
                  ponto em foco do desenho anterior sobreviveria a troca,
                  apontando para um instante que ja nao esta no eixo. */
               <Grafico
-                key={janela.chave}
+                key={intervalo ? `${intervalo.de}_${intervalo.ate}` : janela.chave}
                 pontos={qSerie.data.pontos}
                 bucketS={qSerie.data.bucket_s}
                 deMs={Date.parse(qSerie.data.from)}

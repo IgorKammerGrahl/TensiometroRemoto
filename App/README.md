@@ -119,38 +119,44 @@ reporte perdido são indistinguíveis na série agregada, então a legenda diz q
 linha se interrompe onde leituras consecutivas ficaram distantes, e para por aí.
 Contar seria afirmar uma precisão que o dado não tem.
 
-## Limitação conhecida — o PATCH de talhão não sabe apagar a faixa
+## Resolvido em 16/11/2026 — remover a faixa do talhão (`RF08`)
 
-Configurar os limiares funciona; **voltar um talhão para não-configurado, não**.
-Descoberto do mesmo jeito que o anterior: contra o servidor de verdade, com um
-botão que devolvia `200 OK` e não mudava nada.
+Configurar os limiares sempre funcionou; **voltar um talhão para
+não-configurado** ficou meses sem caminho. O botão existiu, mandava
+`{"kpa_alerta": null, "kpa_estresse": null}` no `PATCH` e devolvia `200 OK`
+sem mudar nada: em Go, os campos `*float32` ficam `nil` tanto para `null`
+quanto para chave ausente, e o `COALESCE` de `AtualizarTalhao` lê `nil` como
+*mantenha*. Um controle que afirma sucesso e não faz nada é pior que nenhum, e
+ele saiu.
 
-A causa está no Go. Os campos são `*float32`, e `json.Unmarshal` deixa o
-ponteiro `nil` tanto para `null` explícito quanto para chave ausente — os dois
-casos ficam indistinguíveis. `AtualizarTalhao` então faz
-`COALESCE($4, t.kpa_alerta)`, que lê `nil` como *mantenha o que está lá*. Enviar
-`{"kpa_alerta": null, "kpa_estresse": null}` é, para aquele endpoint,
-exatamente o mesmo que enviar `{}`.
+O conserto não mexeu no `PATCH`. As três formas de distinguir ausente de nulo
+dentro dele (ponteiro duplo, `json.RawMessage`, sentinela) mudariam o que um
+campo do contrato significa conforme a forma de escrever o JSON. Em vez disso,
+a faixa virou sub-recurso: **`DELETE /api/v1/app/talhoes/{id}/faixa`** zera os
+dois limiares juntos (o `CHECK` trata a faixa como par), com a mesma
+autorização por concessão do `PATCH`, e é idempotente. O `PATCH` continua só
+configurando, e o tipo de `api.patchTalhao` deixou de aceitar `null`.
 
-O botão saiu do formulário. Um controle que reporta sucesso e não faz nada é
-pior que controle nenhum: a interface passa a afirmar um fato falso, que é o
-erro que este projeto persegue no gráfico e no indicador. Hoje se limpa a faixa
-pelo banco:
+Na tela, "Remover os limites" aparece ao lado de "Alterar" quando o talhão
+tem faixa, com confirmação na própria página, como a desativação do nó.
+Verificado no navegador contra o servidor em 16/11/2026 (Talhão Norte:
+definir −30/−60, remover, régua de volta a "Faixa não configurada").
 
-```sql
-UPDATE talhoes SET kpa_alerta = NULL, kpa_estresse = NULL WHERE id = '<uuid>';
-```
+**Status do `RF08` (faixas de atenção): atendido** nas duas direções.
 
-O conserto é de backend e fica para depois da PWA. Ele é pequeno — distinguir
-ausente de nulo e trocar o `COALESCE` —, mas a escolha entre as três formas de
-distinguir (ponteiro duplo, `json.RawMessage` ou um sentinela) tem efeito
-observável no contrato da API e merece um parágrafo no capítulo 5, não uma nota
-de rodapé.
+## Intervalo de datas no histórico (`RF07`), 16/11/2026
 
-**Status do `RF07`: cumprido apenas na direção de configurar.** Não é *atendido*.
-O texto do TCC precisa declarar isso como limitação conhecida; afirmar o
-requisito como entregue seria a mesma classe de erro que o botão removido —
-relatar como feito o que não acontece.
+Além de 24 h, 7 dias e 30 dias, "Escolher datas" abre dois campos (de, até).
+O intervalo é de dias inteiros no fuso do aparelho, e **aqui o cliente manda
+`to`**, ao contrário das janelas relativas (ver `src/janela.ts`): as datas são
+do calendário do produtor, não uma duração contada do agora. A exceção é o
+intervalo que termina hoje, em que o fim continua sendo o relógio do servidor.
+
+Um nó que parou de reportar ganhou o atalho "Ver a semana da última leitura":
+sem ele, um nó parado há mais de 30 dias abria com o gráfico vazio nas três
+janelas.
+
+**Status do `RF07`: atendido.**
 
 ## `RF10` — verificado ponta a ponta contra o servidor
 

@@ -58,3 +58,62 @@ export function parametros(j: Janela, ancora: Ancora): { from?: string } {
   if (ancora === null) return {};
   return { from: new Date(ancora - j.duracaoS * 1000).toISOString() };
 }
+
+// ------------------------------------------------- intervalo de datas (RF07)
+
+/** Intervalo escolhido pelo produtor: dias inteiros do calendario dele, no
+ *  fuso do aparelho, em 'AAAA-MM-DD' -- o formato do <input type="date">. */
+export type Intervalo = { readonly de: string; readonly ate: string };
+
+const DIA_ISO = /^\d{4}-\d{2}-\d{2}$/;
+
+/** Data local 'AAAA-MM-DD' somada de `n` dias. O construtor de Date atravessa
+ *  mes e ano sozinho, e acompanharia horario de verao se ele voltasse. */
+function deslocar(dia: string, n: number): Date {
+  const [a, m, d] = dia.split('-').map(Number);
+  return new Date(a!, m! - 1, d! + n);
+}
+
+/** 'AAAA-MM-DD' do instante, no fuso do aparelho. */
+export function diaLocal(ms: number): string {
+  const d = new Date(ms);
+  const p = (n: number) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
+}
+
+/** de <= ate <= hoje, as duas no formato do input. A comparacao de texto vale
+ *  porque o formato e de largura fixa e vai do ano para o dia. */
+export function intervaloValido(iv: Intervalo, hoje: string): boolean {
+  return DIA_ISO.test(iv.de) && DIA_ISO.test(iv.ate) && iv.de <= iv.ate && iv.ate <= hoje;
+}
+
+/** Parametros de consulta de um intervalo de datas.
+ *
+ * AQUI O CLIENTE MANDA `to`, ao contrario das janelas relativas. As datas sao
+ * escolha do produtor, no calendario dele -- "de 1 a 16 de setembro" --, e
+ * nao uma duracao contada do agora; quem sabe onde comeca o dia 1 em Rio do
+ * Sul e o aparelho, nao o servidor (que fala UTC). Fim exclusivo: meia-noite
+ * do dia seguinte ao ultimo.
+ *
+ * A excecao e o intervalo que termina hoje. Ai o fim e o agora do servidor, e
+ * `to` fica de fora pelo motivo do cabecalho deste arquivo. `hoje` e o unico
+ * uso do relogio do aparelho aqui, e um erro dele so muda a decisao perto da
+ * meia-noite. */
+export function parametrosIntervalo(iv: Intervalo, hoje: string): { from: string; to?: string } {
+  const from = deslocar(iv.de, 0).toISOString();
+  if (iv.ate >= hoje) return { from };
+  return { from, to: deslocar(iv.ate, 1).toISOString() };
+}
+
+/** Os 7 dias que terminam no dia do instante dado. Usado ao abrir a escolha
+ *  de datas: com o instante da ultima leitura, um no que parou de reportar ha
+ *  meses abre direto na semana em que ainda havia dado. */
+export function intervaloInicial(fimMs: number): Intervalo {
+  const ate = diaLocal(fimMs);
+  return { de: diaLocal(deslocar(ate, -6).getTime()), ate };
+}
+
+export function tituloIntervalo(iv: Intervalo): string {
+  const br = (dia: string) => dia.split('-').reverse().join('/');
+  return iv.de === iv.ate ? `Dia ${br(iv.de)}` : `De ${br(iv.de)} a ${br(iv.ate)}`;
+}
