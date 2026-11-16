@@ -1,0 +1,8 @@
+data        : 2026-11-16T11:30:24-03:00
+kernel      : Linux 7.3.4-1-cachyos
+cpu         : 13th Gen Intel(R) Core(TM) i7-13620H (16 threads)
+memoria     : 15.3 GiB
+docker      : 29.9.3, compose 5.7.1
+imagens     : docker.io/library/postgres:16.15-alpine3.24, docker.io/library/caddy:2.11.9-alpine
+rede        : cliente no host -> Caddy (HTTPS, CA local, tls internal) -> replicas da API; tudo na mesma maquina
+commit      : 88e7708 + alteracoes nao commitadas (item 2)

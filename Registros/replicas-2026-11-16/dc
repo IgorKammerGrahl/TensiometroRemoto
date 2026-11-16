@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+# dc <a|b> <args...>: docker compose da instalacao de teste tcc-<a|b>
+S=$(cd "$(dirname "$0")" && pwd); n=$1; shift
+cd /home/igorkg/TCC/deploy && exec docker compose --env-file "$S/tcc-$n.env" -f compose.yaml -f compose.local.yaml "$@"
