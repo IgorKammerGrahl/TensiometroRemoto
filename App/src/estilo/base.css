@@ -1437,3 +1437,21 @@ p {
   width: 90%;
   height: 90%;
 }
+
+/* --------------------------------------------- campo com botao (senha) */
+.campo__com-botao {
+  display: flex;
+  gap: var(--e2);
+}
+.campo__com-botao > input {
+  flex: 1;
+  min-width: 0;
+  min-height: var(--toque);
+  padding: 0 var(--e3);
+  border: var(--borda-grossa) solid var(--borda-forte);
+  border-radius: var(--raio);
+  background: var(--superficie-2);
+}
+.campo__com-botao > input:focus {
+  border-color: var(--tinta);
+}
