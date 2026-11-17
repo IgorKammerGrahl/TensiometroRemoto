@@ -30,9 +30,10 @@
     piezorresistivo e a aquisição em um microcontrolador ESP32, configurado em
     campo por portal cativo; a telemetria autenticada, com idempotência
     garantida pelo par identificador do nó e número de sequência; e um serviço
-    de retaguarda com aplicação web progressiva embarcada, que apresenta ao
-    produtor a leitura corrente, o histórico e as faixas de atenção, e que
-    converte cada leitura pela calibração que ela referencia. Em decisão
+    de retaguarda com aplicação web progressiva embarcada, que responde ao
+    produtor, por talhão e em palavras, se é preciso irrigar, com a leitura e
+    o histórico como detalhe, e que converte cada leitura pela calibração que
+    ela referencia. Em decisão
     tomada com o orientador, o escopo foi recortado: a calibração do
     instrumento, que depende da estanqueidade do tensiômetro, problema de
     natureza hidráulica, passou a esforço secundário, e o trabalho passou a
@@ -52,8 +53,8 @@
     O método de implantação de uma instalação e de um nó novos foi descrito
     como roteiro reprodutível. Permanecem não realizadas a calibração contra o
     vacuômetro mecânico, que manteve os coeficientes nominais de catálogo
-    porque o instrumento disponível não reteve vácuo, a validação em solo e a
-    implantação em servidor remoto. O trabalho estabelece, portanto, a
+    porque o instrumento disponível não reteve vácuo, a validação em solo, a
+    implantação em servidor remoto e os testes com usuários. O trabalho estabelece, portanto, a
     viabilidade técnica da cadeia de aquisição e de transmissão e a sua
     operação com múltiplos nós em ambiente controlado, e delimita
     explicitamente as afirmações que os ensaios executados não autorizam.
@@ -77,9 +78,10 @@
     acquisition on an ESP32 microcontroller, configured in the field through a
     captive portal; authenticated telemetry, with idempotency guaranteed by
     the pair node identifier and sequence number; and a back-end service with
-    an embedded progressive web application, which presents the farmer with
-    the current reading, the history and the attention thresholds, and which
-    converts each reading through the calibration it references. In a
+    an embedded progressive web application, which tells the farmer, per
+    field and in words, whether irrigation is needed, with the reading and its
+    history as detail, and which converts each reading through the
+    calibration it references. In a
     decision taken with the advisor, the scope was narrowed: calibration of
     the instrument, which depends on the tensiometer being airtight, a
     hydraulic problem, became a secondary effort, and the work turned to
@@ -100,8 +102,8 @@
     for a new installation and a new node was described as a reproducible
     procedure. Calibration against the mechanical vacuum gauge, which kept the
     catalogue nominal coefficients because the available instrument did not
-    hold vacuum, validation in soil and deployment on a remote server remain
-    unperformed. The work therefore establishes the technical feasibility of
+    hold vacuum, validation in soil, deployment on a remote server and
+    testing with users remain unperformed. The work therefore establishes the technical feasibility of
     the acquisition and transmission chain and its operation with multiple
     nodes in a controlled environment, and explicitly delimits the claims that
     the trials carried out do not authorise.
