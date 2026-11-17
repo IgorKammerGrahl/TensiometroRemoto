@@ -17,6 +17,9 @@
          superficie do aplicativo em vez de brigar com ela. -->
     <meta name="theme-color" media="(prefers-color-scheme: light)" content="#f7f5f0" />
     <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#131210" />
+    <!-- Tema antes da primeira pintura; ver public/tema.js. Sem type=module e
+         sem defer de proposito: precisa rodar antes do CSS ser aplicado. -->
+    <script src="/tema.js"></script>
     <meta name="description" content="Monitoramento de umidade do solo por tensiometria" />
 
     <link rel="manifest" href="/manifest.webmanifest" />

@@ -93,61 +93,60 @@
   --borda-fina: 1px;
   --borda-grossa: 2px;
 
-  /* Superficie e tinta -- modo claro (o padrao; e o modo de uso sob sol). */
-  --superficie: #f7f5f0;
-  --superficie-2: #ffffff;
-  --superficie-afundada: #edeae2;
-  --tinta: #14120e;
-  --tinta-2: #4a453c;
-  --tinta-3: #6e675b;
-  --borda: #b8af9e;
-  --borda-forte: #8c8474;
-  --sobre-cor: #ffffff;
+  /* Redesenho de 11/2026. */
+  --texto-veredito: 1.75rem; /* a resposta do talhao: o maior texto da tela */
+  --faixa-estado: 0.5rem; /* faixa lateral de cor + hachura dos cartoes */
+  --barra-inferior: 4rem;
+  --toque-principal: 3.5rem; /* a acao principal de cada tela */
 
-  /* Estado. Validados por scripts/validate_palette.js contra a superficie
-   * clara: os cinco testes passam (deuteranopia dE 16.0, tritanopia 15.7,
-   * visao normal 19.3).
+  /* TEMA: CLARO POR PADRAO, E NAO O DO SISTEMA (ver src/tema.ts).
+   *
+   * Cada cor e declarada UMA vez, com o par claro/escuro em light-dark(). Qual
+   * dos dois vale e decidido pelo color-scheme: `light` aqui, sobrescrito pelo
+   * estilo inline que public/tema.js poe no <html> quando a pessoa escolheu
+   * escuro ou "igual ao celular". Sem JavaScript, fica o claro.
+   *
+   * O guia de dark mode manda o root ser `light dark` (seguir o sistema). Aqui
+   * nao, de proposito: sol e economia de bateria -- ver src/tema.ts.
+   *
+   * O escuro e SELECIONADO, nao invertido: cada passo foi escolhido e validado
+   * contra a superficie escura por conta propria. E por isso `only light`, e
+   * nao `light`: o `only` recusa o escurecimento automatico do navegador, que
+   * inverteria a paleta validada por algoritmo (o que foi medido esta em
+   * src/tema.ts). */
+  color-scheme: only light;
+
+  /* Superficie e tinta. Claro: papel envelhecido, o modo de uso sob sol. */
+  --superficie: light-dark(#f7f5f0, #131210);
+  --superficie-2: light-dark(#ffffff, #1e1c19);
+  --superficie-afundada: light-dark(#edeae2, #0c0b0a);
+  --tinta: light-dark(#14120e, #f2efe9);
+  --tinta-2: light-dark(#4a453c, #bdb6a9);
+  --tinta-3: light-dark(#6e675b, #8c857a);
+  --borda: light-dark(#b8af9e, #4a453e);
+  --borda-forte: light-dark(#8c8474, #6e675d);
+  --sobre-cor: light-dark(#ffffff, #131210);
+
+  /* Estado. Validados por scripts/validate_palette.js contra cada superficie,
+   * em cada modo: os cinco testes passam (claro: deuteranopia dE 16.0,
+   * tritanopia 15.7, visao normal 19.3; escuro: 9.1, 14.2, 20.8).
    *
    * Conforto e AZUL, nao verde. O verde que passava no teste de daltonismo nao
    * passava no piso de croma sobre este bege; e azul e semanticamente melhor
-   * aqui de qualquer modo -- o assunto e agua no solo. */
-  --conforto: #0e6fa8;
-  --alerta: #c07800;
-  --estresse: #a82015;
+   * aqui de qualquer modo -- o assunto e agua no solo.
+   *
+   * No escuro o estresse vai para o carmim em vez do vermelho: na faixa
+   * estreita de luminosidade que sobra, ambar e vermelho convergem sob
+   * deuteranopia. Coerencia de matiz entre os modos custaria a separacao -- e a
+   * separacao e o requisito. */
+  --conforto: light-dark(#0e6fa8, #3080be);
+  --alerta: light-dark(#c07800, #ac8c05);
+  --estresse: light-dark(#a82015, #e85b7c);
 
   /* Cinza de estado. DELIBERADAMENTE FORA da paleta de estado.
    * Cobre os dois casos que nao sao leitura ruim nem leitura boa: talhao sem
-   * faixa configurada e leitura velha. Se um deles usasse uma cor da escala,
-   * seria lido como um grau dela. */
-  --neutro: #7d766a;
-  --neutro-fraco: #ded9cf;
-}
-
-/* Modo escuro SELECIONADO, nao invertido. Os passos foram escolhidos e
- * validados contra a superficie escura por conta propria: os cinco testes
- * passam (deuteranopia dE 9.1, tritanopia 14.2, visao normal 20.8).
- *
- * O estresse foi para o carmim em vez do vermelho: no escuro, na faixa estreita
- * de luminosidade que sobra, ambar e vermelho convergem sob deuteranopia.
- * Coerencia de matiz entre os modos custaria a separacao -- e a separacao e o
- * requisito. */
-@media (prefers-color-scheme: dark) {
-  :root {
-    --superficie: #131210;
-    --superficie-2: #1e1c19;
-    --superficie-afundada: #0c0b0a;
-    --tinta: #f2efe9;
-    --tinta-2: #bdb6a9;
-    --tinta-3: #8c857a;
-    --borda: #4a453e;
-    --borda-forte: #6e675d;
-    --sobre-cor: #131210;
-
-    --conforto: #3080be;
-    --alerta: #ac8c05;
-    --estresse: #e85b7c;
-
-    --neutro: #8c857a;
-    --neutro-fraco: #2a2724;
-  }
+   * limites e leitura velha. Se um deles usasse uma cor da escala, seria lido
+   * como um grau dela. */
+  --neutro: light-dark(#7d766a, #8c857a);
+  --neutro-fraco: light-dark(#ded9cf, #2a2724);
 }
