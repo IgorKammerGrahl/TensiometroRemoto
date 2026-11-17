@@ -13,8 +13,9 @@ A primeira parte está respondida, do transdutor à interface. A cadeia foi
 construída com componentes de prateleira de baixo custo e opera de ponta a
 ponta nesse trecho: o condicionamento e a aquisição no ESP32, a transmissão
 autenticada e idempotente, o armazenamento da grandeza bruta junto da
-calibração que a interpreta, e a interface que apresenta ao produtor a
-leitura, o histórico e as faixas de atenção. O acoplamento do transdutor ao
+calibração que a interpreta, e a interface que responde ao produtor, por
+talhão e em palavras, se é preciso irrigar, com a leitura, o histórico e as
+faixas de atenção como detalhe. O acoplamento do transdutor ao
 tensiômetro foi construído, mas ainda não produziu medida válida
 (@sec-substituto). Em bancada, a
 dispersão do sinal ficou uma ordem de grandeza abaixo do erro declarado para o
@@ -103,7 +104,10 @@ segunda é a autorização expressa como estrutura da consulta, e não como
 verificação condicional no código, com o compartilhamento de dados modelado
 por concessão de talhão. A terceira é uma interface projetada para não afirmar
 ao produtor um fato falso sobre o solo: leituras antigas não exibem zona,
-lacunas não são interpoladas, e a cor nunca é o único canal de um alerta.
+lacunas não são interpoladas, a resposta do talhão não se forma com menos da
+metade dos nós falando, e a cor nunca é o único canal de um alerta. A mesma
+interface acompanha o tamanho de texto escolhido no celular até o dobro do
+normal.
 
 Soma-se a isso o registro explícito dos erros encontrados e corrigidos, e do
 que cada ensaio não autoriza afirmar, que permite a quem retomar o trabalho
@@ -131,7 +135,13 @@ reunidas:
   máquina do cliente, e apenas quanto à ingestão (@sec-escala);
 - com mais de uma cópia do serviço, o limite de tentativas de login por conta
   fica mais folgado, uma cota por cópia (@sec-replicas);
-- não foram realizados testes com usuários representativos do produtor rural.
+- a resposta por talhão é calculada no aplicativo, e não no servidor, de
+  modo que um segundo cliente teria de reimplementá-la (@sec-veredito);
+- a legibilidade da interface foi verificada apenas em emulador, sem celular
+  físico (@sec-legibilidade);
+- não foram realizados testes com usuários representativos do produtor rural,
+  e a ordem dos talhões por urgência, que troca a posição dos cartões quando a
+  resposta muda, aguarda essa avaliação.
 
 == Trabalhos futuros
 
@@ -163,4 +173,7 @@ As limitações acima apontam, em grande parte, os próprios trabalhos futuros:
   secagem real do sistema;
 - estimativa do tempo restante até o limiar de atenção a partir da tendência
   da série, cuja validação depende dessas séries de secagem real;
-- testes de usabilidade com produtores rurais.
+- resposta do talhão calculada pelo servidor, com a mesma ordem de
+  verificações, para que todos os clientes respondam igual;
+- testes de usabilidade com produtores rurais, que decidam também a ordem dos
+  talhões na tela inicial.

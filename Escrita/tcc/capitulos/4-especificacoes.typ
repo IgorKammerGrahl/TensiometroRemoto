@@ -335,11 +335,14 @@ para identificar situações de alerta hídrico.
 
 Das três frentes previstas, duas foram executadas e uma não. A confiabilidade
 da telemetria foi medida em dois ensaios contínuos e a interface foi
-verificada por suíte automatizada e por ensaio ponta a ponta contra o servidor
-em execução, ambos relatados no @cap-prototipo. A verificação da calibração
-analógica não foi realizada, e com ela ficaram por fazer os ensaios de secagem
-e umedecimento do solo; os testes exploratórios com usuários também não foram
-conduzidos. As limitações decorrentes estão declaradas ao final daquele
+verificada por suíte automatizada, por ensaio ponta a ponta contra o servidor
+em execução e, quanto à legibilidade, em celular Android emulado, com o texto
+ampliado até 200% e o estado conferido sem cor, todos relatados no
+@cap-prototipo. A verificação da calibração analógica não foi realizada, e
+com ela ficaram por fazer os ensaios de secagem e umedecimento do solo; os
+testes exploratórios com usuários também não foram conduzidos, de modo que
+a clareza das informações e o tempo para identificar um alerta, que eles
+mediriam, seguem sem verificação. As limitações decorrentes estão declaradas ao final daquele
 capítulo.
 
 O plano de testes deve, ainda, incorporar três condicionantes de natureza

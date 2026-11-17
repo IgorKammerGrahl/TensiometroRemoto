@@ -22,8 +22,9 @@ unidades de pressão e pela transmissão autenticada ao servidor. O terceiro é 
 serviço de retaguarda, que recebe, valida, armazena e disponibiliza as
 leituras, com modelo de autorização por concessão de talhão. O quarto é a
 camada de apresentação, uma aplicação web progressiva embutida no próprio
-binário do serviço, que exibe ao produtor a leitura corrente, o histórico e as
-faixas de atenção. Com ela, o quarto objetivo específico deste trabalho ---
+binário do serviço, que responde ao produtor, por talhão e em palavras, se é
+preciso irrigar, e exibe a leitura corrente, o histórico e as faixas de
+atenção. Com ela, o quarto objetivo específico deste trabalho ---
 implementar a infraestrutura de comunicação em nuvem e desenvolver o aplicativo
 de monitoramento --- está cumprido quanto à construção. A operação, contudo,
 ocorreu sempre com o servidor na rede local: a hospedagem remota não foi
@@ -743,9 +744,12 @@ dependência de recurso nativo do dispositivo: a aplicação consulta séries
 históricas e exibe classificações calculadas no servidor, operações
 inteiramente cobertas pelas capacidades de um navegador.
 
-O que se segue não é uma descrição de telas. São as decisões de projeto em que
-a interface pode afirmar ao produtor um fato falso sobre o solo dele, e a
-forma como cada uma foi tratada.
+O que se segue não é uma descrição de telas. São, primeiro, as decisões de
+projeto em que a interface pode afirmar ao produtor um fato falso sobre o solo
+dele, e a forma como cada uma foi tratada; depois, as decisões do redesenho
+feito ao fim do desenvolvimento, para que a resposta chegue a quem vai lê-la
+--- um produtor muitas vezes mais velho, que consulta o celular sob o sol e,
+às vezes, sem óculos.
 
 === Distribuição em artefato único
 
@@ -805,7 +809,7 @@ porque os limites do campo são inclusivos enquanto a restrição exige
 desigualdade estrita; e a chegada dos valores por qualquer caminho que não
 seja aquele formulário.
 
-=== Estados que não podem colapsar em conforto
+=== Estados que não podem colapsar em conforto <sec-estados-leitura>
 
 A interface distingue quatro situações, verificadas nesta ordem: o nó está
 desativado; o nó nunca reportou; a última leitura é antiga demais para
@@ -839,7 +843,8 @@ relação a todos eles. A justificativa está no RNF05 lido em concreto: a tela
 será consultada sob luz solar direta, onde a distinção entre matizes se
 degrada, e por um usuário que pode ser daltônico. Nas duas situações a cor
 deixa de ser um canal confiável, e um sistema cujo alerta depende só dela
-falha exatamente para quem mais precisa dele.
+falha exatamente para quem mais precisa dele. O redesenho acrescentou a esses
+canais um pictograma (@sec-legibilidade).
 
 === Descontinuidade da série
 
@@ -868,28 +873,213 @@ lacuna responderia "não há lacuna" e a linha seria ligada. *O modo de falha
 escolhido é um gráfico fragmentado, que é visível, em vez de uma reta
 inventada, que não é.*
 
-=== A lista com centenas de nós
+=== Uma resposta por talhão <sec-veredito>
 
-A lista de nós foi desenhada para poucos aparelhos: um cartão por nó, do mais
-seco para o mais úmido. Com os nós simulados da @sec-escala, ela virou
-rolagem, e a pergunta que a tela existe para responder --- de qual talhão
-cuidar agora --- passou a exigir a leitura de cartão por cartão. A lista foi
-então agrupada por talhão, sem reordenar nada: como o servidor já entrega os
-nós do mais seco para o mais úmido, preservar essa ordem ao agrupar põe
-primeiro o talhão do nó mais seco e, dentro dele, o nó mais seco, e a regra do
-sinal continua tendo uma única implementação.
+Até a fase final do desenvolvimento, a tela inicial era uma lista de nós
+agrupados por talhão, cada um com a sua leitura em kPa e a sua zona. Executada em um celular Android
+emulado e examinada do ponto de vista de quem a usaria, ela mostrou três
+problemas que nenhum teste automatizado acusava. A pergunta que motiva a
+consulta --- é preciso irrigar? --- não tinha resposta direta: o talhão exibia
+contagens por zona e uma tira de traços, e a conclusão ficava por conta de
+quem lia. O caminho principal empregava o vocabulário do sistema --- nó, faixa,
+valores negativos de kPa --- e misturava à leitura as funções do técnico que
+instala e calibra. E o tamanho de texto escolhido nas configurações do
+celular não chegava à página, problema tratado na @sec-legibilidade.
 
-Cada talhão com mais nós do que os três cartões exibidos ganha um resumo: a
-régua do detalhe, deitada, com as mesmas faixas e hachuras, e um traço por nó
-com leitura atual na posição da sua tensão. Os traços são semitransparentes,
-de modo que a sobreposição escurece onde há muitos nós, e a distribuição do
-talhão se lê de relance, sem histograma calculado. Abaixo da tira, a contagem
-por estado vem escrita, na ordem de gravidade. Nó sem leitura atual não ganha
-traço --- um traço afirma onde o solo está agora --- e aparece só na contagem.
-Com todos os cartões à vista, o resumo não aparece, porque apenas repetiria o
-que está logo abaixo. Uma busca por nome, código ou talhão completa a tela.
-Verificado com 160 nós simulados em quatro talhões, um deles sem faixa
-configurada.
+A tela inicial passou, então, a responder por talhão, em palavras: _Solo
+úmido · Não precisa irrigar agora_, _Solo secando · Irrigar nos próximos
+dias_, _Solo seco · Irrigar agora_. O valor em kPa continua disponível,
+rotulado como tensão da água no solo, mas como detalhe abaixo da resposta. A
+resposta é calculada a partir das zonas que o servidor já atribuiu a cada nó,
+por uma função que percorre uma sequência fixa de verificações, e, como nos
+estados da leitura (@sec-estados-leitura), a ordem é a regra:
+
++ nenhum nó ligado no talhão: não há a quem perguntar, e os nós desligados não
+  entram em conta alguma;
++ talhão sem limites de irrigação: nenhuma quantidade de dados permite
+  afirmar, razão pela qual esta verificação precede a contagem;
++ menos da metade dos nós ligados com leitura atual: a resposta seria a de uma
+  minoria, e o talhão aparece como _Sem leitura recente_;
++ alguma leitura atual sem zona em um talhão com limites, situação que o banco
+  de dados não deveria admitir: a resposta é _Não dá para dizer_, porque um
+  valor nulo nunca é convertido em conforto;
++ só então, a mediana das zonas das leituras atuais.
+
+A mediana é tomada sobre as zonas, e não sobre os valores de tensão. Isso é
+legítimo porque a classificação feita pelo servidor é monótona na tensão e os
+dois limiares são os mesmos para todos os nós do talhão --- são atributos do
+talhão, e não do nó (@sec-faixas) ---, de modo que a zona da leitura mediana é
+a mediana das zonas. A consequência é que o cliente continua sem comparar
+leitura com limiar: o módulo que calcula a resposta recebe zonas, conta-as e
+escolhe uma posição, e a verificação dos limites lê-os apenas como presença.
+A defesa contra o sinal invertido, que consistia em tornar o erro
+inexprimível, sobrevive à agregação.
+
+Com número ímpar de leituras atuais, a mediana é a usual. Com número par, há
+duas zonas no meio, e a escolhida é a mais seca das duas --- uma mediana
+superior, no sentido da severidade. A escolha segue a mesma orientação da
+agregação temporal pelo mínimo (@sec-faixas): na dúvida entre duas zonas, a
+interface pende para a que pede atenção. A mediana foi preferida ao nó mais
+seco, critério implícito da lista anterior, porque com ele um único nó com
+defeito que lesse seco decidiria a resposta do talhão inteiro; com a mediana,
+mudar a resposta exige que metade dos nós concorde.
+
+O caso de campo, porém, é de poucos nós por talhão, e aí a proteção diminui.
+Com um nó, vale ele. Com dois, a mediana superior é o mais seco dos dois, e o
+defeito do lado seco volta a decidir. O cartão do talhão declara isso em uma
+frase --- _Com dois sensores, vale o mais seco_ --- e lista os dois nós, cada
+um com a sua palavra e o seu valor, de modo que a discordância entre eles
+fica à vista.
+
+A mediana tem também o defeito simétrico: esconde a minoria. Em um talhão de
+quarenta nós, quinze em estresse podem conviver com uma mediana em conforto.
+Para esse caso, a resposta ganha um complemento --- _Solo úmido · mas 15
+sensores secos · Não precisa irrigar agora_ --- quando os nós de uma zona mais
+seca que a resposta somam ao menos um quarto das leituras atuais,
+$ceil(n slash 4)$. O
+complemento avisa e não muda a resposta, que continua sendo a da mediana; o
+estresse tem prioridade sobre o alerta por ser a situação mais urgente. O
+limiar separa o defeito isolado do fenômeno: com quarenta nós, um nó em
+estresse não aciona o aviso, e dez acionam. Com um ou dois nós o complemento
+não ocorre por construção, já que a mediana superior já é o mais seco; com
+três, basta um. As frases de todos os casos estão em um único lugar do
+código, pela mesma razão que já orientava o texto da idade da leitura: duas
+redações do mesmo estado são duas oportunidades de uma delas soar como "tudo
+bem".
+
+Há uma tensão com a @sec-faixas que precisa ser declarada. Lá, a
+classificação foi posta no servidor para que todos os clientes produzissem o
+mesmo resultado; a resposta do talhão, que também é regra de negócio, ficou no
+cliente. A escolha decorreu do recorte do redesenho, que não alterou a API, e
+o risco é exatamente o descrito naquela seção: um segundo cliente teria de
+reimplementar a ordem das verificações, a mediana e o limiar do complemento. O
+que se preservou é a parte mais propensa a erro, a comparação com limiares
+negativos, que continua tendo uma só implementação. Levar a agregação para o
+servidor fica como trabalho futuro.
+
+=== A tela inicial e a lista com centenas de nós
+
+A primeira tela inicial foi desenhada para poucos aparelhos: um cartão por nó,
+do mais seco para o mais úmido. Com os nós simulados da @sec-escala, ela
+virou rolagem, e foi primeiro agrupada por talhão, preservando a ordem do
+servidor, com um resumo para cada talhão com mais nós do que os cartões
+exibidos: a régua do detalhe, deitada, com as mesmas faixas e hachuras e um
+traço semitransparente por nó com leitura atual na posição da sua tensão. A
+sobreposição escurece onde há muitos nós, e a distribuição do talhão se lê de
+relance, sem histograma calculado. Nó sem leitura atual não ganha traço,
+porque um traço afirma onde o solo está agora.
+
+No redesenho, essa tira saiu da tela inicial. A pergunta de qual talhão cuidar
+passou a ser respondida pela frase, e a distribuição foi para a página do
+talhão, sob o título _Onde está cada sensor_, para quem quer ver de onde vem a
+resposta. Cada talhão é agora um cartão cuja primeira linha é a resposta. O
+miolo do cartão muda com o número de nós ligados, porque o caso de campo é de
+um a quatro nós por talhão, e não de quarenta. Com um nó, o cartão mostra o
+próprio nó em uma linha e leva direto à tela dele, já que a página do talhão
+só repetiria o que ele diz. Com dois ou três, há uma linha por nó, com a
+palavra e o valor. Com quatro ou mais, há uma barra de proporção: um segmento
+por zona, com a cor e a hachura dela, e um segmento neutro para os nós sem
+leitura recente, cada um de largura proporcional à contagem, com as contagens
+escritas embaixo. Talhão sem limites não tem barra
+nem amostras de cor, porque não há zonas a mostrar; no lugar, uma frase diz
+quantos nós têm leitura sem limites para classificá-la.
+
+A ordem dos cartões também mudou. A anterior --- o talhão do nó mais seco
+primeiro --- contradiria a mediana: um único nó com defeito poria um talhão de
+_Solo úmido_ acima de um de _Solo seco_. Os cartões passaram a seguir a
+urgência da resposta: estresse, alerta, sem leitura recente, indeterminado,
+sem limites, conforto e, por último, talhão sem nó em uso. A ordenação é
+estável sobre categorias --- dentro de uma mesma resposta, vale a ordem do
+servidor --- e não compara tensão alguma, de modo que não é uma segunda
+implementação da regra de sinal. O custo foi registrado: os cartões trocam de
+lugar quando a resposta muda, e quem usa o aplicativo todos os dias pode se
+guiar pela posição. A alternativa, uma ordem fixa com a urgência apenas no
+cabeçalho, depende do teste com usuários, que não foi realizado. Acima dos
+cartões, uma síntese da propriedade responde antes de qualquer um deles, com
+uma linha por situação --- _1 talhão para irrigar agora_, _2 talhões para
+irrigar nos próximos dias_ ---, e não uma frase corrida, que com seis talhões
+passava de cinco linhas.
+
+A partir do cartão, o caminho tem dois níveis, cada um com endereço próprio,
+de modo que o botão de voltar do Android funciona em todos eles. A página do
+talhão traz a resposta e a origem dela, com os dois limites do talhão
+escritos, a tira, uma busca a partir de nove nós e a lista dos nós, do mais
+seco para o mais úmido. A tela do nó traz a resposta daquele nó, o valor, a
+régua e o gráfico. O que serve ao técnico --- identificadores, registro de
+calibração, dados de cadastro --- foi para uma área recolhida ao fim da tela
+do nó, _Para o técnico_. Alterar os limites passou a pedir confirmação na
+própria tela, com os valores anteriores e os novos, porque a mudança altera a
+resposta de todos os nós do talhão. O vocabulário da tela mudou junto: nó
+passou a ser _sensor_, faixa passou a ser _limites de irrigação_, e desativado
+passou a ser _desligado_. Neste texto, nó continua designando o dispositivo,
+como nos capítulos anteriores; a mudança é de quem lê a tela.
+
+=== Legível sem cor, com texto grande e sob o sol <sec-legibilidade>
+
+Cada estado é comunicado agora por quatro canais redundantes: um pictograma, a
+palavra, a cor e a hachura. Os pictogramas foram desenhados para o
+aplicativo: um torrão com três gotas para o solo úmido; com uma gota, para o
+que está secando; rachado e sob o sol, para o seco; tracejado e com um ponto
+de interrogação, quando não é possível dizer; um relógio, para a falta de
+leitura recente; uma tomada solta, para o nó desligado. O desenho é feito em
+tinta sobre o centro claro de um anel, e a cor e a hachura ficam no anel, de
+modo que o pictograma se lê sob o sol, em impressão monocromática e por quem
+não distingue cores. Os leitores de tela o ignoram, porque a informação é a
+palavra, que vem sempre ao lado. Com as capturas de tela convertidas para tons
+de cinza, o estado continuou legível, o que atende, quanto aos estados, ao critério 1.4.1 das diretrizes de acessibilidade do W3C,
+segundo o qual a cor não pode ser o único meio visual de transmitir uma
+informação @w3c2024.
+
+O problema do texto era menos visível. O Android permite aumentar o tamanho da
+fonte nas configurações do sistema, e é esse o recurso que uma pessoa com
+visão reduzida de fato usa. Com a escala em 130%, porém, só a interface do
+navegador crescia, e a página continuava igual. Desde a versão 146, o Chrome
+só aplica essa escala ao conteúdo quando a página a pede, por uma metatag
+(`<meta name="text-scale" content="scale">`), que o aplicativo não tinha. Com
+ela, a escala do sistema passa a valer, desde que nenhuma regra de estilo fixe
+o tamanho da fonte na raiz do documento, o que a anularia; o texto e a maior
+parte dos espaçamentos da interface são definidos em relação a essa raiz. O critério 1.4.4 das mesmas
+diretrizes pede que o texto possa ser ampliado até 200% sem perda de conteúdo
+ou de funcionalidade @w3c2024, e foi esse o teto testado: seis telas, três
+escalas de texto (100%, 130% e 200%) e os dois temas, 36 combinações, nenhuma
+com rolagem horizontal, conferida por medição no navegador do emulador, e não
+por inspeção visual. A largura da tela emulada é de 393 pixels CSS, maior que
+os 320 do critério de refluxo (1.4.10), que não foi verificado nessa largura.
+
+O tema claro passou a ser o padrão, mesmo com o celular em modo escuro, e o
+escuro, uma escolha feita nos ajustes do aplicativo. É um desvio deliberado da
+orientação usual, que é seguir a preferência do sistema, por dois motivos de
+campo: sob o sol, o tema claro é o legível; e a economia de bateria do Android
+liga o modo escuro sozinha, de modo que o produtor com pouca carga receberia a
+tela escura sem ter escolhido nada. O tema claro é declarado de forma a
+recusar também o escurecimento automático que os navegadores podem aplicar a
+páginas claras, que inverteria por algoritmo as cores e as hachuras escolhidas
+para serem distinguíveis por daltônicos. O que foi medido limita essa
+garantia: o tema escuro do próprio Chrome não altera o aplicativo, mas o
+escurecimento forçado, que no Chrome 149 só existe como opção experimental,
+ignora a recusa. A escolha do tema é aplicada antes da primeira pintura da
+tela por um script em arquivo separado, e não embutido no documento, porque a
+política de segurança de conteúdo enviada pelo serviço só admite scripts
+carregados de arquivos da própria origem.
+
+Uma decisão de navegação foi construída e revertida, e o registro vale pelo
+método. O projeto previa uma barra inferior fixa, na região alcançada pelo
+polegar, com os destinos _Talhões_ e _Ajustes_, e fixou, antes de construí-la,
+a condição para que ela ficasse: com o texto em 200%, a barra teria de deixar
+visível pelo menos um cartão de talhão inteiro. Construída e medida, ela
+ocupou 154 dos 745 pixels de altura útil, e nenhum cartão coube inteiro acima
+dela. Pela condição, a barra saiu, e os ajustes viraram um botão no topo da
+tela inicial. Sem a condição escrita antes, a barra --- um padrão consagrado
+em aplicativos móveis --- provavelmente teria ficado, e a tela teria perdido
+um quinto da altura justamente para quem aumenta o texto por precisar dele.
+
+Toda essa verificação foi feita em emulador (Android Studio, perfil Pixel 5,
+Chrome 149), com dados simulados --- talhões de um a quatro nós, um deles sem
+limites e outro com nós sem leitura recente --- e com os 160 nós simulados da
+@sec-escala. A execução em um celular físico, a instalação completa do
+aplicativo e o teste com pessoas do público a que o redesenho se destina não
+foram realizados. É esse teste que diria se as palavras, os pictogramas e a
+ordem dos cartões são lidos como se pretendeu.
 
 === Três defeitos que só apareceram contra o sistema real
 
@@ -984,10 +1174,13 @@ chave primária composta e o resultado das consultas de autorização por junç�
 não são reproduzíveis por um substituto sem reimplementá-lo, o que faria o
 teste verificar a reimplementação em vez do sistema.
 
-A camada de apresentação é verificada por 95 casos distribuídos em nove
+A camada de apresentação é verificada por 156 casos distribuídos em catorze
 arquivos, que cobrem a segmentação da série, a geometria da régua, a ordem de
-verificação dos estados da leitura, a tradução de zona em aparência e a
-montagem dos coeficientes de calibração enviados ao servidor.
+verificação dos estados da leitura, a tradução de zona em aparência, a
+montagem dos coeficientes de calibração enviados ao servidor e, desde o
+redesenho, a resposta do talhão --- a ordem das verificações, a mediana
+superior, o complemento, as frases e os plurais, a ordenação por urgência e a
+síntese --- e a escolha do tema.
 
 Os comportamentos críticos cobertos são a inversão de sinal na classificação
 das faixas de atenção; as fronteiras exatas dos limiares, verificadas nos
@@ -1691,8 +1884,9 @@ sequência, e nunca um número reaproveitado.
 O dado simulado fica marcado. O cadastro do nó ganhou um atributo que o
 identifica como simulado, fixado no momento do cadastro: a edição posterior do
 nó não o altera em nenhuma direção, e um nó real não pode ser convertido em
-simulado, nem o contrário. O serviço devolve o atributo, e o aplicativo exibe o
-selo _Simulado_ na lista de nós e no detalhe de cada um. O nó de demonstração,
+simulado, nem o contrário. O serviço devolve o atributo, e o aplicativo
+exibe o selo _Simulado_ em cada nó simulado --- ou uma única vez, no cartão do
+talhão, quando todos os nós dele o são. O nó de demonstração,
 cuja série também é gerada, recebeu a mesma marca. A ferramenta, por sua vez,
 só envia com as credenciais que ela própria recebeu ao cadastrar, e confere,
 antes de cada execução, que todos os seus nós estão marcados como simulados,
