@@ -34,7 +34,9 @@ const ESTADOS: ReadonlyArray<{
   { campo: 'semLeitura', zona: 'sem-leitura', texto: () => 'sem leitura recente' },
 ];
 
-export function TiraTalhao({ g }: { g: GrupoTalhao }) {
+/** `semContagem`: na pagina do talhao com 4 ou mais sensores a barra de
+ *  proporcao ja da a contagem; repetir aqui seria a mesma lista duas vezes. */
+export function TiraTalhao({ g, semContagem = false }: { g: GrupoTalhao; semContagem?: boolean }) {
   const faixas = bandas(g.talhao.kpa_alerta, g.talhao.kpa_estresse);
   const limiares =
     faixas.length > 0
@@ -89,26 +91,28 @@ export function TiraTalhao({ g }: { g: GrupoTalhao }) {
         </div>
       </figure>
 
-      <ul className="tira__contagem">
-        {ESTADOS.filter((e) => g.contagem[e.campo] > 0).map((e) => {
-          const qtd = g.contagem[e.campo];
-          if (e.zona === 'sem-leitura') {
+      {!semContagem && (
+        <ul className="tira__contagem">
+          {ESTADOS.filter((e) => g.contagem[e.campo] > 0).map((e) => {
+            const qtd = g.contagem[e.campo];
+            if (e.zona === 'sem-leitura') {
+              return (
+                <li key={e.campo} className="estado estado--sem-estado">
+                  <span className="estado__marca estado__marca--sem-estado" aria-hidden="true" />
+                  <span className="numero">{qtd}</span> {e.texto(qtd)}
+                </li>
+              );
+            }
+            const a = aparencia(e.zona);
             return (
-              <li key={e.campo} className="estado estado--sem-estado">
-                <span className="estado__marca estado__marca--sem-estado" aria-hidden="true" />
+              <li key={e.campo} className={`estado estado--${a.chave}`}>
+                <span className={`estado__marca hachura--${a.hachura}`} aria-hidden="true" />
                 <span className="numero">{qtd}</span> {e.texto(qtd)}
               </li>
             );
-          }
-          const a = aparencia(e.zona);
-          return (
-            <li key={e.campo} className={`estado estado--${a.chave}`}>
-              <span className={`estado__marca hachura--${a.hachura}`} aria-hidden="true" />
-              <span className="numero">{qtd}</span> {e.texto(qtd)}
-            </li>
-          );
-        })}
-      </ul>
+          })}
+        </ul>
+      )}
     </div>
   );
 }

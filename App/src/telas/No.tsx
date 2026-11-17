@@ -118,8 +118,10 @@ export function No() {
   return (
     <div className="pagina">
       <header className="cabecalho cabecalho--detalhe">
-        <Link to="/" className="voltar">
-          ← Talhões
+        {/* Volta para o talhao do sensor, nao para a lista: e de la que se
+            chega aqui. Enquanto o sensor nao carregou, a raiz. */}
+        <Link to={dev ? `/talhao/${encodeURIComponent(dev.talhao.id)}` : '/'} className="voltar">
+          ← {dev ? dev.talhao.nome : 'Talhões'}
         </Link>
       </header>
 

@@ -1,14 +1,12 @@
 import { useQuery } from '@tanstack/react-query';
-import { useId, useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import { Link } from 'react-router';
 import { api } from '../api';
-import { CartaoNo } from '../componentes/CartaoNo';
 import { CartaoTalhao } from '../componentes/CartaoTalhao';
 import { LinhaDeEstado } from '../componentes/LinhaDeEstado';
-import { situacao } from '../leitura';
 import { useAgora } from '../relogio';
 import { useLogout, useSessao } from '../sessao';
-import { agruparPorTalhao, buscarNos } from '../talhoes';
+import { agruparPorTalhao } from '../talhoes';
 import { dataPorExtenso } from '../tempo';
 import { ordenarPorUrgencia, partesDaSintese, veredito } from '../veredito';
 
@@ -21,17 +19,10 @@ import { ordenarPorUrgencia, partesDaSintese, veredito } from '../veredito';
 // trocam de lugar quando a resposta muda) esta na spec e vai para o teste
 // com pessoas.
 
-/** A partir de quantos sensores a busca aparece. Com poucos, so ocupa espaco. */
-const BUSCA_A_PARTIR_DE = 9;
-/** Teto de cartoes no resultado da busca: uma letra so casaria com centenas. */
-const MAX_ACHADOS = 50;
-
 export function Talhoes() {
   const agora = useAgora();
   const sessao = useSessao();
   const logout = useLogout();
-  const idBusca = useId();
-  const [termo, setTermo] = useState('');
 
   const q = useQuery({
     queryKey: ['devices'],
@@ -51,8 +42,6 @@ export function Talhoes() {
     }));
     return ordenarPorUrgencia(comResposta, (c) => c.v);
   }, [devices, q.dataUpdatedAt, agora]);
-  const buscando = termo.trim() !== '';
-  const achados = devices && buscando ? buscarNos(devices, termo) : [];
 
   return (
     <div className="pagina">
@@ -76,48 +65,15 @@ export function Talhoes() {
         </p>
       )}
 
-      {devices && devices.length >= BUSCA_A_PARTIR_DE && (
-        <div className="campo busca">
-          <label htmlFor={idBusca}>Procurar sensor ou talhão</label>
-          <input
-            id={idBusca}
-            type="search"
-            autoComplete="off"
-            value={termo}
-            onChange={(e) => setTermo(e.target.value)}
-          />
-        </div>
-      )}
-
-      {buscando ? (
-        <section aria-label="Resultado da busca">
-          <p className="secundario" aria-live="polite">
-            {achados.length === 0
-              ? 'Nenhum sensor com esse nome, código ou talhão.'
-              : `${achados.length} ${achados.length === 1 ? 'sensor encontrado' : 'sensores encontrados'}, do mais seco para o mais úmido.`}
-          </p>
-          <ul className="lista">
-            {achados.slice(0, MAX_ACHADOS).map((d) => (
-              <li key={d.id}>
-                <CartaoNo d={d} s={situacao(d.ativo, d.ultima, q.dataUpdatedAt, agora)} />
-              </li>
-            ))}
-          </ul>
-          {achados.length > MAX_ACHADOS && (
-            <p className="nota secundario">
-              Mostrando os {MAX_ACHADOS} primeiros. Escreva mais do nome para achar os outros.
-            </p>
-          )}
-        </section>
-      ) : (
-        <ul className="cartoes-talhao">
-          {cartoes.map(({ g, v }) => (
-            <li key={g.talhao.id}>
-              <CartaoTalhao g={g} v={v} fetchadoEm={q.dataUpdatedAt} agora={agora} />
-            </li>
-          ))}
-        </ul>
-      )}
+      {/* Sem busca aqui: ela fica na pagina de cada talhao, onde a lista de
+          sensores esta. A tela inicial so responde "preciso irrigar?". */}
+      <ul className="cartoes-talhao">
+        {cartoes.map(({ g, v }) => (
+          <li key={g.talhao.id}>
+            <CartaoTalhao g={g} v={v} fetchadoEm={q.dataUpdatedAt} agora={agora} />
+          </li>
+        ))}
+      </ul>
 
       {devices && devices.length > 0 && (
         <p className="nota secundario">

@@ -1,4 +1,3 @@
-import { useId, useState } from 'react';
 import { Link } from 'react-router';
 import type { DeviceApp } from '../api';
 import { textoKpa } from '../escala';
@@ -7,7 +6,6 @@ import type { GrupoTalhao } from '../talhoes';
 import { formatarDuracao } from '../tempo';
 import { frasesDoVeredito, idadeMaisRecente, textoSemLeitura, type Veredito } from '../veredito';
 import { visualDoVeredito } from '../visual';
-import { CartaoNo } from './CartaoNo';
 import { MarcaSituacao } from './Estado';
 import { BarraProporcao } from './BarraProporcao';
 import { classesDoVisual, MarcaVeredito } from './MarcaVeredito';
@@ -29,8 +27,6 @@ type Props = { g: GrupoTalhao; v: Veredito; fetchadoEm: number; agora: number };
  *  O "Ver o sensor ->" do rodape e so texto -- um segundo link para o mesmo
  *  destino seria ruido na lista de links. */
 export function CartaoTalhao({ g, v, fetchadoEm, agora }: Props) {
-  const idLista = useId();
-  const [aberto, setAberto] = useState(false);
   const frases = frasesDoVeredito(v);
   const visual = visualDoVeredito(v);
   const total = g.nos.length;
@@ -42,7 +38,9 @@ export function CartaoTalhao({ g, v, fetchadoEm, agora }: Props) {
 
   // Com um sensor so, a pagina do talhao so repetiria a dele: vai direto.
   const direto = total === 1 ? g.nos[0]! : null;
-  const destino = direto ? `/no/${encodeURIComponent(direto.id)}` : null;
+  const destino = direto
+    ? `/no/${encodeURIComponent(direto.id)}`
+    : `/talhao/${encodeURIComponent(g.talhao.id)}`;
 
   const rodape = [
     idade !== null ? `Última leitura há ${formatarDuracao(idade)}` : null,
@@ -57,13 +55,9 @@ export function CartaoTalhao({ g, v, fetchadoEm, agora }: Props) {
 
       <header className="cartao-talhao__topo">
         <h2>
-          {destino ? (
-            <Link className="cartao-talhao__link" to={destino}>
-              {g.talhao.nome}
-            </Link>
-          ) : (
-            g.talhao.nome
-          )}
+          <Link className="cartao-talhao__link" to={destino}>
+            {g.talhao.nome}
+          </Link>
         </h2>
         {g.talhao.cultura && <span className="secundario">{g.talhao.cultura}</span>}
       </header>
@@ -83,7 +77,7 @@ export function CartaoTalhao({ g, v, fetchadoEm, agora }: Props) {
       {v.tipo === 'sem-limites' ? (
         <p className="secundario">
           <span className="numero">{v.contagem.semZona}</span> {sensores(v.contagem.semZona)} com leitura, sem
-          limites para classificar.
+          limites para classificar. Toque para definir os limites.
         </p>
       ) : ligados.length === 1 ? (
         <LinhaUnica d={ligados[0]!} s={sit(ligados[0]!)} />
@@ -108,32 +102,11 @@ export function CartaoTalhao({ g, v, fetchadoEm, agora }: Props) {
 
       <footer className="cartao-talhao__rodape">
         {rodape && <span>{rodape}</span>}
-        {destino ? (
-          <span className="cartao-talhao__ver" aria-hidden="true">
-            Ver o sensor →
-          </span>
-        ) : (
-          <button
-            type="button"
-            className="cartao-talhao__abrir"
-            aria-expanded={aberto}
-            aria-controls={idLista}
-            onClick={() => setAberto((a) => !a)}
-          >
-            {aberto ? 'Esconder os sensores' : `Ver os ${total} sensores`}
-          </button>
-        )}
+        <span className="cartao-talhao__ver" aria-hidden="true">
+          {direto ? 'Ver o sensor →' : `Ver os ${total} sensores →`}
+        </span>
       </footer>
 
-      {!destino && aberto && (
-        <ul id={idLista} className="lista">
-          {g.nos.map((d) => (
-            <li key={d.id}>
-              <CartaoNo d={d} s={sit(d)} comTalhao={false} comSelo={!todosSimulados} />
-            </li>
-          ))}
-        </ul>
-      )}
     </article>
   );
 }

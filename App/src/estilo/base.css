@@ -1144,8 +1144,7 @@ p {
   font-size: var(--texto-sm);
   color: var(--tinta-2);
 }
-.cartao-talhao__ver,
-.cartao-talhao__abrir {
+.cartao-talhao__ver {
   display: inline-flex;
   align-items: center;
   min-height: var(--toque);
@@ -1331,4 +1330,10 @@ p {
 }
 .mudanca li + li {
   margin-top: var(--e1);
+}
+
+/* A barra de proporcao dentro da resposta (pagina do talhao) usa a largura
+   toda; .agora alinha os filhos ao inicio. */
+.agora > .proporcao {
+  align-self: stretch;
 }
