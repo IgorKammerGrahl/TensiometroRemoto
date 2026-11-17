@@ -1065,8 +1065,8 @@ p {
    ocuparia um terco da largura sem dizer nada a mais. */
 .marca-veredito {
   flex: none;
-  width: min(3.5rem, 80px);
-  height: min(3.5rem, 80px);
+  width: min(4rem, 88px);
+  height: min(4rem, 88px);
   border: var(--borda-grossa) solid var(--cor-estado, var(--neutro));
   border-radius: 50%;
   background-color: var(--cor-estado, var(--neutro));
@@ -1407,4 +1407,33 @@ p {
 .opcao__dica {
   font-size: var(--texto-sm);
   color: var(--tinta-2);
+}
+
+/* ------------------------------------------------------------- pictogramas
+ *
+ * Anel de cor + hachura (o .marca-veredito de sempre) com um miolo claro, e o
+ * desenho em tinta no miolo. A hachura nao passa por baixo do traco: o
+ * desenho fica legivel no sol e em preto e branco. Em sem leitura e
+ * desligado o anel e o quadrado tracejado de "aqui nao ha estado". */
+.marca-veredito {
+  display: inline-grid;
+  place-items: center;
+}
+.marca-veredito__miolo {
+  display: grid;
+  place-items: center;
+  width: calc(100% - 0.75rem);
+  height: calc(100% - 0.75rem);
+  border-radius: inherit;
+  background: var(--superficie-2);
+  color: var(--tinta);
+}
+.marca-veredito.sem-estado .marca-veredito__miolo {
+  width: calc(100% - 0.5rem);
+  height: calc(100% - 0.5rem);
+  background: transparent;
+}
+.pictograma {
+  width: 90%;
+  height: 90%;
 }
