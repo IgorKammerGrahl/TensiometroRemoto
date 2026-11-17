@@ -30,10 +30,13 @@ uma delas no meio da carga não custou nenhuma leitura (@sec-replicas).
 A segunda parte permanece em aberto: se o valor exibido corresponde à tensão
 da água no solo com exatidão útil ao manejo. Responder a ela exige a
 calibração contra o vacuômetro mecânico e o ensaio em solo, e nenhum dos dois
-foi concluído. O trabalho estabelece, portanto, a viabilidade técnica da
-cadeia de medição e de transmissão, e não a exatidão da medida.
-#pendente[RESULTADO PENDENTE: rever este parágrafo com o resultado da
-calibração experimental.]
+foi concluído: o tensiômetro disponível não reteve vácuo (@sec-substituto), e,
+com o recorte descrito na @sec-objetivos, a estanqueidade do instrumento,
+problema de natureza hidráulica, passou a esforço secundário. O trabalho
+estabelece, portanto, a viabilidade técnica da cadeia de medição e de
+transmissão, e não a exatidão da medida; o que falta para estabelecê-la ---
+vedar o instrumento e executar o procedimento da @sec-validacao --- está entre
+os trabalhos futuros.
 
 == Atendimento aos objetivos
 
@@ -87,9 +90,10 @@ remoto, com certificado de autoridade pública, não foi exercitada
 conversão, que a proposta original incluía no quinto objetivo, saiu dos
 objetivos com o recorte descrito na @sec-objetivos: depende do ensaio de
 calibração, cujo procedimento está descrito na @sec-validacao, e o RNF03, que
-exige erro compatível com o uso agronômico, segue sem verificação.
-#pendente[RESULTADO PENDENTE: coeficientes, coeficiente de determinação e erro
-quadrático médio da calibração experimental.]
+exige erro compatível com o uso agronômico, segue sem verificação. Por isso,
+nenhuma métrica de ajuste --- coeficientes, coeficiente de determinação, erro
+quadrático médio --- é apresentada, e a conversão em uso permanece a dos
+coeficientes nominais de catálogo (@sec-estado).
 
 == Contribuições
 
