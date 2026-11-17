@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router';
+import { type Resultado, usePedidoDeInstalacao } from '../instalacao';
 import { useLogout, useSessao } from '../sessao';
 import { aplicarEscolha, type Escolha, gravarEscolha, lerEscolha } from '../tema';
 
@@ -34,6 +35,9 @@ export function Ajustes() {
   const sistemaEscuro = useSistemaEscuro();
   // Instalado, o aplicativo ja abre pelo icone: a instrucao so ocuparia lugar.
   const instalado = matchMedia('(display-mode: standalone)').matches;
+  const instalar = usePedidoDeInstalacao();
+  const [instalando, setInstalando] = useState(false);
+  const [resultado, setResultado] = useState<Resultado | null>(null);
 
   const escolher = (e: Escolha) => {
     setEscolha(e);
@@ -76,9 +80,33 @@ export function Ajustes() {
         {!instalado && (
           <section className="pilha conteudo">
             <h2>Instalar o aplicativo</h2>
-            <p>
-              No menu <strong>⋮</strong> do navegador, toque em <strong>Adicionar à tela inicial</strong>. O
-              Tensio passa a abrir como um aplicativo, pelo ícone.
+            {instalar ? (
+              <button
+                type="button"
+                className="botao botao--largo"
+                /* aria-disabled, e nao disabled: o botao nao perde o foco
+                   enquanto o pedido esta aberto (guia install-web-app). */
+                aria-disabled={instalando}
+                onClick={() => {
+                  if (instalando) return;
+                  setInstalando(true);
+                  void instalar()
+                    .then(setResultado)
+                    .finally(() => setInstalando(false));
+                }}
+              >
+                Instalar o aplicativo
+              </button>
+            ) : (
+              <p>
+                No menu <strong>⋮</strong> do navegador, toque em <strong>Adicionar à tela inicial</strong>.
+              </p>
+            )}
+            <p className="secundario">O Tensio passa a abrir como um aplicativo, pelo ícone.</p>
+            <p role="status" className="secundario">
+              {resultado === 'instalado' && 'Pronto: o aplicativo foi instalado ou aberto.'}
+              {resultado === 'cancelado' && 'A instalação foi cancelada. Dá para tentar de novo.'}
+              {resultado === 'falhou' && 'Não foi possível instalar agora.'}
             </p>
           </section>
         )}

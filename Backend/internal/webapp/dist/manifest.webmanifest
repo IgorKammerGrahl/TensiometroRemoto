@@ -1,4 +1,5 @@
 {
+  "id": "/",
   "name": "Tensio",
   "short_name": "Tensio",
   "description": "Monitoramento de umidade do solo por tensiometria",
