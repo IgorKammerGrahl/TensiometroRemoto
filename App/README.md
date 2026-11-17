@@ -165,8 +165,9 @@ rolagem, e "como está este talhão?" só se respondia lendo cartão por cartão
 
 - **Agrupada por talhão, sem `.sort()`** (`src/talhoes.ts`). O servidor manda
   do mais seco para o mais úmido; agrupar preservando a ordem põe primeiro o
-  talhão do nó mais seco e, dentro dele, o nó mais seco. Ver o cabeçalho de
-  `telas/Nos.tsx` sobre por que esta tela não ordena nada.
+  talhão do nó mais seco e, dentro dele, o nó mais seco. (Desde 17/11 a tela
+  inicial reordena os **talhões** por categoria de resposta — ver abaixo —, mas
+  nunca por kPa.)
 - **A tira do talhão** (`componentes/TiraTalhao.tsx`): a régua do detalhe
   deitada, 0 a −80 kPa, com as mesmas faixas e hachuras, e um traço por nó com
   leitura **atual**. Os traços são semitransparentes, então a sobreposição
@@ -180,6 +181,46 @@ rolagem, e "como está este talhão?" só se respondia lendo cartão por cartão
 
 Verificado no navegador com 160 nós simulados em 4 talhões (um sem faixa) e
 com o banco de dev (3 nós parados).
+
+## Redesenho para quem usa: resposta primeiro (17/11/2026)
+
+Público: produtor rural mais velho, lendo no sol, às vezes sem óculos. A tela
+inicial passou de "lista de nós com kPa" para **uma resposta por talhão, em
+palavras**: *Solo úmido · Não precisa irrigar agora*, *Solo secando · Irrigar
+nos próximos dias*, *Solo seco · Irrigar agora*.
+
+- **A regra** (`src/veredito.ts`, com testes). Ordem fixa: nenhum sensor ligado
+  → talhão sem limites → menos da metade dos ligados com leitura recente →
+  leitura sem zona (nulo nunca vira úmido) → **mediana superior das zonas**
+  (com número par de sensores, a mais seca das duas do meio). A mediana sai das
+  **zonas que o servidor já classificou**; o cliente continua sem comparar kPa
+  com limite. Quando um quarto ou mais dos sensores está mais seco que a
+  resposta, ela ganha um aviso ("mas 9 sensores secos"), sem mudar a ação.
+- **Cartões por urgência da resposta**, estável sobre a ordem do servidor. Os
+  talhões trocam de lugar quando a resposta muda — o custo para quem se guia
+  pela posição fica para o teste com pessoas decidir.
+- **Quatro canais por estado:** pictograma de solo (`componentes/Pictograma.tsx`),
+  palavra, cor e hachura. Em cinza, a tela continua legível.
+- **Vocabulário:** sensor (não nó), limites de irrigação (não faixa), desligado
+  (não desativado). Calibração, identificador e cadastro ficam em
+  "Para o técnico", fechado, no fim da tela do sensor.
+- **Texto do sistema:** `<meta name="text-scale" content="scale">` (Chrome 146+)
+  faz o "Tamanho da fonte" do Android valer dentro da página. O CSS é todo em
+  `rem` e não fixa `font-size` no `html` — fixar anularia a meta. Testado de
+  100% a 200%, sem rolagem lateral em nenhuma tela.
+- **Tema claro por padrão**, mesmo com o celular no escuro (sol e economia de
+  bateria); escuro só por escolha em Ajustes. Cores com `light-dark()` e
+  `color-scheme: only light` — o `only` recusa o escurecimento automático do
+  navegador. `public/tema.js` aplica a escolha antes da primeira pintura; é
+  arquivo externo porque a CSP da API (`script-src 'self'`) bloqueia script
+  inline.
+- **Barra inferior: feita, medida e retirada.** Com texto em 200% no Pixel 5 ela
+  ocupava 154 de 745 px e nenhum cartão cabia inteiro acima dela. Ajustes virou
+  um botão no topo da tela inicial.
+
+Verificado no emulador do Android Studio (AVD Pixel 5, Chrome 149) via
+`adb reverse`, com a fixture de campo (`make campo` em `Backend/`: talhões de 1
+a 4 sensores, um sem limites, um sem leitura) e a vitrine de 160 nós.
 
 ## `RF10` — verificado ponta a ponta contra o servidor
 
@@ -290,8 +331,12 @@ o comentário em `public/sw.js`.
 | `src/janela.ts` | Janelas do histórico. **O cliente escolhe a duração; o servidor decide quando é "agora"** — `to` nunca é enviado. |
 | `src/relogio.ts` | `useAgora`: relógio que avança sozinho, porque *atual → velha* muda sem resposta nova do servidor. |
 | `src/sessao.tsx` | Sessão, login/logout e o porteiro das rotas (401 ≠ 403 ≠ sem rede). |
-| `src/componentes/` | Régua, gráfico e as marcas de estado. Sem regra de negócio: recebem o que decidir já decidiu. |
-| `src/telas/` | Lista de nós e detalhe do nó. |
+| `src/veredito.ts` | A resposta do talhão: ordem das verificações, mediana superior das **zonas**, frases, urgência e síntese. |
+| `src/visual.ts` | Resposta → visual (inclui os estados que não são zona: sem limites, sem leitura, desligado). |
+| `src/tema.ts` | Claro por padrão; escolha guardada; espelhado em `public/tema.js`. |
+| `src/instalacao.ts` | Botão de instalar: `navigator.install()` ou `beforeinstallprompt`; sem nenhum, não aparece. |
+| `src/componentes/` | Régua, gráfico, marcas de estado, pictogramas, cartão do talhão. Sem regra de negócio: recebem o que decidir já decidiu. |
+| `src/telas/` | Talhões (inicial), talhão, sensor, cadastro, ajustes, entrar. |
 | `src/erros.ts` | Erro de nó → frase. Não tem por onde receber *qual* concessão faltou. |
 | `src/componentes/Faixa.tsx` | Configuração dos limiares. A inversão é **inexprimível**, não detectada. |
 | `src/componentes/Calibracao.tsx` | Ensaio do nó. Existe porque a falta de calibração é **silenciosa**: o nó parece mudo. |
@@ -299,7 +344,7 @@ o comentário em `public/sw.js`.
 | `src/componentes/Gerenciar.tsx` | Editar, mover e desativar. Dois controles porque são dois riscos. |
 | `src/estilo/` | Tokens e base. Cor é reservada para estado; interação é tinta e forma. |
 
-As seis primeiras são funções puras com teste no Vitest. É onde o erro seria
+As funções puras têm teste no Vitest: `zona`, `tempo`, `serie`, `leitura`, `escala`, `calibracao`, `janela`, `talhoes`, `veredito`, `visual` e `tema` (além de `api`, `erros` e `clienteQuery`). É onde o erro seria
 silencioso — inverter uma comparação de kPa negativo, ligar dois pontos através
 de uma lacuna, envelhecer uma leitura pelo relógio errado, mostrar verde sobre
 leitura morta — então é onde o teste está.
@@ -307,9 +352,11 @@ leitura morta — então é onde o teste está.
 Duas decisões de desenho registradas no próprio código, porque são do tipo que
 alguém "otimiza" depois sem que nada quebre visivelmente:
 
-- **A lista nunca é reordenada no cliente** (`src/api.ts`). O servidor já devolve
-  `ORDER BY kpa ASC`, que é o mais seco primeiro. Ordenar por kPa *decrescente*
-  pareceria certo em qualquer revisão rápida e poria o talhão mais seco no fim.
+- **A lista nunca é reordenada por kPa no cliente** (`src/api.ts`). O servidor já
+  devolve `ORDER BY kpa ASC`, que é o mais seco primeiro. Ordenar por kPa
+  *decrescente* pareceria certo em qualquer revisão rápida e poria o talhão mais
+  seco no fim. A tela inicial reordena os talhões só por **categoria** da
+  resposta (`ordenarPorUrgencia`), estável sobre a ordem do servidor.
 - **Talhão sem faixa configurada mantém a escala e o entalhe, e perde só as
   bandas** (`src/escala.ts`). Posição é medição e não depende de limiar; banda é
   classificação e depende. Suprimir a régua inteira seria o único lugar da
