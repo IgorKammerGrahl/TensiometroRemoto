@@ -43,7 +43,7 @@
     2,6 mV, e não houve perda de pacotes em 772 emissões consecutivas após a
     correção da condição de rede responsável pelas perdas iniciais. As duas
     corridas, medindo a mesma grandeza em dias distintos, diferiram em 1,9 mV
-    --- cerca de 0,07 kPa ---, o que caracteriza a reprodutibilidade entre
+    --- cerca de 0,07 kPa ---, o que caracteriza a precisão intermediária entre
     ensaios como incerteza maior que a dispersão interna de cada um.
     Permanecem não realizadas a calibração experimental contra o vacuômetro
     mecânico, que manteve os coeficientes nominais de catálogo, e a validação
@@ -84,7 +84,7 @@
     loss occurred over 772 consecutive transmissions once the network
     condition responsible for the initial losses had been corrected. The two
     runs, measuring the same quantity on different days, differed by 1.9 mV
-    --- about 0.07 kPa ---, which characterises between-run reproducibility as
+    --- about 0.07 kPa ---, which characterises between-run intermediate precision as
     an uncertainty larger than the internal dispersion of either run.
     Experimental calibration against the mechanical vacuum gauge, which left
     the catalogue nominal coefficients in place, and validation in soil remain
