@@ -1323,3 +1323,12 @@ p {
 .dobra[open] {
   padding-bottom: var(--e4);
 }
+
+/* --------------------------------------------- confirmacao dos limites */
+.mudanca {
+  margin: 0;
+  padding-left: var(--e5);
+}
+.mudanca li + li {
+  margin-top: var(--e1);
+}

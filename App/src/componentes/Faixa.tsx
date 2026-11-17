@@ -51,6 +51,7 @@ export function Faixa({ talhao }: { talhao: Talhao }) {
   const idEstresse = useId();
   const [aberto, setAberto] = useState(false);
   const [confirmandoRemocao, setConfirmandoRemocao] = useState(false);
+  const [confirmandoMudanca, setConfirmandoMudanca] = useState(false);
   const [rascunho, setRascunho] = useState<Rascunho>({
     alerta: talhao.kpa_alerta === null ? '' : String(talhao.kpa_alerta),
     estresse: talhao.kpa_estresse === null ? '' : String(talhao.kpa_estresse),
@@ -83,6 +84,7 @@ export function Faixa({ talhao }: { talhao: Talhao }) {
     onSuccess: () => {
       invalidar();
       setAberto(false);
+      setConfirmandoMudanca(false);
     },
   });
 
@@ -177,6 +179,92 @@ export function Faixa({ talhao }: { talhao: Talhao }) {
     );
   }
 
+  /* CONFIRMAR ANTES DE MUDAR. Os limites mudam a resposta de TODO sensor do
+   * talhao, e a tela inicial inteira com ela. Inline, como a remocao logo
+   * acima: nao tira o foco de onde ele esta. O texto mostra o antes e o
+   * depois e diz a consequencia, nao "tem certeza?". */
+  if (confirmandoMudanca && alertaNum !== null && estresseNum !== null) {
+    const antesAlerta = configurado ? talhao.kpa_alerta : null;
+    const antesEstresse = configurado ? talhao.kpa_estresse : null;
+    return (
+      <div className="painel painel__confirma" role="group" aria-label="Confirmar os limites de irrigação">
+        <p>
+          <strong>
+            {configurado ? 'Mudar' : 'Definir'} os limites de irrigação de {talhao.nome}?
+          </strong>
+        </p>
+        <ul className="mudanca">
+          <li>
+            {aparencia('alerta').rotulo} a partir de{' '}
+            {antesAlerta !== null && antesAlerta !== alertaNum && (
+              <>
+                <span className="numero">{textoKpa(antesAlerta)}</span> →{' '}
+              </>
+            )}
+            <strong className="numero">{textoKpa(alertaNum)}</strong> kPa
+            {antesAlerta === alertaNum && ' (sem mudança)'}
+          </li>
+          <li>
+            {aparencia('estresse').rotulo} a partir de{' '}
+            {antesEstresse !== null && antesEstresse !== estresseNum && (
+              <>
+                <span className="numero">{textoKpa(antesEstresse)}</span> →{' '}
+              </>
+            )}
+            <strong className="numero">{textoKpa(estresseNum)}</strong> kPa
+            {antesEstresse === estresseNum && ' (sem mudança)'}
+          </li>
+        </ul>
+        <p>A resposta de todos os sensores deste talhão passa a usar estes números.</p>
+        {salvar.isError && (
+          /* A MENSAGEM DO SERVIDOR VAI PARA A TELA COMO VEIO, embaixo de uma
+             manchete fixa.
+             Como veio porque ela e a unica que sabe QUAL restricao falhou, e
+             reescreve-la aqui criaria uma segunda fonte de verdade sobre a mesma
+             regra -- que e o que o `min`/`max` cruzado existe para evitar.
+             Embaixo de uma manchete porque, com a inversao e a faixa ja barradas
+             pelo input, o erro que de fato chega aqui e o do par igual, e ele
+             chega escrito em nome de coluna: "kpa_estresse precisa ser menor...".
+             Isso e pior que jargao de agronomia para quem nunca viu o banco.
+             A manchete e uma constante -- diz que NAO SALVOU, nao diz por que --,
+             entao nao sabe regra nenhuma; o detalhe tecnico fica logo abaixo,
+             legivel para quem for diagnosticar. */
+          <p className="painel__erro" role="alert">
+            <strong>Os limites não foram salvos.</strong>{' '}
+            {salvar.error instanceof ErroAPI && salvar.error.status === SEM_REDE ? (
+              'Sem conexão com o servidor.'
+            ) : salvar.error instanceof ErroAPI ? (
+              <span className="secundario">{salvar.error.message}</span>
+            ) : (
+              'Tente de novo em alguns instantes.'
+            )}
+          </p>
+        )}
+        <div className="painel__acoes">
+          <button
+            type="button"
+            className="botao"
+            disabled={salvar.isPending}
+            onClick={() => salvar.mutate({ kpa_alerta: alertaNum, kpa_estresse: estresseNum })}
+          >
+            {salvar.isPending ? 'Salvando…' : configurado ? 'Mudar os limites' : 'Definir os limites'}
+          </button>
+          <button
+            type="button"
+            className="botao botao--contorno"
+            disabled={salvar.isPending}
+            onClick={() => {
+              setConfirmandoMudanca(false);
+              salvar.reset();
+            }}
+          >
+            Voltar
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <form
       className="painel"
@@ -186,7 +274,7 @@ export function Faixa({ talhao }: { talhao: Talhao }) {
         // {null, null} seria aceito com 200 e nao mudaria nada (ver api.ts), e
         // "sucesso que nao fez nada" e o unico desfecho inaceitavel aqui.
         if (alertaNum === null || estresseNum === null) return;
-        salvar.mutate({ kpa_alerta: alertaNum, kpa_estresse: estresseNum });
+        setConfirmandoMudanca(true);
       }}
     >
       <h2 className="painel__titulo">Limites de irrigação de {talhao.nome}</h2>
@@ -240,34 +328,9 @@ export function Faixa({ talhao }: { talhao: Talhao }) {
         <span className="dica">{aparencia('estresse').explicacao}</span>
       </div>
 
-      {salvar.isError && (
-        /* A MENSAGEM DO SERVIDOR VAI PARA A TELA COMO VEIO, embaixo de uma
-           manchete fixa.
-           Como veio porque ela e a unica que sabe QUAL restricao falhou, e
-           reescreve-la aqui criaria uma segunda fonte de verdade sobre a mesma
-           regra -- que e o que o `min`/`max` cruzado existe para evitar.
-           Embaixo de uma manchete porque, com a inversao e a faixa ja barradas
-           pelo input, o erro que de fato chega aqui e o do par igual, e ele
-           chega escrito em nome de coluna: "kpa_estresse precisa ser menor...".
-           Isso e pior que jargao de agronomia para quem nunca viu o banco.
-           A manchete e uma constante -- diz que NAO SALVOU, nao diz por que --,
-           entao nao sabe regra nenhuma; o detalhe tecnico fica logo abaixo,
-           legivel para quem for diagnosticar. */
-        <p className="painel__erro" role="alert">
-          <strong>Os limites não foram salvos.</strong>{' '}
-          {salvar.error instanceof ErroAPI && salvar.error.status === SEM_REDE ? (
-            'Sem conexão com o servidor.'
-          ) : salvar.error instanceof ErroAPI ? (
-            <span className="secundario">{salvar.error.message}</span>
-          ) : (
-            'Tente de novo em alguns instantes.'
-          )}
-        </p>
-      )}
-
       <div className="painel__acoes">
         <button type="submit" className="botao" disabled={salvar.isPending}>
-          {salvar.isPending ? 'Salvando…' : 'Salvar'}
+          Continuar
         </button>
         <button
           type="button"
