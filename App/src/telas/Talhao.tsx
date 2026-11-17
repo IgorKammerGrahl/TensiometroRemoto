@@ -97,12 +97,14 @@ export function TelaTalhao() {
             </div>
             {v.tipo === 'zona' && g.talhao.kpa_alerta !== null && g.talhao.kpa_estresse !== null && (
               /* De onde vem a resposta. Os limites aqui so sao EXIBIDOS, nunca
-                 comparados: a zona veio do servidor (ver veredito.ts). */
+                 comparados: a zona veio do servidor (ver veredito.ts).
+                 Sem frase sobre "maioria": a regra e a mediana superior, e
+                 num empate (2 umidos, 2 secando -> secando) nao ha maioria. A
+                 barra e a tira logo abaixo mostram a distribuicao. */
               <p className="secundario">
                 Pelos limites de irrigação deste talhão: secando a partir de{' '}
                 <span className="numero">{textoKpa(g.talhao.kpa_alerta)}</span> kPa, seco a partir de{' '}
-                <span className="numero">{textoKpa(g.talhao.kpa_estresse)}</span> kPa. Vale o que diz a
-                maioria dos sensores.
+                <span className="numero">{textoKpa(g.talhao.kpa_estresse)}</span> kPa.
               </p>
             )}
             {comBarra && <BarraProporcao c={v.contagem} />}
