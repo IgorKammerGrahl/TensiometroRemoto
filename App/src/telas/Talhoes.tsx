@@ -5,7 +5,6 @@ import { api } from '../api';
 import { CartaoTalhao } from '../componentes/CartaoTalhao';
 import { LinhaDeEstado } from '../componentes/LinhaDeEstado';
 import { useAgora } from '../relogio';
-import { useLogout, useSessao } from '../sessao';
 import { agruparPorTalhao } from '../talhoes';
 import { dataPorExtenso } from '../tempo';
 import { ordenarPorUrgencia, partesDaSintese, veredito } from '../veredito';
@@ -21,8 +20,6 @@ import { ordenarPorUrgencia, partesDaSintese, veredito } from '../veredito';
 
 export function Talhoes() {
   const agora = useAgora();
-  const sessao = useSessao();
-  const logout = useLogout();
 
   const q = useQuery({
     queryKey: ['devices'],
@@ -47,7 +44,18 @@ export function Talhoes() {
     <div className="pagina">
       <header className="cabecalho cabecalho--dia">
         <h1 className="so-leitor-de-tela">Talhões</h1>
-        <p className="dia">{dataPorExtenso(agora)}</p>
+        {/* AJUSTES NO TOPO, E NAO NUMA BARRA FIXA EMBAIXO. A barra foi feita e
+            medida (17/11/2026, Pixel 5, texto em 200%): ela ocupava 154 px de
+            745, e nenhum cartao de talhao cabia inteiro acima dela. A regra da
+            spec era essa: se a barra nao deixa ver um cartao inteiro com texto
+            grande, ela sai -- quem mais aumenta a fonte e quem mais perderia
+            tela. */}
+        <div className="cabecalho__linha">
+          <p className="dia">{dataPorExtenso(agora)}</p>
+          <Link to="/ajustes" className="botao botao--contorno">
+            Ajustes
+          </Link>
+        </div>
         {devices && (
           <ul className="sintese">
             {partesDaSintese(cartoes.map((c) => c.v)).map((p) => (
@@ -82,25 +90,6 @@ export function Talhoes() {
         </p>
       )}
 
-      {/* Ate existir Ajustes (Task 10): cadastrar e sair ficam aqui, no fim --
-          a pergunta desta tela e "preciso irrigar?", e cadastrar ou sair e o
-          que se faz depois de responder. */}
-      <p className="nota">
-        <Link to="/nos/novo" className="botao botao--contorno botao--largo">
-          Cadastrar sensor
-        </Link>
-      </p>
-      <p>
-        {sessao.data && <span className="secundario">{sessao.data.usuario.nome} · </span>}
-        <button
-          type="button"
-          className="botao botao--contorno"
-          onClick={() => logout.mutate()}
-          disabled={logout.isPending}
-        >
-          Sair
-        </button>
-      </p>
     </div>
   );
 }

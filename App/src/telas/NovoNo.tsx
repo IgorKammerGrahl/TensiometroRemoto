@@ -162,8 +162,9 @@ export function NovoNo() {
   return (
     <div className="pagina">
       <header className="cabecalho cabecalho--detalhe">
-        <Link to="/" className="voltar">
-          ← Talhões
+        {/* Cadastrar se abre de Ajustes, e e para la que se volta. */}
+        <Link to="/ajustes" className="voltar">
+          ← Ajustes
         </Link>
       </header>
 

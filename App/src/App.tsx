@@ -3,6 +3,7 @@ import { useEffect } from 'react';
 import { BrowserRouter, Navigate, Route, Routes, useLocation } from 'react-router';
 import { criarClienteQuery } from './clienteQuery';
 import { ExigeSessao, SemSessao } from './sessao';
+import { Ajustes } from './telas/Ajustes';
 import { Entrar } from './telas/Entrar';
 import { No } from './telas/No';
 import { NovoNo } from './telas/NovoNo';
@@ -70,6 +71,14 @@ export function App() {
             element={
               <ExigeSessao>
                 <No />
+              </ExigeSessao>
+            }
+          />
+          <Route
+            path="/ajustes"
+            element={
+              <ExigeSessao>
+                <Ajustes />
               </ExigeSessao>
             }
           />

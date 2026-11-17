@@ -96,7 +96,6 @@
   /* Redesenho de 11/2026. */
   --texto-veredito: 1.75rem; /* a resposta do talhao: o maior texto da tela */
   --faixa-estado: 0.5rem; /* faixa lateral de cor + hachura dos cartoes */
-  --barra-inferior: 4rem;
   --toque-principal: 3.5rem; /* a acao principal de cada tela */
 
   /* TEMA: CLARO POR PADRAO, E NAO O DO SISTEMA (ver src/tema.ts).
