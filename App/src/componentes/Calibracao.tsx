@@ -98,7 +98,7 @@ export function Calibracao({ dev }: { dev: DeviceApp }) {
       <div className="painel">
         <div className="painel__confirma" role="status">
           <p>
-            <strong>Ensaio registrado.</strong> Grave este identificador no portal do nó, no campo{' '}
+            <strong>Ensaio registrado.</strong> Grave este identificador no portal do sensor, no campo{' '}
             <span className="numero">CALIBRATION_ID</span>:
           </p>
           {/* Mesma caixa copiavel do token em NovoNo.tsx -- o estilo e de
@@ -137,9 +137,9 @@ export function Calibracao({ dev }: { dev: DeviceApp }) {
              secando" e outra coisa. Ver o comentario de .aviso em base.css. */
           <div className="aviso" role="alert">
             <span>
-              <strong>Este nó ainda não foi calibrado.</strong> Enquanto não houver um ensaio, o
-              servidor recusa todas as leituras que ele enviar — o nó parece mudo, mas o que falta é
-              este cadastro.
+              <strong>Este sensor ainda não foi calibrado.</strong> Enquanto não houver um ensaio, o
+              servidor recusa todas as leituras que ele enviar — o sensor parece mudo, mas o que falta
+              é este cadastro.
             </span>
           </div>
         )}
@@ -157,7 +157,7 @@ export function Calibracao({ dev }: { dev: DeviceApp }) {
               setAberto(true);
             }}
           >
-            {atual ? 'Registrar novo ensaio' : 'Calibrar este nó'}
+            {atual ? 'Registrar novo ensaio' : 'Calibrar este sensor'}
           </button>
         </div>
       </div>
@@ -326,7 +326,7 @@ export function Calibracao({ dev }: { dev: DeviceApp }) {
           {salvar.error instanceof ErroAPI && salvar.error.status === SEM_REDE ? (
             'Sem conexão com o servidor.'
           ) : salvar.error instanceof ErroAPI && salvar.error.status === 404 ? (
-            'Este nó pode ter saído do seu acesso. Atualize a página; se o problema continuar, procure quem administra o sistema.'
+            'Este sensor pode ter saído do seu acesso. Atualize a página; se o problema continuar, procure quem administra o sistema.'
           ) : salvar.error instanceof ErroAPI && salvar.error.status === 400 ? (
             <span className="secundario">{salvar.error.message}</span>
           ) : (

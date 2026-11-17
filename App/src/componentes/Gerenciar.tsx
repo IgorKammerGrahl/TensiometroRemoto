@@ -70,7 +70,7 @@ export function Gerenciar({ dev }: { dev: DeviceApp }) {
       <div className="painel painel--fechado">
         <div className="painel__acoes">
           <button type="button" className="botao botao--contorno" onClick={() => setAberto(true)}>
-            Editar este nó
+            Editar os dados do sensor
           </button>
         </div>
 
@@ -109,7 +109,7 @@ export function Gerenciar({ dev }: { dev: DeviceApp }) {
           salvar.mutate(corpo);
         }}
       >
-        <h2 className="painel__titulo">Dados do nó</h2>
+        <h2 className="painel__titulo">Dados do sensor</h2>
 
         <div className="campo">
           <label htmlFor={idDescricao}>Descrição</label>
@@ -120,7 +120,7 @@ export function Gerenciar({ dev }: { dev: DeviceApp }) {
             value={form.descricao}
             onChange={(e) => setForm((f) => ({ ...f, descricao: e.target.value }))}
           />
-          <span className="dica">É o que aparece na lista de nós.</span>
+          <span className="dica">É o nome que aparece nas telas.</span>
         </div>
 
         <div className="campo">
@@ -139,8 +139,8 @@ export function Gerenciar({ dev }: { dev: DeviceApp }) {
             ))}
           </select>
           <span className="dica">
-            Mudar o talhão muda quem enxerga este nó e os limites que classificam as leituras
-            dele.
+            Mudar o talhão muda quem enxerga este sensor e os limites de irrigação que valem para
+            ele.
           </span>
         </div>
 
@@ -212,10 +212,10 @@ function Ativacao({
            * teclado ou leitor de tela preso atras de um dialogo. O bloco
            * inline nao tem esse problema porque nunca tira o foco de onde ele
            * esta. */
-          <div className="painel__confirma" role="group" aria-label="Confirmar desativação">
+          <div className="painel__confirma" role="group" aria-label="Confirmar desligamento">
             <p>
-              <strong>Desativar {dev.descricao || dev.id}?</strong> O servidor passa a recusar as
-              leituras deste nó. O que ele medir enquanto estiver desativado não entra no
+              <strong>Desligar {dev.descricao || dev.id}?</strong> O servidor passa a recusar as
+              leituras deste sensor. O que ele medir enquanto estiver desligado não entra no
               histórico, nem depois que ele voltar.
             </p>
             <div className="painel__acoes">
@@ -225,7 +225,7 @@ function Ativacao({
                 disabled={ativacao.isPending}
                 onClick={() => ativacao.mutate(false)}
               >
-                {ativacao.isPending ? 'Desativando…' : 'Desativar mesmo assim'}
+                {ativacao.isPending ? 'Desligando…' : 'Desligar mesmo assim'}
               </button>
               <button
                 type="button"
@@ -233,7 +233,7 @@ function Ativacao({
                 disabled={ativacao.isPending}
                 onClick={() => setConfirmando(false)}
               >
-                Manter ativo
+                Manter ligado
               </button>
             </div>
           </div>
@@ -244,7 +244,7 @@ function Ativacao({
               className="botao botao--contorno"
               onClick={() => setConfirmando(true)}
             >
-              Desativar este nó
+              Desligar este sensor
             </button>
           </div>
         )
@@ -258,14 +258,14 @@ function Ativacao({
             disabled={ativacao.isPending}
             onClick={() => ativacao.mutate(true)}
           >
-            {ativacao.isPending ? 'Reativando…' : 'Reativar este nó'}
+            {ativacao.isPending ? 'Religando…' : 'Religar este sensor'}
           </button>
         </div>
       )}
 
       {ativacao.isError && (
         <p className="painel__erro" role="alert">
-          <strong>O nó continua como estava.</strong>{' '}
+          <strong>O sensor continua como estava.</strong>{' '}
           {explicarFalhaDeNo(ativacao.error, 'edicao')}
         </p>
       )}

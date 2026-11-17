@@ -118,7 +118,7 @@ export function Faixa({ talhao }: { talhao: Talhao }) {
       <div className="painel painel--fechado">
         <div className="painel__acoes">
           <button type="button" className="botao botao--contorno" onClick={() => setAberto(true)}>
-            {configurado ? 'Alterar os limites do talhão' : 'Definir os limites deste talhão'}
+            {configurado ? 'Mudar os limites de irrigação' : 'Definir os limites de irrigação'}
           </button>
           {configurado && !confirmandoRemocao && (
             <button
@@ -138,9 +138,9 @@ export function Faixa({ talhao }: { talhao: Talhao }) {
              certeza?". */
           <div className="painel__confirma" role="group" aria-label="Confirmar remoção dos limites">
             <p>
-              <strong>Remover os limites de {talhao.nome}?</strong> Os nós deste talhão continuam
-              mostrando o valor em kPa, mas deixam de ser classificados: a régua, a lista e o
-              gráfico passam a dizer “{aparencia(null).rotulo.toLowerCase()}”.
+              <strong>Remover os limites de {talhao.nome}?</strong> Os sensores deste talhão
+              continuam mostrando o valor em kPa, mas a resposta passa a ser “Limites não
+              definidos”: sem eles não dá para dizer se precisa irrigar.
             </p>
             {remover.isError && (
               <p className="painel__erro" role="alert">
@@ -189,7 +189,7 @@ export function Faixa({ talhao }: { talhao: Talhao }) {
         salvar.mutate({ kpa_alerta: alertaNum, kpa_estresse: estresseNum });
       }}
     >
-      <h2 className="painel__titulo">Limites de {talhao.nome}</h2>
+      <h2 className="painel__titulo">Limites de irrigação de {talhao.nome}</h2>
       <p className="painel__ajuda secundario">
         A escala vai de {textoKpa(TOPO_KPA)} (solo encharcado) a {textoKpa(FUNDO_KPA)} (solo seco).
         Quanto mais negativo, mais seco.

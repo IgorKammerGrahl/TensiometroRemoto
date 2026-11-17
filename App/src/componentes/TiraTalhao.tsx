@@ -19,7 +19,7 @@ import { aparencia } from '../zona';
 // aparecem na contagem, por escrito, e nao na escala.
 
 /** Ordem de gravidade: quem precisa de acao primeiro. O texto reusa as
- *  palavras dos rotulos de estado (Seco, Secando, Umidade boa) para que a
+ *  palavras dos rotulos de estado (Seco, Secando, Umido) para que a
  *  contagem e o cartao digam a mesma coisa, so que na forma de uma frase
  *  que aceita numero na frente. */
 const ESTADOS: ReadonlyArray<{
@@ -29,9 +29,9 @@ const ESTADOS: ReadonlyArray<{
 }> = [
   { campo: 'estresse', zona: 'estresse', texto: (n) => (n === 1 ? 'seco' : 'secos') },
   { campo: 'alerta', zona: 'alerta', texto: () => 'secando' },
-  { campo: 'conforto', zona: 'conforto', texto: () => 'com umidade boa' },
-  { campo: 'semFaixa', zona: null, texto: () => 'sem faixa para classificar' },
-  { campo: 'semLeitura', zona: 'sem-leitura', texto: () => 'sem leitura atual' },
+  { campo: 'conforto', zona: 'conforto', texto: (n) => (n === 1 ? 'úmido' : 'úmidos') },
+  { campo: 'semFaixa', zona: null, texto: () => 'sem limites para classificar' },
+  { campo: 'semLeitura', zona: 'sem-leitura', texto: () => 'sem leitura recente' },
 ];
 
 export function TiraTalhao({ g }: { g: GrupoTalhao }) {
@@ -48,8 +48,8 @@ export function TiraTalhao({ g }: { g: GrupoTalhao }) {
   // A lista vem do mais seco para o mais umido: extremos sem varrer nada.
   const descricao =
     n === 0
-      ? 'Nenhum nó deste talhão tem leitura atual.'
-      : `Leituras atuais de ${n} ${n === 1 ? 'nó' : 'nós'}, de ${textoKpa(
+      ? 'Nenhum sensor deste talhão tem leitura recente.'
+      : `Leituras recentes de ${n} ${n === 1 ? 'sensor' : 'sensores'}, de ${textoKpa(
           Math.max(...g.leituras),
         )} a ${textoKpa(Math.min(...g.leituras))} kPa.`;
 

@@ -71,11 +71,11 @@ export function situacao(
 export function textoDeIdade(s: Situacao): string {
   switch (s.tipo) {
     case 'desativado':
-      return 'Nó desativado';
+      return 'Desligado';
     case 'nunca':
       return 'Ainda não enviou nenhuma leitura';
     case 'velha':
-      return `Sem dados há ${formatarDuracao(s.idadeS)}`;
+      return `Sem leitura há ${formatarDuracao(s.idadeS)}`;
     case 'atual':
       return `há ${formatarDuracao(s.idadeS)}`;
     default: {

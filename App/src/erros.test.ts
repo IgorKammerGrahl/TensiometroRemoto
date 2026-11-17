@@ -21,7 +21,7 @@ describe('explicarFalhaDeNo', () => {
   // afirmaria nao chegou na resposta.
   it('no 404 da edicao nomeia no e talhao, sem escolher entre eles', () => {
     const m = explicarFalhaDeNo(erro(404, 'device nao encontrado'), 'edicao');
-    expect(m).toMatch(/nó/);
+    expect(m).toMatch(/sensor/);
     expect(m).toMatch(/talhão/);
     expect(m).toMatch(/ou/);
   });
@@ -30,7 +30,7 @@ describe('explicarFalhaDeNo', () => {
     const m = explicarFalhaDeNo(erro(404, 'talhao nao encontrado'), 'cadastro');
     expect(m).toMatch(/talhão/);
     // O no ainda nao existe; culpa-lo seria descrever um estado impossivel.
-    expect(m).not.toMatch(/\bnó\b/);
+    expect(m).not.toMatch(/sensor/);
   });
 
   it('traduz o conflito de id sem repetir o vocabulario do banco', () => {
