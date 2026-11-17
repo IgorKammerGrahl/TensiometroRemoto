@@ -9,7 +9,19 @@ import { SeloSimulado } from './Simulado';
 /** Um no na lista: nome, talhao, estado e, so se a leitura e atual, o valor.
  *  Saiu de Nos.tsx quando a lista passou a aparecer em dois lugares (dentro de
  *  cada talhao e no resultado da busca) -- uma copia so do cartao. */
-export function CartaoNo({ d, s, comTalhao = true }: { d: DeviceApp; s: Situacao; comTalhao?: boolean }) {
+/** `comSelo={false}` dentro de um talhao todo simulado: o cartao do talhao ja
+ *  declara, e repetir o selo em cada sensor e ruido. */
+export function CartaoNo({
+  d,
+  s,
+  comTalhao = true,
+  comSelo = true,
+}: {
+  d: DeviceApp;
+  s: Situacao;
+  comTalhao?: boolean;
+  comSelo?: boolean;
+}) {
   // Sem leitura atual e talhao sem faixa recebem a MESMA enfase, e isso e
   // proposital: os dois significam "nao sei o estado deste talhao". Dar a um
   // deles um tratamento mais discreto que ao outro criaria um degrau de
@@ -21,7 +33,7 @@ export function CartaoNo({ d, s, comTalhao = true }: { d: DeviceApp; s: Situacao
       <span className="cartao__corpo">
         <strong>
           {d.descricao || d.id}
-          {d.simulado && <SeloSimulado />}
+          {d.simulado && comSelo && <SeloSimulado />}
         </strong>
         {/* Dentro do grupo do talhao o nome do talhao ja esta no titulo;
             repeti-lo em cada cartao e ruido. Na busca, que mistura talhoes,

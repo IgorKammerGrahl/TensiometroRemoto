@@ -5,7 +5,7 @@ import { ExigeSessao, SemSessao } from './sessao';
 import { Entrar } from './telas/Entrar';
 import { No } from './telas/No';
 import { NovoNo } from './telas/NovoNo';
-import { Nos } from './telas/Nos';
+import { Talhoes } from './telas/Talhoes';
 
 // Regras de sessao vencida, repeticao e foco: ver clienteQuery.ts.
 const clienteQuery = criarClienteQuery();
@@ -27,7 +27,7 @@ export function App() {
             path="/"
             element={
               <ExigeSessao>
-                <Nos />
+                <Talhoes />
               </ExigeSessao>
             }
           />

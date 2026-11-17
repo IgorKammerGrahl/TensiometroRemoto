@@ -251,7 +251,14 @@ const talhoes = (n: number) => (n === 1 ? '1 talhão' : `${n} talhões`);
 
 /** A frase do topo da tela inicial: a propriedade inteira numa linha. */
 export function sintese(vs: readonly Veredito[]): string {
-  if (vs.length === 0) return 'Nenhum sensor instalado nos seus talhões ainda';
+  return partesDaSintese(vs).join(' · ');
+}
+
+/** A mesma sintese em partes, uma por situacao: a tela mostra uma por linha,
+ *  porque com seis talhoes a frase corrida passa de cinco linhas e deixa de
+ *  ser lida de relance. */
+export function partesDaSintese(vs: readonly Veredito[]): string[] {
+  if (vs.length === 0) return ['Nenhum sensor instalado nos seus talhões ainda'];
   const n = { agora: 0, logo: 0, semLeitura: 0, semLimites: 0, umidos: 0, semSensor: 0 };
   for (const v of vs) {
     if (v.tipo === 'zona') {
@@ -262,7 +269,7 @@ export function sintese(vs: readonly Veredito[]): string {
     else if (v.tipo === 'sem-limites') n.semLimites++;
     else n.semSensor++;
   }
-  if (n.umidos === vs.length) return 'Nenhum talhão precisa de água agora';
+  if (n.umidos === vs.length) return ['Nenhum talhão precisa de água agora'];
   const partes: Array<[number, string]> = [
     [n.agora, 'para irrigar agora'],
     [n.logo, 'para irrigar nos próximos dias'],
@@ -271,8 +278,5 @@ export function sintese(vs: readonly Veredito[]): string {
     [n.umidos, 'com solo úmido'],
     [n.semSensor, 'sem sensor em uso'],
   ];
-  return partes
-    .filter(([q]) => q > 0)
-    .map(([q, t]) => `${talhoes(q)} ${t}`)
-    .join(' · ');
+  return partes.filter(([q]) => q > 0).map(([q, t]) => `${talhoes(q)} ${t}`);
 }

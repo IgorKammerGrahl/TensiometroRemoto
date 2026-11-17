@@ -121,7 +121,7 @@ function SemConexao({ aoTentar }: { aoTentar: () => void }) {
   return (
     <main className="tela-borda">
       <h1>Sem conexão</h1>
-      <p>Não foi possível falar com o servidor. Verifique a rede do aparelho.</p>
+      <p>Não foi possível falar com o servidor. Confira a internet do celular.</p>
       <button type="button" className="botao" onClick={aoTentar}>
         Tentar de novo
       </button>

@@ -18,7 +18,7 @@ function mensagemDeLogin(erro: unknown): string {
     return 'Esta conta está desativada. Procure quem administra o sistema.';
   }
   if (erro.status === SEM_REDE) {
-    return 'Não foi possível falar com o servidor. Verifique a rede do aparelho.';
+    return 'Não foi possível falar com o servidor. Confira a internet do celular.';
   }
   return erro.message;
 }

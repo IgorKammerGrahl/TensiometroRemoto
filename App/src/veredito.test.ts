@@ -7,6 +7,7 @@ import {
   idadeMaisRecente,
   itensDaContagem,
   ordenarPorUrgencia,
+  partesDaSintese,
   sintese,
   textoSemLeitura,
   type Veredito,
@@ -261,6 +262,13 @@ describe('sintese', () => {
     ).toBe(
       '1 talhão para irrigar agora · 2 talhões para irrigar nos próximos dias · 1 talhão sem limites · 1 talhão com solo úmido',
     );
+  });
+  it('em partes, uma por situacao, para a tela mostrar uma por linha', () => {
+    expect(partesDaSintese([de(['estresse']), de(['conforto']), de(['conforto'])])).toEqual([
+      '1 talhão para irrigar agora',
+      '2 talhões com solo úmido',
+    ]);
+    expect(partesDaSintese([])).toEqual(['Nenhum sensor instalado nos seus talhões ainda']);
   });
   it('poucos dados e indeterminado somam como sem leitura; sem sensor no fim', () => {
     expect(sintese([de(['nunca']), de(['conforto', null]), de(['desligado'])])).toBe(
