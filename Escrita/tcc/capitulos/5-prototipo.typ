@@ -917,7 +917,9 @@ inexprimível, sobrevive à agregação.
 
 Com número ímpar de leituras atuais, a mediana é a usual. Com número par, há
 duas zonas no meio, e a escolhida é a mais seca das duas --- uma mediana
-superior, no sentido da severidade. A escolha segue a mesma orientação da
+superior, no sentido da severidade. É o caso do talhão do painel (b) da
+@fig-app-telas, em que dois nós úmidos e dois secando resultam em _Solo
+secando_. A escolha segue a mesma orientação da
 agregação temporal pelo mínimo (@sec-faixas): na dúvida entre duas zonas, a
 interface pende para a que pede atenção. A mediana foi preferida ao nó mais
 seco, critério implícito da lista anterior, porque com ele um único nó com
@@ -1012,7 +1014,32 @@ própria tela, com os valores anteriores e os novos, porque a mudança altera a
 resposta de todos os nós do talhão. O vocabulário da tela mudou junto: nó
 passou a ser _sensor_, faixa passou a ser _limites de irrigação_, e desativado
 passou a ser _desligado_. Neste texto, nó continua designando o dispositivo,
-como nos capítulos anteriores; a mudança é de quem lê a tela.
+como nos capítulos anteriores; a mudança é de quem lê a tela. A
+@fig-app-telas mostra os três níveis.
+
+// Flutuante, com a fonte DENTRO da figura: as três telas não cabem no resto
+// de uma página qualquer, e uma figura presa ao fluxo deixaria meia página
+// em branco. Fora da figura, a linha de fonte ficaria para trás.
+#figure(
+  kind: image,
+  placement: auto,
+  caption: [Telas do aplicativo: (a) tela inicial; (b) página de um talhão com
+    quatro nós; (c) tela de um nó],
+  {
+    grid(
+      columns: 3,
+      column-gutter: 4mm,
+      row-gutter: 2mm,
+      ..("app-inicio", "app-talhao", "app-sensor").map(f => box(
+        stroke: 0.5pt + luma(55%),
+        image("../figuras/" + f + ".png", width: 4.8cm),
+      )),
+      ..("(a)", "(b)", "(c)").map(t => text(size: 10pt, t)),
+    )
+    fonte[Elaborado pelo autor (2026), em emulador (Android Studio, perfil
+      Pixel 5, Chrome 149), com dados simulados.]
+  },
+) <fig-app-telas>
 
 === Legível sem cor, com texto grande e sob o sol <sec-legibilidade>
 
@@ -1043,8 +1070,33 @@ diretrizes pede que o texto possa ser ampliado até 200% sem perda de conteúdo
 ou de funcionalidade @w3c2024, e foi esse o teto testado: seis telas, três
 escalas de texto (100%, 130% e 200%) e os dois temas, 36 combinações, nenhuma
 com rolagem horizontal, conferida por medição no navegador do emulador, e não
-por inspeção visual. A largura da tela emulada é de 393 pixels CSS, maior que
+por inspeção visual. A largura da tela emulada é de 392 pixels CSS, maior que
 os 320 do critério de refluxo (1.4.10), que não foi verificado nessa largura.
+A @fig-app-legibilidade mostra a tela de um nó convertida para tons de cinza
+e a tela inicial com o texto em 200%, em que a resposta do cartão passa para
+baixo do pictograma em vez de ser cortada.
+
+#figure(
+  kind: image,
+  placement: auto,
+  caption: [Legibilidade: (a) tela de um nó convertida para tons de cinza;
+    (b) tela inicial com o texto do sistema em 200%; (c) cartão de talhão
+    com o texto em 200%],
+  {
+    grid(
+      columns: 3,
+      column-gutter: 4mm,
+      row-gutter: 2mm,
+      ..("app-sensor-cinza", "app-inicio-200", "app-cartao-200").map(f => box(
+        stroke: 0.5pt + luma(55%),
+        image("../figuras/" + f + ".png", width: 4.8cm),
+      )),
+      ..("(a)", "(b)", "(c)").map(t => text(size: 10pt, t)),
+    )
+    fonte[Elaborado pelo autor (2026), em emulador (Android Studio, perfil
+      Pixel 5, Chrome 149), com dados simulados.]
+  },
+) <fig-app-legibilidade>
 
 O tema claro passou a ser o padrão, mesmo com o celular em modo escuro, e o
 escuro, uma escolha feita nos ajustes do aplicativo. É um desvio deliberado da
