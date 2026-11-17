@@ -1257,3 +1257,69 @@ p {
   flex-wrap: wrap;
   gap: var(--e1) var(--e4);
 }
+
+/* ------------------------------------------------------- tela do sensor */
+.agora__medida {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0 var(--e2);
+}
+.agora__rotulo {
+  flex-basis: 100%;
+  font-size: var(--texto-sm);
+  font-weight: 700;
+  color: var(--tinta-2);
+}
+/* Menor que a resposta: o numero e detalhe. */
+.agora__medida .agora__valor {
+  font-size: 2rem;
+}
+
+/* -------------------------------------------------------- blocos fechados
+ *
+ * <details> nativo (guia "accordion"): sem titulo dentro do summary, que o
+ * leitor de tela anuncia como botao; seta desenhada logo ANTES do rotulo --
+ * longe dele, quem usa lupa de tela nao associa uma ao outro --, girando ao
+ * abrir, e so com movimento para quem nao pediu menos movimento. */
+.dobra {
+  border-top: var(--borda-grossa) solid var(--tinta);
+}
+.dobra > summary {
+  display: flex;
+  align-items: center;
+  gap: var(--e3);
+  min-height: var(--toque-principal);
+  font-size: var(--texto-lg);
+  font-weight: 700;
+  list-style: none;
+  cursor: pointer;
+}
+.dobra > summary::-webkit-details-marker {
+  display: none;
+}
+.dobra > summary::before {
+  content: '';
+  flex-shrink: 0;
+  inline-size: 1em;
+  block-size: 1em;
+  background-color: currentColor;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M5 9l7 7 7-7' fill='none' stroke='black' stroke-width='3.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")
+    no-repeat center / contain;
+  rotate: -90deg;
+}
+.dobra[open] > summary::before {
+  rotate: 0deg;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .dobra > summary::before {
+    transition: rotate 0.2s;
+  }
+}
+.dobra > summary:hover {
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}
+.dobra[open] {
+  padding-bottom: var(--e4);
+}
