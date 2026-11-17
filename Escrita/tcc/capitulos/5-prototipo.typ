@@ -27,27 +27,35 @@ faixas de atenção. Com ela, o quarto objetivo específico deste trabalho ---
 implementar a infraestrutura de comunicação em nuvem e desenvolver o aplicativo
 de monitoramento --- está cumprido quanto à construção. A operação, contudo,
 ocorreu sempre com o servidor na rede local: a hospedagem remota não foi
-exercitada.
+exercitada. Além do nó físico, o serviço foi exercitado com até mil nós
+simulados, marcados como tais, que falam com ele pela mesma interface do
+firmware, e com três cópias atrás do proxy reverso, uma delas parada no meio da
+carga (@sec-escala).
 
 A derivação física do instrumento foi obtida, e o diagnóstico anterior a
 respeito do vazamento que a acometia foi retificado: a causa era a cápsula
 cerâmica dessaturada, e não a montagem improvisada. Ainda assim, toda a
 experimentação relatada neste capítulo é de bancada, com o transdutor aberto à
 atmosfera ou submetido a sucção manual. O tensiômetro empregado nessa etapa
-quebrou em meados de setembro; o substituto já foi recebido, e os ensaios
-ainda pendentes serão conduzidos com ele.
+quebrou em meados de setembro. Com o substituto, as tentativas de calibração
+de outubro não produziram nenhum ponto válido: o instrumento não sustenta
+vácuo, e a entrada de ar foi localizada no próprio tensiômetro, sem que a
+derivação tenha sido descartada como caminho adicional (@sec-substituto).
 
-Quatro itens previstos permanecem não realizados, e determinam os limites do
+Três itens previstos permanecem não realizados, e determinam os limites do
 que este capítulo autoriza afirmar.
 
-A *calibração experimental* não foi conduzida. Os coeficientes de conversão em
+A *calibração experimental* não foi concluída. Os coeficientes de conversão em
 uso são os valores nominais de catálogo, e nenhuma métrica de ajuste ---
 coeficiente de determinação, erro quadrático médio, erro percentual --- pode
-ser apresentada. Com a retenção de vácuo restabelecida, esse ensaio deixou de
-estar bloqueado, mas não foi realizado a tempo.
+ser apresentada. O ensaio foi tentado em outubro com o tensiômetro substituto,
+que não sustentou vácuo, e nenhum ponto válido foi gravado; em novembro, o
+mesmo instrumento não passou no teste de evaporação (@sec-substituto). Com o
+recorte descrito na @sec-objetivos, a calibração passou a esforço secundário.
 
-A *validação em solo* não foi conduzida. Os ensaios mantiveram o transdutor
-aberto à atmosfera, condição que exercita a cadeia de aquisição, de conversão
+A *validação em solo* não foi conduzida. Os ensaios contínuos mantiveram o
+transdutor aberto à atmosfera, condição que exercita a cadeia de aquisição, de
+conversão
 e de transmissão, mas não a resposta do instrumento à dinâmica de secagem e
 umedecimento do solo.
 
@@ -61,17 +69,21 @@ atendida, mas a evolução para bateria, prevista no próprio requisito, exigir�
 esse recurso. Ambos têm precedente direto na literatura @abdelmoneim2023 e
 ficam registrados como trabalho futuro.
 
-O *RF08 está cumprido apenas na direção de configurar.* A interface permite
-definir e alterar os limiares de atenção de um talhão, mas não removê-los: o
-controle que fazia isso reportava sucesso sem produzir efeito, pela razão
-técnica detalhada na @sec-apresentacao, e foi retirado em vez de mantido.
-Devolver um talhão ao estado não configurado exige, hoje, intervenção direta
-no banco de dados. O requisito não está atendido, e o conserto, que é de
-pequeno porte e pertence ao serviço de retaguarda, fica registrado como
-trabalho futuro.
+O RF07 e o RF08 foram os últimos requisitos completados. A consulta ao
+histórico passou a oferecer, além dos três períodos fixos --- 24 horas, 7 dias
+e 30 dias ---, a seleção de um intervalo de datas; e a configuração dos
+limiares de atenção passou a permitir também removê-los, devolvendo o talhão ao
+estado não configurado, o que exigiu uma decisão sobre o contrato da API
+(@sec-apresentacao). Os dois foram verificados pela interface, contra o
+servidor em execução.
 
-#pendente[FOTO PENDENTE: vista geral da montagem em matriz de contatos, com
-ESP32, divisor resistivo e transdutor.]
+A @fig-montagem mostra o circuito do nó sensor, montado em matriz de contatos.
+
+#figure(
+  caption: [Montagem do circuito em matriz de contatos, com ESP32, divisor resistivo e transdutor],
+  image("../figuras/montagem.jpg", width: 62%),
+) <fig-montagem>
+#fonte[Elaborado pelo autor (2026).]
 
 == Especificação do transdutor e correção de escopo
 
@@ -255,6 +267,16 @@ condicionamento. O filtro cumpre a função de atenuar ruído de alta frequênci
 sem introduzir atraso significativo na grandeza de interesse, que em
 tensiometria varia na escala de horas.
 
+A @fig-divisor mostra o divisor e o capacitor na matriz de contatos. O trecho
+de 20 k$Omega$ é formado por dois resistores de 10 k$Omega$ em série, R2 e R3
+na @fig-condicionamento.
+
+#figure(
+  caption: [Detalhe do divisor resistivo e do capacitor de filtro na matriz de contatos],
+  image("../figuras/divisor.jpg", width: 55%),
+) <fig-divisor>
+#fonte[Elaborado pelo autor (2026).]
+
 A entrada escolhida é o GPIO34, pertencente ao primeiro conversor
 analógico-digital do microcontrolador. A escolha não é preferência de projeto,
 mas decorrência de uma restrição documentada: o segundo conversor é também
@@ -284,9 +306,6 @@ fabricante recomenda a multiamostragem para atenuá-lo @espressifadc44. A média
 é deslocada por picos espúrios isolados, ao passo que a mediana rejeita ambos
 os efeitos; a redução no número de amostras é possível justamente porque a
 mediana não depende do tamanho da amostra para descartar valores atípicos.
-
-#pendente[FOTO PENDENTE: detalhe do divisor resistivo e do capacitor de
-desacoplamento na matriz de contatos.]
 
 == Arquitetura de telemetria
 
@@ -351,26 +370,26 @@ retransmissão subsequente, descartada por idempotência.
     }
 
     fase(-0.75, "1. Primeira transmissão")
-    msg(-1.5, xa, xb, [POST /leituras --- seq = #box[$n$]])
+    msg(-1.5, xa, xb, [POST /api/v1/readings --- seq = #box[$n$]])
     msg(-2.35, xb, xc, [INSERT ... ON CONFLICT DO NOTHING])
     msg(-3.1, xc, xb, [1 linha inserida], dashed: true)
-    msg(-3.85, xb, xa, [201 Created], dashed: true)
+    msg(-3.85, xb, xa, [200 OK --- accepted = 1], dashed: true)
     content((xa, -4.35), text(size: 8.5pt)[descarta a leitura do buffer local])
 
     fase(-5.35, "2. Falha de rede — resposta não recebida")
-    msg(-6.1, xa, xb, [POST /leituras --- seq = #box[$n + 1$]])
+    msg(-6.1, xa, xb, [POST --- seq = #box[$n + 1$]])
     msg(-6.45, xb, xc, [INSERT --- gravada com sucesso])
     line((xb, -7.4), (xa, -7.4), stroke: (dash: "dashed"), mark: (end: "stealth"))
-    content(((xa + xb) / 2, -7.1), text(size: 8.5pt)[201 Created (perdida em trânsito)])
+    content(((xa + xb) / 2, -7.1), text(size: 8.5pt)[200 OK (perdida em trânsito)])
     line((3.0, -7.15), (4.2, -7.7), stroke: 1.1pt)
     line((3.0, -7.7), (4.2, -7.15), stroke: 1.1pt)
     content((xa, -8.15), text(size: 8.5pt)[mantém a leitura no buffer])
 
     fase(-9.0, "3. Retransmissão — descarte idempotente")
-    msg(-9.75, xa, xb, [POST /leituras --- seq = #box[$n + 1$] (repetida)])
+    msg(-9.75, xa, xb, [POST --- seq = #box[$n + 1$] (repetida)])
     msg(-10.5, xb, xc, [INSERT ... ON CONFLICT DO NOTHING])
     content(((xb + xc) / 2, -10.85), text(size: 8.5pt)[0 linhas --- a chave (dispositivo, seq) já existe])
-    msg(-11.55, xb, xa, [200 OK --- leitura já registrada], dashed: true)
+    msg(-11.55, xb, xa, [200 OK --- duplicates = 1], dashed: true)
   })
   ],
 ) <fig-sequencia>
@@ -849,6 +868,29 @@ lacuna responderia "não há lacuna" e a linha seria ligada. *O modo de falha
 escolhido é um gráfico fragmentado, que é visível, em vez de uma reta
 inventada, que não é.*
 
+=== A lista com centenas de nós
+
+A lista de nós foi desenhada para poucos aparelhos: um cartão por nó, do mais
+seco para o mais úmido. Com os nós simulados da @sec-escala, ela virou
+rolagem, e a pergunta que a tela existe para responder --- de qual talhão
+cuidar agora --- passou a exigir a leitura de cartão por cartão. A lista foi
+então agrupada por talhão, sem reordenar nada: como o servidor já entrega os
+nós do mais seco para o mais úmido, preservar essa ordem ao agrupar põe
+primeiro o talhão do nó mais seco e, dentro dele, o nó mais seco, e a regra do
+sinal continua tendo uma única implementação.
+
+Cada talhão com mais nós do que os três cartões exibidos ganha um resumo: a
+régua do detalhe, deitada, com as mesmas faixas e hachuras, e um traço por nó
+com leitura atual na posição da sua tensão. Os traços são semitransparentes,
+de modo que a sobreposição escurece onde há muitos nós, e a distribuição do
+talhão se lê de relance, sem histograma calculado. Abaixo da tira, a contagem
+por estado vem escrita, na ordem de gravidade. Nó sem leitura atual não ganha
+traço --- um traço afirma onde o solo está agora --- e aparece só na contagem.
+Com todos os cartões à vista, o resumo não aparece, porque apenas repetiria o
+que está logo abaixo. Uma busca por nome, código ou talhão completa a tela.
+Verificado com 160 nós simulados em quatro talhões, um deles sem faixa
+configurada.
+
 === Três defeitos que só apareceram contra o sistema real
 
 Os três defeitos a seguir passaram pela suíte automatizada e pela verificação
@@ -883,10 +925,20 @@ atualização interpreta o ponteiro nulo como "preserve o valor atual", de modo
 que pedir a remoção equivale a não pedir nada. *O controle foi removido, e não
 mantido.* O princípio é o mesmo que governa o gráfico e o indicador de estado:
 uma interface que afirma um fato falso é pior que uma funcionalidade ausente,
-porque a ausência é percebida e a falsidade não. O conserto pertence ao
-serviço de retaguarda, é pequeno e está registrado; enquanto não for feito, o
-RF08 está cumprido apenas na direção de configurar, e essa limitação está
-declarada na @sec-estado.
+porque a ausência é percebida e a falsidade não.
+
+O conserto, feito depois, não alterou a atualização parcial. Dentro dela, há
+três formas de distinguir a chave ausente do valor nulo --- um ponteiro duplo,
+a leitura do documento bruto antes da conversão ou um valor sentinela ---, e as
+três fazem o significado de um campo do contrato depender da forma de escrever
+o documento: um cliente que enviasse o valor nulo supondo "não altere" passaria
+a apagar. A remoção ganhou, em vez disso, uma operação própria: o método
+DELETE do HTTP sobre a faixa, tratada como recurso subordinado ao talhão, que
+apaga os dois limiares juntos, como a restrição do banco já exige, e que é
+idempotente, como o protocolo define o método @rfc9110. A atualização parcial
+continua apenas configurando, e o controle voltou à interface, com a
+confirmação na própria tela, sem janela modal. Verificado contra o servidor em
+execução, o RF08 passou a ser atendido nas duas direções.
 
 *Invalidação de cache incompleta, visível apenas por leitor de tela.* O resumo
 textual do gráfico --- o texto alternativo que um leitor de tela anuncia ---
@@ -918,14 +970,15 @@ audível.
 
 === Suíte automatizada
 
-A verificação do serviço de retaguarda é feita por 89 funções de teste, que se
-desdobram em 109 casos executáveis quando os subtestes parametrizados são
-contados individualmente. A distinção é registrada porque os dois números
-descrevem a mesma suíte e divergem por um fator de organização do código: 89 é
-o que se conta lendo os arquivos, 109 é o que a ferramenta reporta ao executar.
-As funções distribuem-se por três dos oito pacotes do serviço, e são
-executadas contra uma instância real do PostgreSQL, e não contra substitutos
-em memória. A escolha decorre de o comportamento sob verificação depender de
+A verificação do serviço de retaguarda é feita por 111 funções de teste, que
+se desdobram em 148 casos executáveis quando os subtestes parametrizados são
+contados individualmente: 147 passam, e um é pulado por depender de uma série
+real de secagem, que ainda não existe. A distinção é registrada porque os dois
+números descrevem a mesma suíte e divergem por um fator de organização do
+código: 111 é o que se conta lendo os arquivos, 148 é o que a ferramenta
+reporta ao executar. As funções distribuem-se por quatro dos nove pacotes do
+serviço, e as que dependem do banco de dados são executadas contra uma
+instância real do PostgreSQL, e não contra substitutos em memória. A escolha decorre de o comportamento sob verificação depender de
 propriedades do próprio banco de dados: a rejeição de leituras duplicadas pela
 chave primária composta e o resultado das consultas de autorização por junção
 não são reproduzíveis por um substituto sem reimplementá-lo, o que faria o
@@ -1041,9 +1094,10 @@ calculado a partir de dados de catálogo.
 
 A terceira decorre de uma advertência explícita do fabricante do transdutor,
 que registra a possibilidade de flutuação do sinal de saída sob incidência de
-luz @cfsensor. A advertência é particularmente pertinente a este arranjo,
-uma vez que o tubo do tensiômetro empregado é transparente. Não foram
-realizados ensaios comparativos entre condições de iluminação, de modo que a
+luz @cfsensor. A advertência é pertinente a este arranjo, em que o transdutor
+fica exposto à luz ambiente na matriz de contatos, sem invólucro
+(@fig-montagem), e a mangueira que o liga ao tensiômetro é translúcida. Não
+foram realizados ensaios comparativos entre condições de iluminação, de modo que a
 magnitude desse efeito no arranjo específico permanece desconhecida.
 
 A quarta diz respeito à grandeza exibida. O sistema converte e apresenta a
@@ -1090,7 +1144,7 @@ caminho aberto para o ar entrar. O tensiômetro não estava vazando pela
 derivação; estava vazando pela função que a cápsula deixara de exercer. Após
 submersão prolongada da cápsula, com a ressaturação do material poroso, o
 sistema passou a reter vácuo, e a derivação por septo perfurado mostrou-se
-adequada.
+adequada naquele instrumento.
 
 O registro desta retificação tem valor metodológico independente do seu
 desfecho favorável. A montagem improvisada era o componente novo do arranjo, e
@@ -1100,9 +1154,104 @@ ao elemento cujo estado não havia sido verificado, adiou o diagnóstico
 correto. Verificar a saturação da cápsula antes de qualquer ensaio hidráulico
 passa a integrar o procedimento.
 
-Com a retenção de vácuo restabelecida, a derivação deixa de ser o impedimento
-à calibração experimental. Esta permanece não realizada, mas por não ter sido
-conduzida, e não por estar bloqueada.
+Com a retenção de vácuo restabelecida no primeiro instrumento, a derivação
+deixou de ser o impedimento à calibração experimental. Esse instrumento,
+porém, quebrou antes do ensaio, e o substituto trouxe outro impedimento,
+relatado a seguir.
+
+=== Tentativa de calibração com o tensiômetro substituto <sec-substituto>
+
+O ensaio de calibração foi tentado em 20 e 21 de outubro, com o tensiômetro
+substituto e o roteiro preparado para o primeiro. Os valores em quilopascais
+citados nesta seção são os nominais do firmware, calculados pela curva de
+catálogo, e a alimentação do transdutor foi assumida em 5,00 V, sem
+verificação por instrumento.
+
+A @fig-tensiometro mostra esse instrumento, já sem a agulha. O septo é a tampa
+vermelha no topo, e o vacuômetro mecânico, tomado como padrão de referência,
+fica na tomada lateral logo abaixo do trecho transparente.
+
+#figure(
+  caption: [Tensiômetro substituto com o vacuômetro mecânico acoplado],
+  image("../figuras/tensiometro.jpg", width: 55%),
+) <fig-tensiometro>
+#fonte[Elaborado pelo autor (2026).]
+
+Na primeira sessão, após cerca de uma hora de aquecimento, o sinal estabilizou
+em torno de 3012 mV no pino do conversor. Um primeiro ponto chegou a ser
+gravado, mas é inválido: a altura da coluna foi estimada sem medição, com erro
+de uma ordem de grandeza, e a agulha estava obstruída. Dez minutos de secagem
+da cápsula não alteraram a leitura, e ao retirar a agulha encontrou-se um
+miolo da borracha da tampa preso em seu canhão. O achado indica que a agulha
+removeu material do septo ao perfurá-lo, o que põe em dúvida, para este
+instrumento, a premissa de que o septo volta a vedar quando a agulha é
+retirada.
+
+Na segunda sessão, com a agulha desobstruída, a sucção aplicada pela própria
+agulha passou a alcançar o transdutor, com leituras de até cerca de
+$-"8,8"$ kPa. Os testes de vazamento da derivação, com sucção pela boca e
+vedação pela mão, foram inconclusivos: a pressão se sustentou por alguns
+segundos em duas tentativas e retornou à base nas demais, e a vedação manual
+varia mais do que o efeito procurado. A geometria foi então medida com trena,
+com $Delta h = 7$ cm entre o septo e a tomada do vacuômetro e $H = 48$ cm
+entre a superfície da água do balde e essa tomada, o que fixa o primeiro ponto
+esperado, com a cápsula em água livre, em $-"4,7"$ kPa no vacuômetro.
+
+Esse ponto não foi alcançado. Com o tubo cheio de água fervida e resfriada, a
+agulha espetada e a cápsula imersa no balde, a leitura permaneceu na base,
+entre 3003 e 3011 mV, durante cerca de uma hora; o vacuômetro ficou em zero, e
+a água desceu até sair do trecho transparente do tubo. O transdutor e o
+vacuômetro concordaram, portanto, em que não havia vácuo: o defeito não
+estava na leitura, e sim na retenção.
+
+Para separar a derivação do instrumento, o tubo foi enchido e tampado sem a
+agulha, com a cápsula no balde, e deixado assim por alguns dias. A água voltou
+a descer, mais devagar, e o vacuômetro não saiu do zero. Pelo critério
+preparado de antemão, a entrada de ar está no próprio tensiômetro, acima da
+linha da água: na tampa e no septo, na rosca do vacuômetro ou nas emendas do
+tubo --- os mesmos pontos que a literatura aponta como causas comuns de
+vazamento (@sec-estanqueidade). A diferença de velocidade, de cerca de uma
+hora com a agulha para alguns dias sem ela, indica que a perfuração agrava a
+entrada de ar, mas não é o único caminho. A observação tem limites: o
+transdutor não estava ligado nesse teste, e a sensibilidade do vacuômetro
+perto do zero não foi conferida.
+
+Em novembro, a estanqueidade foi verificada pelo teste de evaporação descrito
+na @sec-estanqueidade, que não depende da sensibilidade do vacuômetro perto do
+zero: com o tubo cheio e tampado e a cápsula ao ar, o instrumento estanque deve
+passar de 50 kPa de tensão em cinco a oito horas @azevedo1999. O tubo foi
+completado e tampado com a mesma rolha perfurada em outubro, e a cápsula,
+saturada, ficou ao ar, sem reimersão, a partir das 11 h de 10 de novembro,
+dentro de casa. As leituras foram tomadas do vacuômetro por fotografia, com
+incerteza de leitura de cerca de 2 kPa pelo ângulo da câmera; o transdutor não
+estava ligado. O ponteiro chegou a cerca de $-10$ kPa em menos de duas horas e não
+passou de $-11$ kPa até o meio da tarde; voltou então a zero, sem que a cápsula
+tivesse sido molhada, e subiu de novo. Na janela de cinco a oito horas que o
+critério fixa, a leitura ficou entre zero e cerca de $-9$ kPa. O máximo do
+ensaio, cerca de $-19$ kPa, veio depois de treze horas, e na manhã seguinte o
+ponteiro estava em cerca de $-4$ kPa. O instrumento não passou no teste.
+
+O ar acumulado sob a tampa indica a causa. No início havia uma pequena bolha;
+treze horas depois, o ar ocupava cerca de dois terços do trecho transparente
+do tubo, e na manhã seguinte o trecho estava aparentemente vazio --- volume
+muito maior do que o ar dissolvido na água explicaria. Uma leitura que sobe,
+estaciona e volta a zero sem reimersão é a de um instrumento em que a
+evaporação pela cápsula e a entrada de ar competem, e em que o ponteiro para
+onde as duas se equilibram. O vácuo, quando se forma, é real: em 9 de
+novembro, depois de vários dias com a cápsula ao ar, o vacuômetro marcava
+cerca de $-35$ kPa e voltou a zero quando a cápsula foi submersa, o que mostra
+também que a cápsula conduz água. O que falha é a retenção.
+
+O ponto de entrada do ar não foi localizado. A rolha é a primeira suspeita: é
+a mesma da qual a agulha removeu material em outubro, uma gota de água
+apareceu sobre ela durante o ensaio, e a troca da rolha é a primeira
+providência que o fabricante indica quando o nível de água do tensiômetro baixa
+rapidamente @hidrosense2025. A troca não foi feita até a redação desta seção.
+
+Nenhum ponto de calibração válido foi gravado. O impedimento à calibração
+deixou de ser a derivação e passou a ser a estanqueidade do instrumento, de
+natureza hidráulica. Com o recorte descrito na @sec-objetivos, a vedação do
+instrumento e a calibração passaram a esforço secundário.
 
 == Resultados de bancada e limites da interpretação <sec-bancada>
 
@@ -1144,7 +1293,7 @@ O desvio de 0,6 kPa entre a leitura em repouso e o valor de catálogo situa-se
 confortavelmente dentro do erro máximo declarado para o próprio transdutor, de
 ±2% do fundo de escala, equivalente a ±2 kPa
 @cfsensor, e é ainda compatível com a hipótese de que a alimentação real do
-sensor seja ligeiramente inferior aos 5,00 V assumidos pelo firmware ---
+sensor seja ligeiramente superior aos 5,00 V assumidos pelo firmware ---
 hipótese plausível dado o comportamento ratiométrico do componente, e que a
 calibração experimental absorverá.
 
@@ -1249,9 +1398,9 @@ como referência, e uma ordem de grandeza abaixo do erro máximo declarado para
 o próprio transdutor. A dispersão do sinal, portanto, não é o fator limitante
 da exatidão do conjunto.
 
-A média em torno de 0,4 kPa com o transdutor aberto à atmosfera não é erro de
-medição, mas o desvio dos coeficientes nominais de catálogo em relação ao
-componente real. É exatamente a grandeza que a calibração experimental
+A média em torno de 0,4 kPa com o transdutor aberto à atmosfera não é ruído, e
+sim erro de medição de natureza sistemática: o desvio dos coeficientes nominais
+de catálogo em relação ao componente real. É exatamente a grandeza que a calibração experimental
 existiria para absorver, e a sua persistência entre os dois ensaios ---
 0,384 e 0,458 kPa --- é consistente com um desvio sistemático de coeficiente, e
 não com ruído.
@@ -1430,8 +1579,9 @@ responde por toda a amplitude entre o máximo e o mínimo das médias horárias.
 
 === Precisão intermediária entre corridas
 
-Os dois ensaios mediram a mesma grandeza física --- a pressão atmosférica,
-com o transdutor aberto --- com a mesma montagem, em dias diferentes. As
+Os dois ensaios mediram a mesma grandeza física --- a pressão manométrica,
+nula com o transdutor aberto à atmosfera --- com a mesma montagem, em dias
+diferentes. As
 médias obtidas foram 3010,3 mV e 3012,24 mV, uma diferença de *1,94 mV, ou
 aproximadamente 0,073 kPa*. No vocabulário do VIM, a condição é de precisão
 intermediária, e não de reprodutibilidade: procedimento, local e montagem
@@ -1443,8 +1593,9 @@ deve ser confundida com ele. O desvio padrão descreve a dispersão interna de
 uma corrida, com a montagem intacta e a alimentação ligada; a diferença entre
 médias descreve o que muda quando a corrida é refeita. Ela absorve o que o
 desvio padrão isolado não vê: variação da alimentação entre as sessões,
-condições ambientais distintas, o estado térmico do conjunto e a própria
-pressão atmosférica real, que não é constante entre dois dias.
+condições ambientais distintas e o estado térmico do conjunto. A pressão
+atmosférica do dia não entra nessa comparação, porque o transdutor é
+manométrico e mede em relação a ela.
 
 A consequência deve ser declarada: *a incerteza real do sistema é maior que o
 desvio padrão medido dentro de um único ensaio.* Isso é esperado e não
@@ -1511,5 +1662,332 @@ provocada e medida. Sob perda prolongada de conectividade, sabe-se apenas o
 que decorre da construção: sem armazenamento local, as leituras do período
 se perdem.
 
-#pendente[FOTO PENDENTE: tensiômetro com o vacuômetro mecânico acoplado,
-utilizado como padrão de referência nos ensaios de calibração previstos.]
+== Operação com múltiplos nós <sec-escala>
+
+O protótipo físico é um nó só, e o sistema foi projetado para muitos: vários
+nós por área monitorada, e um mesmo produtor com áreas em lugares diferentes.
+Esta seção relata como o serviço foi exercitado nessa escala sem os nós físicos
+correspondentes, segundo o método da quarta etapa (@sec-objetivos), e o que a
+medição autoriza afirmar. *Todo dado desta seção é simulado.*
+
+=== Nós simulados
+
+Uma ferramenta de linha de comando faz $N$ nós falarem com o serviço do mesmo
+modo que o firmware fala. Cada nó é cadastrado pela interface do aplicativo,
+com a conta de um produtor, recebe uma calibração registrada e a credencial
+própria que o cadastro devolve, e envia as leituras pela mesma rota de
+ingestão do nó físico, autenticado por essa credencial (@sec-retaguarda). O
+ritmo e a forma do envio também são os do firmware: uma leitura por
+requisição, conexão nova a cada envio, intervalo de 60 s e tempo limite de
+10 s. Nada é gravado diretamente no banco de dados --- diferença deliberada em
+relação à ferramenta que gera a série de demonstração, que grava direto e, por
+isso, não exercita o serviço.
+
+O número de sequência segue a regra do firmware, de avançar e persistir antes
+de enviar. O bloco de números de uma execução inteira é reservado e gravado
+antes do primeiro envio, de modo que uma execução interrompida deixa lacunas na
+sequência, e nunca um número reaproveitado.
+
+O dado simulado fica marcado. O cadastro do nó ganhou um atributo que o
+identifica como simulado, fixado no momento do cadastro: a edição posterior do
+nó não o altera em nenhuma direção, e um nó real não pode ser convertido em
+simulado, nem o contrário. O serviço devolve o atributo, e o aplicativo exibe o
+selo _Simulado_ na lista de nós e no detalhe de cada um. O nó de demonstração,
+cuja série também é gerada, recebeu a mesma marca. A ferramenta, por sua vez,
+só envia com as credenciais que ela própria recebeu ao cadastrar, e confere,
+antes de cada execução, que todos os seus nós estão marcados como simulados,
+visíveis para a conta e ativos; um único nó fora dessa condição aborta a
+execução antes do primeiro envio. A série de um nó real, assim, não recebe
+leitura simulada.
+
+O sinal enviado não é um modelo de solo. Cada nó seca de forma exponencial em
+direção a $-75$ kPa, com constante de tempo de cerca de 25 h, e volta a cerca
+de $-9$ kPa numa irrigação sorteada a cada dois a cinco dias. Ao valor soma-se
+ruído de 3,5 mV de desvio padrão no pino do conversor, pouco acima do medido em
+bancada (@tab-estabilidade), e a leitura é limitada a $-80$ kPa, o limite de
+cavitação (@sec-lacunas). A calibração registrada é a nominal de catálogo, e
+os pontos de partida são sorteados entre $-9$ e $-65$ kPa, para que a lista
+exiba as três faixas de atenção desde o primeiro envio. O sinal serve à
+interface e à carga; não entra em nenhuma afirmação sobre a medida.
+
+=== Ensaio de carga
+
+O ensaio é reproduzido por um único comando, que recria a cada execução um
+banco descartável, com usuário e dois talhões próprios, sobe o serviço
+compilado apontado para esse banco e executa uma varredura em duas partes. Na
+primeira, 10, 100 e 1000 nós enviam na cadência do firmware, por cinco minutos
+cada. Na segunda, os mesmos mil nós enviam com intervalos de 5 s, 1 s, 500 ms
+e 250 ms, por um minuto cada, o que multiplica a taxa de requisições por até 240.
+Os envios seguem uma agenda fixa, e não a espera após cada envio do laço
+do firmware: um serviço lento não consegue frear a carga que recebe, de modo
+que a carga aplicada é um teto da real. A ferramenta mede também o próprio
+atraso em relação a essa agenda, que denunciaria um gargalo no cliente; o maior
+atraso de toda a varredura foi de 5,8 ms. A semente do gerador é fixa, e os
+relatórios de cada execução ficam registrados junto da descrição da máquina.
+
+Cliente e serviço rodaram na mesma máquina, um computador portátil com
+processador Intel Core i7-13620H de 16 _threads_ e 15,3 GiB de memória, com o
+PostgreSQL 16 em contêiner, comunicando-se pela interface de _loopback_ e por
+HTTP sem TLS. A @tab-carga resume os resultados.
+
+#figure(
+  caption: [Ensaio de carga com nós simulados],
+  text(size: 10pt)[#table(
+    columns: (0.7fr, 0.9fr, 1.1fr, 0.9fr, 0.8fr, 0.85fr, 0.85fr, 0.95fr),
+    inset: (x: 5pt, y: 4.5pt),
+    align: (right, right, right, right, right, right, right, right),
+    stroke: (x, y) => if y == 0 { (bottom: 0.75pt) } else { (bottom: 0.5pt) },
+    table.header(
+      [*Nós*], [*Intervalo*], [*Taxa (req/s)*], [*Envios*], [*Perdas*],
+      [*p50 (ms)*], [*p99 (ms)*], [*Máx. (ms)*],
+    ),
+    [10], [60 s], [0,17], [50], [0], [6,1], [10,8], [10,8],
+    [100], [60 s], [1,67], [500], [0], [6,0], [8,1], [10,1],
+    [1000], [60 s], [16,7], [5000], [0], [6,0], [7,5], [69,1],
+    [1000], [5 s], [200], [12 000], [0], [3,9], [7,0], [134,6],
+    [1000], [1 s], [1000], [60 000], [0], [4,3], [100,2], [263,5],
+    [1000], [500 ms], [2000], [120 000], [0], [5,5], [74,5], [200,5],
+    [1000], [250 ms], [4000], [240 000], [0], [4,2], [150,4], [235,3],
+  )],
+) <tab-carga>
+#fonte[Elaborado pelo autor (2026). Latência medida no cliente, do envio à
+resposta; p50 e p99 são os percentis 50 e 99.]
+
+Nenhuma leitura se perdeu em toda a varredura. Uma leitura conta como perdida
+quando o envio não recebe resposta, recebe status diferente de 200 ou tem a
+leitura recusada pelo serviço --- os mesmos casos que, no firmware, viram
+lacuna na sequência. As 437 550 leituras aceitas conferem com a contagem feita
+no banco ao final: 437 550 leituras de 1000 nós, todos marcados como simulados.
+
+Na cadência do firmware, a latência não variou com o número de nós: a mediana
+ficou em torno de 6 ms de 10 a 1000 nós, e o p99 dos mil nós, que somam 16,7
+requisições por segundo, foi de 7,5 ms. A saturação tampouco foi alcançada. A
+4000 requisições por segundo, 240 vezes a carga dos mil nós em cadência real,
+todas as leituras foram aceitas e a mediana continuou em 4,2 ms; o que cresceu
+foi a cauda, com o p99 em 150 ms e a fila já visível no percentil 90, de 33 ms.
+Cada ponto da varredura teve uma única execução, e diferenças pequenas entre
+pontos vizinhos, como a do p99 entre 1 s e 500 ms, não são significativas.
+*O teto do serviço não foi encontrado*: a varredura parou em 250 ms por
+escolha, e não por falha.
+
+Quanto ao RNF06, o resultado sustenta a parte do requisito que o ensaio
+exercita: o cadastro de múltiplos nós em mais de um talhão e a recepção das
+suas leituras sem alteração da arquitetura, na escala de mil nós. O ensaio
+usou uma única conta; a separação entre usuários é a do modelo de autorização
+(@sec-autorizacao), que não esteve sob carga. A escalabilidade horizontal, com
+várias cópias do serviço, é o objeto da subseção seguinte.
+
+=== Várias cópias do serviço <sec-replicas>
+
+O serviço de retaguarda não guarda estado entre requisições: a sessão do
+usuário, as leituras e a regra de idempotência --- a unicidade do par formado
+pelo nó e pelo número de sequência --- estão no banco de dados. Várias cópias
+do mesmo binário, ligadas ao mesmo banco, servem portanto o mesmo sistema, e a
+parada de uma delas não interrompe o serviço. A implantação passou a receber o
+número de cópias como parâmetro. O proxy reverso descobre as cópias em
+execução pelo serviço de nomes da plataforma de contêineres, a cada cinco
+segundos, e reparte as requisições entre elas em rodízio. Uma conexão recusada
+por uma cópia que saiu do ar é tentada em outra, o que é seguro para o envio de
+leituras porque o proxy só repete uma requisição que não chegou a ser enviada.
+
+Dois ajustes foram necessários. O primeiro é a parada sem corte. Como o nó não
+retransmite, uma requisição cortada no meio é uma leitura perdida; o serviço
+passou a tratar o sinal de término, fechando a porta para conexões novas e
+deixando terminar, por até 8 s, as requisições que já haviam entrado. O
+segundo é o limitador de tentativas de login, o único estado mantido em
+memória, uma cópia por réplica. Em rodízio, quem ataca a partir de um único
+endereço teria uma cota por cópia. O proxy passou, então, a encaminhar o login
+pelo _hash_ do endereço do cliente, de modo que o mesmo endereço caia sempre na
+mesma cópia e o limite por endereço continue o de uma só. O limite por conta,
+que protege contra ataques distribuídos por muitos endereços, não se recupera
+assim: endereços diferentes caem em cópias diferentes, e a conta alvo passa a
+ter uma cota por cópia. Fechar essa folga exige levar o limitador para o banco
+de dados, e fica como trabalho futuro.
+
+A verificação foi feita em modo local, com três cópias, e está registrada no
+repositório. Duzentos nós simulados enviaram uma leitura por segundo cada,
+durante 90 s, por HTTPS e com conexão nova a cada envio, como o firmware; aos
+30 s, uma das cópias foi parada, e aos 60 s, religada. Os 18 000 envios foram
+todos aceitos, sem nenhuma perda, com mediana de 7,3 ms, p99 de 16,8 ms e
+máximo de 257,5 ms. A cópia parada registrou ter encerrado sem requisições
+pendentes e, religada, voltou ao rodízio. As três dividiram a carga por igual,
+com cerca de 4% de processador cada, e o componente mais exigido foi o proxy
+reverso, entre 47% e 60%, por causa do aperto de mão TLS a cada envio --- custo
+que o ensaio de carga anterior, sem TLS, não tinha como mostrar. Três
+propriedades foram conferidas à parte. A sessão aberta em uma cópia valeu nas
+demais: trinta consultas em rodízio, todas aceitas. A mesma leitura, enviada
+em seis requisições simultâneas, foi gravada uma única vez, com as outras
+cinco reconhecidas como duplicadas. E logins errados a partir do mesmo
+endereço foram recusados a partir da décima primeira tentativa, exatamente o
+limite de uma cópia.
+
+O ensaio não mostra ganho de vazão: as três cópias dividiram o processador da
+mesma máquina, e o que ele estabelece é a correção do sistema com várias cópias
+e a tolerância à parada de uma delas. Tampouco isola a contribuição da parada
+sem corte: com cerca de meia requisição em andamento por cópia, um corte
+abrupto perderia de zero a poucas leituras, o que uma execução não separa do
+acaso; a garantia vem da construção, e o registro da cópia parada a confirma. A
+atualização do serviço sem interrupção, uma cópia por vez, não foi testada.
+
+=== Instalações independentes e método de implantação <sec-implantacao>
+
+"Várias instâncias" tem um segundo sentido: uma instalação por propriedade ou
+cooperativa, cada uma com banco de dados, segredo, usuários e nós próprios. A
+implantação está descrita no repositório como roteiro reprodutível, da máquina
+virtual limpa ao sistema em funcionamento: os serviços sobem juntos --- banco
+de dados, aplicação das migrações, serviço de retaguarda, proxy reverso com
+HTTPS automático e cópia de segurança diária ---, e o roteiro inclui a
+conferência da cadeia de certificados que o firmware aceita. O método se
+resume em duas partes.
+
+Para subir uma instalação nova:
+
++ preparar a máquina e o domínio, com as portas 80 e 443 acessíveis;
++ gerar a configuração: domínio, senha do banco e chave dos tokens de nó e,
+  para uma segunda instalação na mesma máquina, nome da instalação, faixa de
+  rede interna e portas;
++ criar os volumes do banco e das cópias de segurança e subir os serviços;
++ cadastrar o produtor, os talhões e a concessão de acesso, pela ferramenta
+  administrativa.
+
+Para acrescentar um nó a uma instalação:
+
++ cadastrar o nó pelo aplicativo, que exibe a credencial uma única vez, e
+  registrar a sua calibração;
++ configurar o nó pelo portal cativo, com o endereço do servidor, o
+  identificador, a credencial e a calibração, sem recompilar o firmware
+  (@sec-provisionamento);
++ conferir a primeira leitura no aplicativo.
+
+O nome da instalação, a faixa de rede e as portas são os únicos parâmetros que
+separam duas instalações na mesma máquina, e a separação foi verificada com
+duas delas lado a lado, em modo local. A credencial de um nó da primeira e o
+login de um usuário da primeira foram recusados pela segunda, cada uma emitiu
+os próprios certificados, e 120 leituras enviadas à segunda não alteraram a
+contagem da primeira. Na mesma máquina, porém, só uma instalação pode ocupar as
+portas 80 e 443, que a validação do certificado exige; em produção, o natural é
+uma instalação por máquina virtual.
+
+O método foi exercitado em modo local, com a autoridade certificadora interna
+do proxy. Como a máquina virtual de implantação ainda não está disponível, a
+emissão do certificado por uma autoridade pública e a validação dessa cadeia
+pelo ESP32 seguem sem verificação. Da segunda parte do método, a configuração
+pelo portal foi validada em bancada contra o servidor de desenvolvimento, sem
+TLS, e o encadeamento com a calibração registrada vale como implementado, não
+como validado com o nó físico (@sec-provisionamento).
+
+=== Limites destes ensaios
+
+*O transporte não é o do campo.* O ensaio de carga usou _loopback_ e HTTP sem
+TLS; o das cópias usou HTTPS, mas também pela própria máquina. O nó real fala
+HTTPS com o servidor de implantação por Wi-Fi, e a latência de rede e as perdas
+que o enlace provoca (@sec-bancada) ficaram de fora dos dois. Os ensaios medem
+o serviço, o proxy e o banco de dados, não a rede.
+
+*Cliente e serviço disputaram a mesma máquina.* Os números valem para essa
+máquina, sob essa disputa, e não se transferem para o servidor de implantação,
+cuja configuração ainda não é conhecida.
+
+*Os ensaios são curtos.* No de carga, foram cinco minutos por ponto na cadência real e um minuto
+na saturação, e as 437 550 leituras do total são menos de um terço do que mil
+nós produzem em um único dia na cadência do firmware. O efeito do crescimento
+da tabela de leituras ao longo de meses não foi medido.
+
+*Só a ingestão foi medida.* As consultas do aplicativo --- a lista de nós e as
+séries agregadas --- não estiveram sob carga.
+
+== Pontos de extensão <sec-extensao>
+
+A visão geral da arquitetura, no Capítulo 4, afirma que a organização em
+camadas permite incluir novos tipos de sensor sem alterar o núcleo de
+aquisição de dados. Esta seção confere essa afirmação contra o sistema
+construído e descreve, para duas extensões --- outros tipos de sensor e um
+concentrador local de nós ---, o que já é genérico e o que precisaria mudar.
+*Nenhuma das duas foi implementada*: o que segue é análise do código e
+proposta de projeto.
+
+=== Outros tipos de sensor
+
+Uma parte do sistema não depende da grandeza medida. O cadastro do nó, a
+credencial própria de cada um, a autenticação de cada envio, a idempotência
+pelo par formado pelo nó e pelo número de sequência, a autorização por
+concessão de talhão, a marcação do dado simulado e a operação com várias
+cópias e instalações tratam a leitura como um registro de um nó, num instante,
+com um número de sequência. Nada disso muda com o tipo de sensor. Também é
+genérica a decisão central do armazenamento: guardar o sinal bruto, em
+milivolts no pino do conversor, junto do identificador da calibração que o
+interpreta, e converter no servidor (@sec-retaguarda). Um sensor capacitivo de
+umidade ou um termistor de temperatura do solo também entregam uma tensão
+analógica que uma calibração converte numa grandeza.
+
+O tensiômetro, por sua vez, está embutido em quatro lugares:
+
+- *no armazenamento:* a leitura tem uma coluna em kPa, com a faixa física de
+  $-100$ a 10 kPa verificada pelo banco e pela API; a calibração é uma reta de
+  tensão para kPa, com coeficientes nomeados e limitados nessa unidade; e o
+  valor exibido é definido numa única visão do banco, que aplica essa reta;
+- *nas faixas de atenção:* os limiares de alerta e de estresse pertencem ao
+  talhão e são expressos em kPa, entre $-80$ e 0, de modo que um segundo tipo
+  de sensor no mesmo talhão não teria onde guardar os seus;
+- *na apresentação:* a régua de 0 a $-80$ kPa, a convenção de que mais
+  negativo é mais seco, as zonas e o gráfico estão espalhados por cerca de uma
+  dezena de arquivos do aplicativo;
+- *no nó:* o firmware converte a leitura com a curva de catálogo do transdutor
+  e a envia num campo nomeado em kPa.
+
+A extensão proposta reúne essas dependências numa entidade nova, o tipo de
+sensor, com a grandeza, a unidade, a faixa física válida, o sentido da escala
+--- no tensiômetro, mais negativo é mais seco; na umidade volumétrica, é o
+contrário --- e o modelo de conversão. O nó passa a referenciar o seu tipo; a
+calibração passa a guardar os parâmetros do modelo daquele tipo, uma reta ou
+outra função quando a resposta não for linear; a faixa da leitura é conferida
+contra a do tipo; os limiares passam a pertencer ao par talhão e tipo; e o
+aplicativo escolhe escala, unidade e sentido pelo tipo do nó. O contrato de
+envio quase não muda, porque já carrega o sinal bruto e o identificador da
+calibração: só o campo do valor convertido, hoje nomeado em kPa, precisaria de
+um nome genérico, com o nome antigo aceito durante a transição para não exigir
+a regravação dos nós instalados.
+
+Um nó com mais de um sensor pode ser cadastrado, de imediato, como nós
+distintos que compartilham o mesmo hardware, cada um com credencial e
+sequência próprias. Um conceito de canal dentro do nó evitaria multiplicar as
+credenciais, ao custo de levar a idempotência do par nó e sequência para o
+trio nó, canal e sequência.
+
+A afirmação do Capítulo 4 se confirma, portanto, para o transporte e a
+identidade, e não para o armazenamento e a apresentação. Um tipo novo de
+sensor não toca no núcleo de aquisição e de transmissão, mas exige migração do
+esquema, uma conversão nova e trabalho no aplicativo.
+
+=== Concentrador local de nós
+
+Uma propriedade com muitos nós pode preferir que eles não falem diretamente
+com a internet, e sim com um concentrador local, que encaminhe as leituras ao
+servidor. Uma opção que dispensa rádio adicional é o ESP-NOW, protocolo de
+comunicação Wi-Fi sem conexão definido pela Espressif, que transporta os dados
+da aplicação em quadros de ação específicos do fabricante @espressifespnow. O
+concentrador seria outro ESP32, ligado aos nós por ESP-NOW e ao servidor pela
+rede da propriedade. A documentação impõe duas restrições a esse arranjo. O
+canal de cada par precisa coincidir com o canal em que o dispositivo opera
+@espressifespnow, e um concentrador ligado também ao roteador opera no canal
+deste, de modo que os nós ficam presos ao canal do roteador; esse convívio não
+foi testado. E o número de pares por dispositivo é limitado --- até 20, dos
+quais no máximo 17 com cifragem, 7 na configuração padrão @espressifespnow ---,
+o que limita o número de nós cifrados por concentrador.
+
+Do lado do servidor, o contrato atual comporta o concentrador sem mudança se
+ele repassar as leituras de cada nó com a credencial do próprio nó: um envio
+já admite até 500 leituras de um mesmo nó, e a aceitação de uma leitura não
+depende do endereço de origem. O custo dessa opção está no enlace local. A
+credencial de cada nó passaria pelo rádio até o concentrador, protegida apenas
+pela segurança desse enlace, quando hoje ela só trafega dentro do HTTPS. A
+alternativa é dar ao concentrador uma credencial própria, autorizada a enviar
+em nome de um conjunto de nós, o que exige uma entidade nova no servidor e
+desloca para o concentrador a confiança hoje depositada em cada nó.
+
+O concentrador é também o lugar natural do armazenamento local que falta ao
+nó, o RNF04 (@sec-estado). Com memória e alimentação de rede, ele pode guardar
+as leituras durante a falta de conexão e reenviá-las depois, e a idempotência
+do servidor já descarta as que chegarem em dobro. A implementação dependia de
+um segundo ESP32, que não esteve disponível, e fica como trabalho futuro, assim
+como o LoRa, outra tecnologia de rádio, como alternativa ao ESP-NOW.

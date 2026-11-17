@@ -83,7 +83,7 @@ export function NovoNo() {
     return (
       <div className="pagina">
         <div className="pilha conteudo">
-          <h1>Nó cadastrado</h1>
+          <h1>Sensor cadastrado</h1>
 
           <section className="token" aria-labelledby={idToken}>
             <h2 id={idToken} className="token__titulo">
@@ -92,7 +92,7 @@ export function NovoNo() {
             <p>
               Copie e guarde agora. Ele não fica salvo em nenhum lugar que possa mostrá-lo de
               novo — nem nesta tela, nem no servidor. Se ele se perder, o jeito de recuperar o
-              nó é cadastrar outro.
+              sensor é cadastrar outro.
             </p>
 
             <label className="token__rotulo" htmlFor={`${idToken}-valor`}>
@@ -162,17 +162,18 @@ export function NovoNo() {
   return (
     <div className="pagina">
       <header className="cabecalho cabecalho--detalhe">
-        <Link to="/" className="voltar">
-          ← Nós
+        {/* Cadastrar se abre de Ajustes, e e para la que se volta. */}
+        <Link to="/ajustes" className="voltar">
+          ← Ajustes
         </Link>
       </header>
 
       <div className="pilha conteudo">
-        <h1>Cadastrar nó</h1>
+        <h1>Cadastrar sensor</h1>
 
         {talhoes.length === 0 ? (
           <p className="secundario">
-            Você ainda não tem nenhum talhão. Todo nó nasce dentro de um talhão — sem isso ele
+            Você ainda não tem nenhum talhão. Todo sensor nasce dentro de um talhão — sem isso ele
             não aparece para ninguém, nem para quem o cadastrou. Procure quem administra o
             sistema.
           </p>
@@ -189,7 +190,7 @@ export function NovoNo() {
             }}
           >
             <div className="campo">
-              <label htmlFor={idNo}>Identificador do nó</label>
+              <label htmlFor={idNo}>Identificador do sensor</label>
               {/* maxLength e o limite do servidor (64), nao um palpite: o
                   campo simplesmente nao deixa passar do que ele aceita. O
                   formato em si nao e restringido aqui porque o servidor
@@ -246,14 +247,14 @@ export function NovoNo() {
                 ))}
               </select>
               <span className="dica">
-                Só aparecem os talhões que são seus. O nó fica visível para quem tem acesso a
+                Só aparecem os talhões que são seus. O sensor fica visível para quem tem acesso a
                 esse talhão.
               </span>
             </div>
 
             {criar.isError && (
               <p className="painel__erro" role="alert">
-                <strong>O nó não foi cadastrado.</strong>{' '}
+                <strong>O sensor não foi cadastrado.</strong>{' '}
                 {explicarFalhaDeNo(criar.error, 'cadastro')}
               </p>
             )}

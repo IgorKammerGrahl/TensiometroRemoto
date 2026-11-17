@@ -1,0 +1,60 @@
+# Proxy reverso com HTTPS automatico (Let's Encrypt). DOMINIO vem do .env.
+#
+# TLS_LOCAL fica vazio em producao e vale "tls internal" no modo local
+# (compose.local.yaml). O Caddy expande {$VAR} antes de ler o arquivo, entao
+# vazio some e "tls internal" vira a diretiva.
+#
+# X-Forwarded-For: sem trusted_proxies o Caddy SUBSTITUI o cabecalho que o
+# cliente mandou pelo IP real da conexao. A API le esse valor (PROXY_CONFIAVEL).
+{
+	# So Let's Encrypt. O no confia apenas nas raizes do LE (CA_RAIZ_PEM, no
+	# firmware); se o Caddy caisse em outra CA quando o LE falhasse, o site
+	# abriria no navegador e o ESP32 recusaria o certificado.
+	cert_issuer acme
+}
+
+# AS REPLICAS DA API (API_REPLICAS no .env).
+#
+# `dynamic a` pergunta ao DNS do Docker, a cada 5 s, os IPs do servico `api`:
+# com uma replica e um IP, com tres sao tres. Replica que sai do ar some da
+# lista na proxima consulta; ate la, a conexao recusada e tentada de novo em
+# outra replica por ate 5 s (lb_try_duration). Isso e seguro para o POST
+# /readings: o Caddy so repete uma requisicao que NAO chegou a ser enviada
+# (falha de conexao); depois de enviada, so repete GET.
+(replicas_api) {
+	dynamic a {
+		name api
+		port 8080
+		refresh 5s
+	}
+	lb_try_duration 5s
+	lb_try_interval 250ms
+	fail_duration 10s
+}
+
+{$DOMINIO} {
+	{$TLS_LOCAL}
+
+	# LOGIN: SEMPRE NA MESMA REPLICA PARA O MESMO IP.
+	#
+	# O limitador de tentativas de login vive na memoria de cada replica. Em
+	# rodizio, quem ataca de um IP so ganharia N vezes o limite por IP, uma
+	# cota em cada replica. Com o hash do IP do cliente, o mesmo IP cai sempre
+	# na mesma replica, e o limite por IP volta a valer como com uma so.
+	#
+	# O que NAO se recupera assim: o limite por e-mail contra ataque
+	# distribuido. IPs diferentes caem em replicas diferentes, e a conta alvo
+	# passa a ter N cotas. Com N pequeno a perda e pequena; fechar de vez pede
+	# o limitador no banco. Ver Backend/README.md.
+	reverse_proxy /api/v1/app/login {
+		import replicas_api
+		lb_policy client_ip_hash
+	}
+
+	# O resto em rodizio. Nada mais depende de cair na mesma replica: a sessao
+	# e as leituras estao no banco.
+	reverse_proxy {
+		import replicas_api
+		lb_policy round_robin
+	}
+}

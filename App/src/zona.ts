@@ -44,8 +44,8 @@ export type Aparencia = {
 
 const CONFORTO: Aparencia = {
   chave: 'conforto',
-  rotulo: 'Umidade boa',
-  explicacao: 'A planta tem água disponível. Não precisa irrigar agora.',
+  rotulo: 'Úmido',
+  explicacao: 'O solo tem água para a planta. Não precisa irrigar agora.',
   hachura: 'solido',
   enfase: 'nenhuma',
 };
@@ -53,7 +53,7 @@ const CONFORTO: Aparencia = {
 const ALERTA: Aparencia = {
   chave: 'alerta',
   rotulo: 'Secando',
-  explicacao: 'O solo está perdendo água. Prepare a irrigação.',
+  explicacao: 'O solo está perdendo água. Irrigar nos próximos dias.',
   hachura: 'diagonal',
   enfase: 'atencao',
 };
@@ -61,16 +61,16 @@ const ALERTA: Aparencia = {
 const ESTRESSE: Aparencia = {
   chave: 'estresse',
   rotulo: 'Seco',
-  explicacao: 'A planta está sofrendo por falta de água. Irrigue.',
+  explicacao: 'A planta está sofrendo por falta de água. Irrigar agora.',
   hachura: 'cruzado',
   enfase: 'grave',
 };
 
 const NAO_CONFIGURADO: Aparencia = {
   chave: 'nao-configurado',
-  rotulo: 'Faixa não configurada',
+  rotulo: 'Sem limites',
   explicacao:
-    'Este talhão ainda não tem os limites definidos. Sem eles não dá para dizer se a umidade está boa ou ruim.',
+    'Este talhão ainda não tem limites de irrigação. Sem eles não dá para dizer se precisa irrigar.',
   hachura: 'vazado',
   enfase: 'pendencia',
 };

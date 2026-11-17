@@ -18,7 +18,7 @@ function mensagemDeLogin(erro: unknown): string {
     return 'Esta conta está desativada. Procure quem administra o sistema.';
   }
   if (erro.status === SEM_REDE) {
-    return 'Não foi possível falar com o servidor. Verifique a rede do aparelho.';
+    return 'Não foi possível falar com o servidor. Confira a internet do celular.';
   }
   return erro.message;
 }
@@ -26,6 +26,7 @@ function mensagemDeLogin(erro: unknown): string {
 export function Entrar() {
   const [email, setEmail] = useState('');
   const [senha, setSenha] = useState('');
+  const [ver, setVer] = useState(false);
   const navegar = useNavigate();
   const local = useLocation();
   const login = useLogin();
@@ -35,6 +36,8 @@ export function Entrar() {
 
   function enviar(evento: React.FormEvent) {
     evento.preventDefault();
+    // A senha nao fica exposta enquanto o pedido vai e volta.
+    setVer(false);
     login.mutate(
       { email, senha },
       { onSuccess: () => navegar(destino, { replace: true }) },
@@ -60,6 +63,7 @@ export function Entrar() {
             autoCapitalize="none"
             autoCorrect="off"
             spellCheck={false}
+            enterKeyHint="next"
             required
             value={email}
             onChange={(e) => setEmail(e.target.value)}
@@ -68,15 +72,35 @@ export function Entrar() {
 
         <div className="campo">
           <label htmlFor="senha">Senha</label>
-          <input
-            id="senha"
-            name="senha"
-            type="password"
-            autoComplete="current-password"
-            required
-            value={senha}
-            onChange={(e) => setSenha(e.target.value)}
-          />
+          <div className="campo__com-botao">
+            <input
+              id="senha"
+              name="senha"
+              type={ver ? 'text' : 'password'}
+              autoComplete="current-password"
+              enterKeyHint="done"
+              required
+              value={senha}
+              onChange={(e) => setSenha(e.target.value)}
+            />
+            {/* MOSTRAR A SENHA (guia autofill-sign-in-form). Para quem digita
+                devagar num teclado pequeno, conferir o que digitou e o que
+                evita a terceira tentativa errada. O texto do botao diz a ACAO
+                ("Mostrar"/"Esconder"), mais claro para quem enxerga que um
+                botao pressionado; aria-pressed da o estado a quem ouve. O
+                pointerdown sem default mantem o foco -- e o teclado aberto --
+                no campo. */}
+            <button
+              type="button"
+              className="botao botao--contorno"
+              aria-controls="senha"
+              aria-pressed={ver}
+              onPointerDown={(e) => e.preventDefault()}
+              onClick={() => setVer((v) => !v)}
+            >
+              {ver ? 'Esconder' : 'Mostrar'}
+            </button>
+          </div>
         </div>
 
         {/* aria-live: o erro aparece sem mudar de tela, entao um leitor de tela

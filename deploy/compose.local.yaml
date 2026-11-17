@@ -1,0 +1,12 @@
+# Modo local: o mesmo sistema, com a CA interna do Caddy no lugar do Let's
+# Encrypt. Serve para testar o fluxo inteiro sem dominio:
+#
+#   docker compose -f compose.yaml -f compose.local.yaml up -d --build
+#
+# No .env: DOMINIO=localhost. O ESP32 nao entra neste modo: na bancada ele
+# segue com DEV_SEM_TLS contra o `make dev`, e o teste com TLS e contra a VM
+# (docs/DEPLOY.md).
+services:
+  caddy:
+    environment:
+      TLS_LOCAL: tls internal

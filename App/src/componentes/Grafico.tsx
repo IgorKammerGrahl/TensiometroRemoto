@@ -72,7 +72,7 @@ export function Grafico({ pontos, bucketS, deMs, ateMs, kpaAlerta, kpaEstresse }
   if (pontos.length === 0) {
     return (
       <p className="grafico__vazio">
-        Nenhuma leitura neste período. O nó pode não ter reportado, ou o intervalo pode ser
+        Nenhuma leitura neste período. O sensor pode não ter enviado nada, ou o intervalo pode ser
         anterior à instalação dele.
       </p>
     );
@@ -177,7 +177,7 @@ export function Grafico({ pontos, bucketS, deMs, ateMs, kpaAlerta, kpaEstresse }
       </div>
 
       <figcaption className="grafico__legenda secundario">
-        Linha descendo é solo secando. A faixa clara em volta mostra o intervalo entre a menor e a
+        Linha descendo é solo secando. A área clara em volta mostra o intervalo entre a menor e a
         maior leitura de cada período.
         {/* A LEGENDA NAO CONTA PARADAS, PORQUE NAO TEM COMO SABER QUANTAS FORAM.
             O numero de segmentos e uma propriedade do desenho; "quantas vezes o
@@ -194,7 +194,7 @@ export function Grafico({ pontos, bucketS, deMs, ateMs, kpaAlerta, kpaEstresse }
           <>
             {' '}
             <strong>A linha se interrompe onde leituras consecutivas ficaram distantes</strong> — ali
-            o nó pode ter parado de reportar.
+            o sensor pode ter parado de enviar.
           </>
         )}
         {grampeado && ' Alguma leitura passou do fim da escala e foi desenhada no limite.'}
@@ -275,7 +275,7 @@ function descrever(
   const zonaPior = aparencia(pior.zona).rotulo.toLowerCase();
   const lacunas =
     segmentos > 1 ? ` A série tem ${segmentos - 1} interrupção sem dados.` : '';
-  const faixa = temFaixa ? '' : ' As faixas de umidade não estão configuradas.';
+  const faixa = temFaixa ? '' : ' Este talhão ainda não tem limites de irrigação.';
   return (
     `Gráfico da umidade do solo ao longo do tempo, com ${pontos.length} pontos. ` +
     `Quanto mais baixa a linha, mais seco o solo. Pior momento em ${fmtQuando(pior.t)}, ` +

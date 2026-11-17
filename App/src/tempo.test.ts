@@ -1,10 +1,23 @@
 import { describe, expect, it } from 'vitest';
 import {
   LIMIAR_LEITURA_VELHA_S,
+  dataPorExtenso,
   formatarDuracao,
   idadeSegundos,
   leituraVelha,
 } from './tempo';
+
+describe('dataPorExtenso', () => {
+  // O fuso dos testes e America/Sao_Paulo (vite.config.ts).
+  it('dia da semana sem "-feira", com maiuscula, dia e mes', () => {
+    expect(dataPorExtenso(Date.parse('2026-11-16T15:00:00Z'))).toBe('Segunda, 16 de novembro');
+    expect(dataPorExtenso(Date.parse('2026-11-21T15:00:00Z'))).toBe('Sábado, 21 de novembro');
+    expect(dataPorExtenso(Date.parse('2026-11-22T15:00:00Z'))).toBe('Domingo, 22 de novembro');
+  });
+  it('usa o dia local: 23 h de segunda em Sao Paulo ja e terca em UTC', () => {
+    expect(dataPorExtenso(Date.parse('2026-11-17T02:00:00Z'))).toBe('Segunda, 16 de novembro');
+  });
+});
 
 describe('idadeSegundos', () => {
   it('devolve a idade do servidor quando nao decorreu tempo local', () => {

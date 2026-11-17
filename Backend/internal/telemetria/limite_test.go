@@ -1,8 +1,10 @@
 package telemetria
 
 import (
+	"log/slog"
 	"net/http"
 	"net/http/httptest"
+	"net/netip"
 	"testing"
 	"time"
 )
@@ -160,8 +162,9 @@ func TestChaveOrigemIgnoraForwardedFor(t *testing.T) {
 	r.RemoteAddr = "203.0.113.7:54321"
 	r.Header.Set("X-Forwarded-For", "198.51.100.1")
 
-	// Confiar no cabecalho daria um balde novo por tentativa.
-	if got := chaveOrigem(r); got != "203.0.113.7" {
+	// Sem proxy configurado, confiar no cabecalho daria um balde novo por
+	// tentativa.
+	if got := chaveOrigem(r, netip.Addr{}); got != "203.0.113.7" {
 		t.Fatalf("chaveOrigem = %q; queria o IP da conexao, nao o cabecalho", got)
 	}
 }
@@ -169,7 +172,79 @@ func TestChaveOrigemIgnoraForwardedFor(t *testing.T) {
 func TestChaveOrigemSemPorta(t *testing.T) {
 	r := httptest.NewRequest(http.MethodPost, "/api/v1/app/login", nil)
 	r.RemoteAddr = "socket-unix"
-	if got := chaveOrigem(r); got != "socket-unix" {
+	if got := chaveOrigem(r, netip.MustParseAddr("10.250.250.2")); got != "socket-unix" {
 		t.Fatalf("chaveOrigem = %q; endereco sem porta ainda precisa virar chave", got)
+	}
+}
+
+// Com o Caddy configurado, o cabecalho vale SO na conexao que vem dele, e so
+// o item que ele mesmo escreveu (o mais a direita).
+func TestChaveOrigemAtrasDoProxy(t *testing.T) {
+	caddy := netip.MustParseAddr("10.250.250.2")
+	casos := []struct {
+		nome   string
+		remote string
+		xff    []string
+		quero  string
+	}{
+		{"cliente direto forjando o cabecalho", "203.0.113.7:54321",
+			[]string{"198.51.100.1"}, "203.0.113.7"},
+		{"cliente via Caddy", "10.250.250.2:40000",
+			[]string{"203.0.113.7"}, "203.0.113.7"},
+		{"cliente forjando via Caddy: vale o que o Caddy anotou", "10.250.250.2:40000",
+			[]string{"198.51.100.1, 203.0.113.7"}, "203.0.113.7"},
+		{"cabecalho repetido: vale o ultimo", "10.250.250.2:40000",
+			[]string{"198.51.100.1", "203.0.113.7"}, "203.0.113.7"},
+		{"Caddy em IPv4 mapeado em IPv6", "[::ffff:10.250.250.2]:40000",
+			[]string{"203.0.113.7"}, "203.0.113.7"},
+		{"via Caddy sem cabecalho: balde do Caddy", "10.250.250.2:40000",
+			nil, "10.250.250.2"},
+		{"via Caddy com lixo no item final: balde do Caddy", "10.250.250.2:40000",
+			[]string{"203.0.113.7, nao-e-ip"}, "10.250.250.2"},
+		{"gateway na mesma rede nao e o Caddy", "10.250.250.1:40000",
+			[]string{"198.51.100.1"}, "10.250.250.1"},
+	}
+	for _, c := range casos {
+		t.Run(c.nome, func(t *testing.T) {
+			r := httptest.NewRequest(http.MethodPost, "/api/v1/app/login", nil)
+			r.RemoteAddr = c.remote
+			for _, v := range c.xff {
+				r.Header.Add("X-Forwarded-For", v)
+			}
+			if got := chaveOrigem(r, caddy); got != c.quero {
+				t.Fatalf("chaveOrigem = %q; quero %q", got, c.quero)
+			}
+		})
+	}
+}
+
+// O handler de login usa a chave do proxy, e nao so a funcao. Corpo vazio
+// para no 400 do decode, depois do limite por IP e antes de qualquer acesso
+// ao banco -- por isso o store pode ser nil.
+func TestLoginAtrasDoProxyLimitaPorCliente(t *testing.T) {
+	a := NewAPI(nil, segredoTeste, slog.New(slog.DiscardHandler))
+	a.ConfiarNoProxy(netip.MustParseAddr("10.250.250.2"))
+	h := a.Router()
+
+	login := func(cliente string) int {
+		r := httptest.NewRequest(http.MethodPost, "/api/v1/app/login", nil)
+		r.RemoteAddr = "10.250.250.2:40000"
+		r.Header.Set("X-Forwarded-For", cliente)
+		rec := httptest.NewRecorder()
+		h.ServeHTTP(rec, r)
+		return rec.Code
+	}
+
+	for i := range loginRajadaIP {
+		if got := login("203.0.113.7"); got != http.StatusBadRequest {
+			t.Fatalf("tentativa %d: status = %d, quero 400 dentro da rajada", i+1, got)
+		}
+	}
+	if got := login("203.0.113.7"); got != http.StatusTooManyRequests {
+		t.Fatalf("status = %d, quero 429 para o cliente que esgotou a rajada", got)
+	}
+	// O ponto da mudanca: atras do mesmo Caddy, outro cliente tem balde proprio.
+	if got := login("198.51.100.1"); got != http.StatusBadRequest {
+		t.Fatalf("status = %d; o balde de um cliente vazou para outro atras do Caddy", got)
 	}
 }

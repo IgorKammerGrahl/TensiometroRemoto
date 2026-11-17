@@ -83,3 +83,12 @@ export function formatarDuracao(segundos: number): string {
 
   return `${Math.floor(h / 24)} dias`;
 }
+
+/** "Segunda, 16 de novembro": o cabecalho da tela inicial. Sem "-feira" porque
+ *  a frase fica curta o bastante para nao quebrar linha em texto grande. */
+export function dataPorExtenso(ms: number): string {
+  const t = new Intl.DateTimeFormat('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })
+    .format(ms)
+    .replace('-feira', '');
+  return t.charAt(0).toUpperCase() + t.slice(1);
+}

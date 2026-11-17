@@ -80,7 +80,8 @@ describe('textoDeIdade', () => {
       textoDeIdade({ tipo: 'atual', idadeS: 120, kpa: -22, zona: 'conforto' }),
     ];
     expect(new Set(frases).size).toBe(4);
-    expect(frases[2]).toBe('Sem dados há 6 h');
+    expect(frases[0]).toBe('Desligado');
+    expect(frases[2]).toBe('Sem leitura há 6 h');
     expect(frases[3]).toBe('há 2 min');
   });
 

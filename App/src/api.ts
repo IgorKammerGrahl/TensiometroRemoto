@@ -46,6 +46,9 @@ export type DeviceApp = {
   id: string;
   descricao: string;
   ativo: boolean;
+  /** Serie gerada por software (cmd/seed, cmd/simulador), nao medida. Fixado
+   *  no cadastro; nao ha PATCH que o mude. Ver migrations/0004_simulado.sql. */
+  simulado: boolean;
   talhao: Talhao;
   /** null = no cadastrado que nunca reportou. Terceiro estado, distinto de
    *  "leitura velha" e de "leitura atual". */
@@ -151,7 +154,7 @@ export class ErroAPI extends Error {
 }
 
 type Opcoes = {
-  metodo?: 'GET' | 'POST' | 'PATCH';
+  metodo?: 'GET' | 'POST' | 'PATCH' | 'DELETE';
   corpo?: unknown;
   /** Respostas 204 nao tem corpo. Marcar explicitamente evita tentar
    *  desserializar vazio e transformar sucesso em erro de parse. */
@@ -301,20 +304,31 @@ export const api = {
       ...(sinal ? { sinal } : {}),
     }),
 
-  /** Limiares do talhao (RF07/UC04).
+  /** Limiares do talhao (RF08/UC04). So CONFIGURA: para apagar, removerFaixa.
    *
-   * Os dois campos vao SEMPRE juntos, inclusive para limpar (os dois `null`).
-   * Nao e escolha da interface: `talhoes_faixas_ck` exige ambos nulos ou ambos
-   * preenchidos, e `validarFaixa` recusa o par incompleto com 400. Deixar a
-   * assinatura mandar um so seria oferecer um estado que o banco nao aceita. */
+   * Os dois campos vao SEMPRE juntos. Nao e escolha da interface:
+   * `talhoes_faixas_ck` exige ambos nulos ou ambos preenchidos, e
+   * `validarFaixa` recusa o par incompleto com 400. Deixar a assinatura mandar
+   * um so seria oferecer um estado que o banco nao aceita. E `null` aqui NAO
+   * apaga: o servidor le ausente e nulo do mesmo jeito, como "mantenha" -- por
+   * isso o tipo nao aceita null. */
   patchTalhao: (
     id: string,
-    corpo: { kpa_alerta: number | null; kpa_estresse: number | null },
+    corpo: { kpa_alerta: number; kpa_estresse: number },
     sinal?: AbortSignal,
   ) =>
     requisitar<Talhao>(`/talhoes/${encodeURIComponent(id)}`, {
       metodo: 'PATCH',
       corpo,
+      ...(sinal ? { sinal } : {}),
+    }),
+
+  /** Devolve o talhao a nao-configurado (RF08): os dois limiares viram nulos.
+   *  Endpoint proprio porque o PATCH nao sabe apagar; ver appRemoverFaixa no
+   *  servidor. Idempotente. */
+  removerFaixa: (id: string, sinal?: AbortSignal) =>
+    requisitar<Talhao>(`/talhoes/${encodeURIComponent(id)}/faixa`, {
+      metodo: 'DELETE',
       ...(sinal ? { sinal } : {}),
     }),
 

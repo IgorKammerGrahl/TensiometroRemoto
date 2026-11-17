@@ -79,6 +79,8 @@ func (a *API) registrarApp(mux *http.ServeMux) {
 
 	mux.Handle("GET /api/v1/app/talhoes", a.sessao(a.appTalhoes))
 	mux.Handle("PATCH /api/v1/app/talhoes/{id}", a.sessao(a.appPatchTalhao))
+	// A faixa como sub-recurso: e o unico jeito de APAGA-LA. Ver appRemoverFaixa.
+	mux.Handle("DELETE /api/v1/app/talhoes/{id}/faixa", a.sessao(a.appRemoverFaixa))
 }
 
 // ---------------------------------------------------------- middleware
@@ -163,7 +165,7 @@ func (a *API) appLogin(w http.ResponseWriter, r *http.Request) {
 	// O limite por IP vem antes de decodificar: e a unica checagem que nao
 	// depende de nada que o corpo diga, entao e a unica que pode custar menos
 	// que o ataque. Sair daqui e ler zero byte do corpo.
-	if espera, ok := a.loginPorIP.permitir(chaveOrigem(r)); !ok {
+	if espera, ok := a.loginPorIP.permitir(chaveOrigem(r, a.proxyConfiavel)); !ok {
 		recusarPorLimite(w, espera)
 		return
 	}
@@ -298,6 +300,12 @@ func (a *API) appCriarDevice(w http.ResponseWriter, r *http.Request) {
 		ID        string `json:"id"`
 		Descricao string `json:"descricao"`
 		TalhaoID  string `json:"talhao_id"`
+		// Ausente e false: a tela de cadastro (RF10) nao oferece o campo, e
+		// quem o envia e o cmd/simulador. Nao e controle de acesso -- marcar o
+		// proprio no como simulado so muda como ele aparece para o proprio
+		// usuario. O risco que importa e o contrario, serie gerada sem a
+		// marca, e esse o simulador fecha do lado dele.
+		Simulado bool `json:"simulado"`
 	}
 	if !decodificar(w, r, &in) {
 		return
@@ -322,7 +330,7 @@ func (a *API) appCriarDevice(w http.ResponseWriter, r *http.Request) {
 
 	usuarioID := usuarioDoCtx(r.Context())
 	err = a.store.CriarDevice(r.Context(), usuarioID, in.ID, in.Descricao, in.TalhaoID,
-		HashToken(a.segredo, token))
+		HashToken(a.segredo, token), in.Simulado)
 	switch {
 	case errors.Is(err, ErrNaoEncontrado):
 		// Talhao inexistente e talhao nao concedido sao a mesma resposta.
@@ -524,6 +532,39 @@ func (a *API) appPatchTalhao(w http.ResponseWriter, r *http.Request) {
 	}
 	if err != nil {
 		a.erroInterno(w, "atualizacao de talhao", err)
+		return
+	}
+	escreverJSON(w, http.StatusOK, t)
+}
+
+// appRemoverFaixa devolve o talhao a nao-configurado (RF08, a direcao que o
+// PATCH nao alcanca).
+//
+// POR QUE UM DELETE, E NAO `null` NO PATCH. No PATCH, `*float32` deixa o
+// ponteiro nil tanto para `"kpa_alerta": null` quanto para a chave ausente,
+// e o COALESCE le nil como "mantenha". As tres saidas dentro do PATCH --
+// ponteiro duplo, json.RawMessage ou um valor sentinela -- mudam o que um
+// campo do contrato significa conforme a forma de escrever o JSON, e um
+// cliente que mande `null` achando que "nao mexe" passaria a apagar. Aqui a
+// operacao tem nome proprio: o PATCH continua so configurando, e apagar e um
+// verbo que nao se confunde com ele. Tambem casa com o CHECK
+// talhoes_faixas_ck, para o qual a faixa e um par -- nao ha "apagar so o
+// alerta", entao nao ha campo a campo.
+//
+// Idempotente: remover uma faixa que nao existe e o mesmo 200.
+func (a *API) appRemoverFaixa(w http.ResponseWriter, r *http.Request) {
+	talhaoID := r.PathValue("id")
+	if !uuidValido(talhaoID) {
+		erroJSON(w, http.StatusNotFound, "talhao nao encontrado")
+		return
+	}
+	t, err := a.store.RemoverFaixa(r.Context(), usuarioDoCtx(r.Context()), talhaoID)
+	if errors.Is(err, ErrNaoEncontrado) {
+		erroJSON(w, http.StatusNotFound, "talhao nao encontrado")
+		return
+	}
+	if err != nil {
+		a.erroInterno(w, "remocao de faixa", err)
 		return
 	}
 	escreverJSON(w, http.StatusOK, t)

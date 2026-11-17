@@ -101,9 +101,10 @@ export function Regua({ kpa, kpaAlerta, kpaEstresse }: Props) {
             })}
           </ul>
         ) : (
+          /* So a escala: a explicacao de "sem limites" ja esta na resposta, no
+             topo da tela. Repeti-la aqui era o mesmo paragrafo duas vezes. */
           <p className="regua__sem-faixa">
-            <strong>{aparencia(null).rotulo}.</strong> {aparencia(null).explicacao} A escala
-            continua valendo: o traço mostra onde a leitura está entre encharcado e seco.
+            A escala continua valendo: o traço mostra onde a leitura está entre encharcado e seco.
           </p>
         )}
         {marca?.fora === 'abaixo' && (
@@ -127,8 +128,8 @@ export function Regua({ kpa, kpaAlerta, kpaEstresse }: Props) {
 function descrever(kpa: number | null, marca: ReturnType<typeof posicao>, temFaixa: boolean): string {
   const escala = `Escala de ${textoKpa(TOPO_KPA)} a ${textoKpa(FUNDO_KPA)} quilopascal, do solo encharcado no topo ao solo seco embaixo.`;
   const faixa = temFaixa
-    ? ' As faixas de umidade boa, secando e seco estão marcadas.'
-    : ' As faixas de umidade não estão configuradas para este talhão.';
+    ? ' Os limites de irrigação estão marcados: úmido, secando e seco.'
+    : ' Este talhão ainda não tem limites de irrigação.';
   if (kpa === null || marca === null) return `${escala}${faixa} Sem leitura atual para marcar.`;
   return `${escala}${faixa} Leitura atual em ${textoKpa(kpa)} quilopascal.`;
 }

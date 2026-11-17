@@ -730,6 +730,50 @@ func TestCadastroDeDevice(t *testing.T) {
 	if rec.Code != http.StatusConflict {
 		t.Errorf("id duplicado: status = %d, quero 409; corpo: %s", rec.Code, rec.Body.String())
 	}
+
+	// Cadastro sem o campo e no real: a tela de RF10 nao o envia.
+	if resp.Device.Simulado {
+		t.Error("device cadastrado sem `simulado` nasceu simulado")
+	}
+}
+
+// RISCO: serie gerada por software aparecendo como medida, ou um no que
+// deixa de ser simulado e reescreve a procedencia do que ja gravou.
+func TestDeviceSimulado(t *testing.T) {
+	c := novoCenarioApp(t)
+	cookie := entrar(t, c.h, emailA)
+
+	rec := req(t, c.h, http.MethodPost, "/api/v1/app/devices", cookie,
+		fmt.Sprintf(`{"id":"sim-0001","descricao":"no simulado","talhao_id":%q,"simulado":true}`, c.talhaoA))
+	var resp struct {
+		Device DeviceApp `json:"device"`
+	}
+	decodificarResp(t, rec, &resp)
+	if !resp.Device.Simulado {
+		t.Fatal("cadastro com simulado=true devolveu simulado=false")
+	}
+
+	// A marca chega na lista e no detalhe -- e o que a tela le.
+	var lista respDevices
+	decodificarResp(t, req(t, c.h, http.MethodGet, "/api/v1/app/devices", cookie, ""), &lista)
+	for _, d := range lista.Devices {
+		if d.Simulado != (d.ID == "sim-0001") {
+			t.Errorf("lista: %s com simulado=%v", d.ID, d.Simulado)
+		}
+	}
+
+	// PATCH nao e caminho de escrita da marca, em nenhuma direcao.
+	rec = req(t, c.h, http.MethodPatch, "/api/v1/app/devices/sim-0001", cookie, `{"simulado":false}`)
+	var d DeviceApp
+	decodificarResp(t, rec, &d)
+	if !d.Simulado {
+		t.Error("PATCH desmarcou um no simulado")
+	}
+	rec = req(t, c.h, http.MethodPatch, "/api/v1/app/devices/dev-a1", cookie, `{"simulado":true}`)
+	decodificarResp(t, rec, &d)
+	if d.Simulado {
+		t.Error("PATCH marcou como simulado um no real")
+	}
 }
 
 // ------------------------------------------------------- RISCO: sinal
@@ -1112,6 +1156,72 @@ func TestPatchTalhaoDeOutroUsuario(t *testing.T) {
 		"/api/v1/app/talhoes/00000000-0000-0000-0000-000000000000", cookie, `{"cultura":"x"}`)
 	if fantasma.Body.String() != rec.Body.String() {
 		t.Errorf("talhao alheio e inexistente se distinguem: %s / %s", rec.Body.String(), fantasma.Body.String())
+	}
+}
+
+// RF08, a direcao que faltava: DELETE da faixa devolve o talhao a
+// nao-configurado, e a zona dos nos dele volta a ser nula.
+func TestRemoverFaixaDoTalhao(t *testing.T) {
+	c := novoCenarioApp(t)
+	semearKPa(t, "dev-a1", time.Now().UTC().Add(-time.Hour), -40)
+	cookie := entrar(t, c.h, emailA)
+
+	var d DeviceApp
+	decodificarResp(t, req(t, c.h, http.MethodGet, "/api/v1/app/devices/dev-a1", cookie, ""), &d)
+	if d.Ultima.Zona == nil || *d.Ultima.Zona != ZonaAlerta {
+		t.Fatalf("zona antes = %v, quero alerta (-40 com -30/-60)", valor(d.Ultima.Zona))
+	}
+
+	var tl Talhao
+	decodificarResp(t, req(t, c.h, http.MethodDelete, "/api/v1/app/talhoes/"+c.talhaoA+"/faixa", cookie, ""), &tl)
+	if tl.KPaAlerta != nil || tl.KPaEstresse != nil {
+		t.Fatalf("talhao depois do DELETE = %+v, quero os dois limiares nulos", tl)
+	}
+	if tl.Cultura == nil || *tl.Cultura != "Soja" {
+		t.Errorf("cultura = %v, quero Soja intacta: o DELETE e so da faixa", valor(tl.Cultura))
+	}
+
+	decodificarResp(t, req(t, c.h, http.MethodGet, "/api/v1/app/devices/dev-a1", cookie, ""), &d)
+	if d.Ultima.Zona != nil {
+		t.Errorf("zona depois = %q, quero nula", *d.Ultima.Zona)
+	}
+
+	// Idempotente: remover de novo e o mesmo 200 com a faixa nula.
+	rec := req(t, c.h, http.MethodDelete, "/api/v1/app/talhoes/"+c.talhaoA+"/faixa", cookie, "")
+	if rec.Code != http.StatusOK {
+		t.Errorf("segundo DELETE: status = %d, quero 200; corpo: %s", rec.Code, rec.Body.String())
+	}
+}
+
+// A mesma autorizacao do PATCH: talhao do vizinho, uuid inexistente e uuid
+// malformado sao o mesmo 404, e nada muda no banco.
+func TestRemoverFaixaDeTalhaoAlheio(t *testing.T) {
+	c := novoCenarioApp(t)
+	cookie := entrar(t, c.h, emailA)
+
+	alheio := req(t, c.h, http.MethodDelete, "/api/v1/app/talhoes/"+c.talhaoB+"/faixa", cookie, "")
+	if alheio.Code != http.StatusNotFound {
+		t.Fatalf("status = %d, quero 404; corpo: %s", alheio.Code, alheio.Body.String())
+	}
+	for _, id := range []string{"00000000-0000-0000-0000-000000000000", "nao-e-uuid"} {
+		rec := req(t, c.h, http.MethodDelete, "/api/v1/app/talhoes/"+id+"/faixa", cookie, "")
+		if rec.Code != http.StatusNotFound || rec.Body.String() != alheio.Body.String() {
+			t.Errorf("%s: %d %s, quero o mesmo 404 do talhao alheio", id, rec.Code, rec.Body.String())
+		}
+	}
+
+	var alerta *float32
+	if err := testPool.QueryRow(context.Background(),
+		`SELECT kpa_alerta FROM talhoes WHERE id = $1`, c.talhaoB).Scan(&alerta); err != nil {
+		t.Fatal(err)
+	}
+	if alerta == nil || *alerta != -30 {
+		t.Errorf("faixa do vizinho = %v, quero -30 intacta", alerta)
+	}
+
+	// Sem sessao: 401, como todo /app/*.
+	if rec := req(t, c.h, http.MethodDelete, "/api/v1/app/talhoes/"+c.talhaoA+"/faixa", "", ""); rec.Code != http.StatusUnauthorized {
+		t.Errorf("sem cookie: status = %d, quero 401", rec.Code)
 	}
 }
 

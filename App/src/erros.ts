@@ -39,12 +39,12 @@ export function explicarFalhaDeNo(erro: unknown, operacao: Operacao): string {
     case 404:
       return operacao === 'cadastro'
         ? 'O talhão escolhido não está mais disponível para você. Atualize a página; se ele continuar fora da lista, procure quem administra o sistema.'
-        : 'O nó ou o talhão escolhido pode ter saído do seu acesso. Atualize a página; se o problema continuar, procure quem administra o sistema.';
+        : 'O sensor ou o talhão escolhido pode ter saído do seu acesso. Atualize a página; se o problema continuar, procure quem administra o sistema.';
 
     case 409:
       // O servidor diz "ja existe device com esse id". "Device" e "id" sao
       // palavras do banco; a regra e a mesma, so o vocabulario muda.
-      return 'Já existe um nó com esse identificador. Escolha outro.';
+      return 'Já existe um sensor com esse identificador. Escolha outro.';
 
     case 400:
       // Campo recusado. O servidor nomeia QUAL, e nomear de novo aqui seria

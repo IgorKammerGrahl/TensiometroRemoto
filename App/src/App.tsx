@@ -1,76 +1,36 @@
-import {
-  MutationCache,
-  QueryCache,
-  QueryClient,
-  QueryClientProvider,
-} from '@tanstack/react-query';
-import { BrowserRouter, Navigate, Route, Routes } from 'react-router';
-import { ErroAPI, SEM_REDE } from './api';
-import { CHAVE_SESSAO, ExigeSessao, SemSessao } from './sessao';
+import { QueryClientProvider } from '@tanstack/react-query';
+import { useEffect } from 'react';
+import { BrowserRouter, Navigate, Route, Routes, useLocation } from 'react-router';
+import { criarClienteQuery } from './clienteQuery';
+import { ExigeSessao, SemSessao } from './sessao';
+import { Ajustes } from './telas/Ajustes';
 import { Entrar } from './telas/Entrar';
 import { No } from './telas/No';
 import { NovoNo } from './telas/NovoNo';
-import { Nos } from './telas/Nos';
+import { TelaTalhao } from './telas/Talhao';
+import { Talhoes } from './telas/Talhoes';
 
-const clienteQuery = new QueryClient({
-  /* A SESSAO PODE MORRER COM O APLICATIVO ABERTO.
-   *
-   * O porteiro das rotas decide a partir de /me, que fica em cache. Se a
-   * sessao expirar enquanto a lista esta na tela, e /devices voltar 401, o
-   * porteiro nao fica sabendo: o usuario ganha uma faixa de erro generica e
-   * nenhum caminho de volta ao login.
-   *
-   * Aqui em vez de em cada tela porque e uma regra do transporte, nao de uma
-   * tela -- e porque a versao por tela seria copiada errada na quinta. A
-   * invalidacao refaz /me, que responde 401, e o porteiro redireciona. */
-  queryCache: new QueryCache({
-    onError: (erro) => devolverAoLogin(erro),
-  }),
-  /* E a sessao tambem pode morrer entre abrir um formulario e salvar. O
-   * mutationCache existe porque `queryCache.onError` NAO ve mutacao: sem esta
-   * copia, um 401 ao salvar viraria uma mensagem de erro tecnica dentro do
-   * formulario e o usuario ficaria tentando de novo numa sessao que acabou. */
-  mutationCache: new MutationCache({
-    onError: (erro) => devolverAoLogin(erro),
-  }),
-  defaultOptions: {
-    queries: {
-      /* SO REPETE O QUE VALE A PENA REPETIR.
-       *
-       * O padrao da biblioteca (tres tentativas para qualquer erro) esta errado
-       * aqui de duas maneiras. Repetir um 401 nao vai fazer aparecer uma sessao
-       * que nao existe -- so atrasa o redirecionamento para o login em alguns
-       * segundos de tela parada. Repetir um 404 nao vai fazer aparecer um no que
-       * nao e do usuario. Falha de rede, essa sim, e frequentemente transitoria:
-       * o celular anda pela lavoura e o sinal vai e volta.
-       *
-       * Por isso a repeticao e restrita a SEM_REDE, e e a existencia desse
-       * codigo separado -- em vez de um status HTTP inventado -- que torna a
-       * condicao escrevivel. */
-      retry: (tentativa, erro) =>
-        erro instanceof ErroAPI && erro.status === SEM_REDE && tentativa < 2,
-      retryDelay: (tentativa) => 1000 * 2 ** tentativa,
-      /* Telemetria envelhece. Voltar para o aplicativo depois de deixa-lo aberto
-       * no bolso deve trazer dado de agora, nao o dado de quando a tela abriu.
-       * (E quando nao trouxer, `medido_ha_s` conta a verdade -- ver tempo.ts.) */
-      refetchOnWindowFocus: true,
-    },
-  },
-});
+// Regras de sessao vencida, repeticao e foco: ver clienteQuery.ts.
+const clienteQuery = criarClienteQuery();
 
-/** Sessao vencida volta para o login, venha o 401 de uma leitura ou de uma
- *  escrita. Uma funcao so para as duas porque a regra e do transporte: ver a
- *  condicao escrita duas vezes seria o comeco de ela divergir em uma delas. */
-function devolverAoLogin(erro: unknown) {
-  if (erro instanceof ErroAPI && (erro.status === 401 || erro.status === 403)) {
-    clienteQuery.invalidateQueries({ queryKey: CHAVE_SESSAO });
-  }
+/** Cada tela abre no topo. O BrowserRouter mantem a rolagem da tela anterior:
+ *  tocar num cartao no fim da lista abria o talhao ja rolado ate o fim, com a
+ *  resposta -- o motivo de abrir a tela -- fora de vista. So na troca de
+ *  caminho: o voltar do navegador continua devolvendo a posicao que ele
+ *  guardou. */
+function RolarAoTopo() {
+  const { pathname } = useLocation();
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [pathname]);
+  return null;
 }
 
 export function App() {
   return (
     <QueryClientProvider client={clienteQuery}>
       <BrowserRouter>
+        <RolarAoTopo />
         <Routes>
           <Route
             path="/entrar"
@@ -84,7 +44,15 @@ export function App() {
             path="/"
             element={
               <ExigeSessao>
-                <Nos />
+                <Talhoes />
+              </ExigeSessao>
+            }
+          />
+          <Route
+            path="/talhao/:id"
+            element={
+              <ExigeSessao>
+                <TelaTalhao />
               </ExigeSessao>
             }
           />
@@ -103,6 +71,14 @@ export function App() {
             element={
               <ExigeSessao>
                 <No />
+              </ExigeSessao>
+            }
+          />
+          <Route
+            path="/ajustes"
+            element={
+              <ExigeSessao>
+                <Ajustes />
               </ExigeSessao>
             }
           />

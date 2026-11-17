@@ -6,6 +6,13 @@ Circuito/sketch/config.h
 # Nunca versionar. Ver Backend/.env.example.
 Backend/.env
 
+# Configuracao do deploy: senha do banco e segredo do HMAC de producao.
+# Nunca versionar. Ver deploy/.env.example. O .env.* cobre o de uma segunda
+# instalacao na mesma maquina (docs/DEPLOY.md), que tambem leva segredos.
+deploy/.env
+deploy/.env.*
+!deploy/.env.example
+
 # Artefatos de compilacao
 Circuito/sketch/build/
 Circuito/teste/teste_payload
@@ -18,6 +25,11 @@ Backend/devtoken
 # dentro da janela de 30 dias) e `devices.token_hash`. Sao backups locais --
 # ficam no disco, nunca no repositorio.
 Backend/dump-*.sql
+
+# Estado do cmd/simulador: tokens dos nos simulados (credenciais, ainda que
+# de nos que so existem em software) e o seq de cada um.
+Backend/simulador-estado*.json
+Backend/.simulador-estado-*
 
 # Configuracao de IDE
 Backend/.idea/

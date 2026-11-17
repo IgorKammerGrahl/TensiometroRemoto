@@ -19,37 +19,44 @@
   ],
   // agradecimentos: [Texto dos agradecimentos aqui.],
   resumo: [
-    Este trabalho descreve o desenvolvimento de um protótipo de telemetria
+    Este trabalho descreve o desenvolvimento de um sistema de telemetria
     baseado em Internet das Coisas (IoT) e tensiometria eletrônica para o
-    monitoramento remoto da tensão da água no solo. A agricultura irrigada
-    responde pela maior parcela do consumo de água doce do planeta, e a
-    ineficiência no manejo hídrico compromete tanto a produtividade quanto a
-    sustentabilidade ambiental. Nesse contexto, o tensiômetro é considerado
-    instrumento de referência para o agendamento da irrigação, porém sua
-    dependência de leituras manuais limita o uso em larga escala. Foram
-    construídos os quatro estágios da cadeia de medição: um tensiômetro
-    analógico derivado por septo perfurado e acoplado a um transdutor de
-    pressão piezorresistivo; o condicionamento do sinal e a aquisição em um
-    microcontrolador ESP32; a telemetria autenticada, com idempotência
+    monitoramento remoto da tensão da água no solo, projetado para operar com
+    múltiplos nós sensores. A agricultura irrigada responde pela maior parcela
+    do consumo de água doce do planeta, e o tensiômetro, instrumento de
+    referência para o agendamento da irrigação, depende de leituras manuais
+    que limitam o seu uso em larga escala. Foram construídos um nó sensor, com
+    um tensiômetro analógico acoplado a um transdutor de pressão
+    piezorresistivo e a aquisição em um microcontrolador ESP32, configurado em
+    campo por portal cativo; a telemetria autenticada, com idempotência
     garantida pelo par identificador do nó e número de sequência; e um serviço
-    de retaguarda com aplicação web progressiva embarcada no próprio binário,
-    que apresenta ao produtor a leitura corrente, o histórico e as faixas de
-    atenção configuráveis. O nó é configurado em campo pelo celular, por portal
-    cativo, sem recompilação, e a calibração registrada pela interface é
-    aplicada pelo servidor a cada leitura. A verificação combinou suíte automatizada de
-    testes, ensaio ponta a ponta contra o servidor em execução e dois ensaios
-    contínuos de bancada, sem TLS e com o transdutor aberto à atmosfera. No segundo
-    deles, de 13 h 36 min e 784 amostras, o sinal apresentou desvio padrão de
-    2,6 mV, e não houve perda de pacotes em 772 emissões consecutivas após a
-    correção da condição de rede responsável pelas perdas iniciais. As duas
-    corridas, medindo a mesma grandeza em dias distintos, diferiram em 1,9 mV
-    --- cerca de 0,07 kPa ---, o que caracteriza a precisão intermediária entre
-    ensaios como incerteza maior que a dispersão interna de cada um.
-    Permanecem não realizadas a calibração experimental contra o vacuômetro
-    mecânico, que manteve os coeficientes nominais de catálogo, e a validação
-    em solo. O trabalho estabelece, portanto, a viabilidade técnica da cadeia
-    de medição e de transmissão, e delimita explicitamente as afirmações que
-    os ensaios executados não autorizam.
+    de retaguarda com aplicação web progressiva embarcada, que apresenta ao
+    produtor a leitura corrente, o histórico e as faixas de atenção, e que
+    converte cada leitura pela calibração que ela referencia. Em decisão
+    tomada com o orientador, o escopo foi recortado: a calibração do
+    instrumento, que depende da estanqueidade do tensiômetro, problema de
+    natureza hidráulica, passou a esforço secundário, e o trabalho passou a
+    avaliar a operação do sistema com múltiplos nós. Em bancada, com o
+    transdutor aberto à atmosfera e sem TLS, o sinal apresentou desvio padrão
+    de 2,6 mV ao longo de 13 h 36 min, duas corridas em dias distintos
+    diferiram em 1,9 mV, cerca de 0,07 kPa, e não houve perda em 772 emissões
+    consecutivas após a correção da condição de rede responsável pelas perdas
+    iniciais. A operação com múltiplos nós foi avaliada com nós simulados,
+    marcados como tais, que se comunicam com o servidor pela mesma interface do
+    firmware: mil nós na cadência real foram atendidos sem perda e com
+    latência de 7,5 ms no percentil 99, e o serviço não perdeu leitura até
+    4000 requisições por segundo, sem que o seu teto fosse alcançado. Com três
+    cópias do serviço atrás de um proxy reverso, a parada de uma delas no meio
+    da carga, por HTTPS, não custou nenhuma de 18 000 leituras, e duas
+    instalações independentes na mesma máquina mostraram-se isoladas entre si.
+    O método de implantação de uma instalação e de um nó novos foi descrito
+    como roteiro reprodutível. Permanecem não realizadas a calibração contra o
+    vacuômetro mecânico, que manteve os coeficientes nominais de catálogo
+    porque o instrumento disponível não reteve vácuo, a validação em solo e a
+    implantação em servidor remoto. O trabalho estabelece, portanto, a
+    viabilidade técnica da cadeia de aquisição e de transmissão e a sua
+    operação com múltiplos nós em ambiente controlado, e delimita
+    explicitamente as afirmações que os ensaios executados não autorizam.
   ],
   palavras-chave: (
     "Internet das Coisas",
@@ -59,38 +66,45 @@
     "ESP32",
   ),
   abstract: [
-    This work describes the development of a telemetry prototype based on the
+    This work describes the development of a telemetry system based on the
     Internet of Things (IoT) and electronic tensiometry for remote monitoring
-    of soil water tension. Irrigated agriculture accounts for the largest
-    share of the planet's freshwater consumption, and inefficient water
-    management compromises both productivity and environmental
-    sustainability. In this context, the tensiometer is considered the
-    reference instrument for irrigation scheduling, but its reliance on manual
-    readings limits large-scale use. All four stages of the measurement chain
-    were built: an analog tensiometer tapped through a needle-pierced septum
-    and coupled to a piezoresistive pressure transducer; signal conditioning
-    and acquisition on an ESP32 microcontroller; authenticated telemetry, with
-    idempotency guaranteed by the pair node identifier and sequence number;
-    and a back-end service with a progressive web application embedded in the
-    binary itself, which presents the farmer with the current reading, the
-    history and the configurable attention thresholds. The node is configured
-    in the field from a phone through a captive portal, without recompiling,
-    and the calibration registered through the interface is applied by the
-    server to every reading. Verification combined
-    an automated test suite, an end-to-end trial against the running server
-    and two continuous bench trials, without TLS and with the transducer open
-    to the atmosphere. In the second of these, lasting 13 h 36 min and comprising 784
-    samples, the signal showed a standard deviation of 2.6 mV, and no packet
-    loss occurred over 772 consecutive transmissions once the network
-    condition responsible for the initial losses had been corrected. The two
-    runs, measuring the same quantity on different days, differed by 1.9 mV
-    --- about 0.07 kPa ---, which characterises between-run intermediate precision as
-    an uncertainty larger than the internal dispersion of either run.
-    Experimental calibration against the mechanical vacuum gauge, which left
-    the catalogue nominal coefficients in place, and validation in soil remain
+    of soil water tension, designed to operate with multiple sensor nodes.
+    Irrigated agriculture accounts for the largest share of the planet's
+    freshwater consumption, and the tensiometer, the reference instrument for
+    irrigation scheduling, relies on manual readings that limit its
+    large-scale use. The following were built: a sensor node, with an analog
+    tensiometer coupled to a piezoresistive pressure transducer and
+    acquisition on an ESP32 microcontroller, configured in the field through a
+    captive portal; authenticated telemetry, with idempotency guaranteed by
+    the pair node identifier and sequence number; and a back-end service with
+    an embedded progressive web application, which presents the farmer with
+    the current reading, the history and the attention thresholds, and which
+    converts each reading through the calibration it references. In a
+    decision taken with the advisor, the scope was narrowed: calibration of
+    the instrument, which depends on the tensiometer being airtight, a
+    hydraulic problem, became a secondary effort, and the work turned to
+    evaluating the operation of the system with multiple nodes. On the bench,
+    with the transducer open to the atmosphere and without TLS, the signal
+    showed a standard deviation of 2.6 mV over 13 h 36 min, two runs on
+    different days differed by 1.9 mV, about 0.07 kPa, and no loss occurred
+    over 772 consecutive transmissions once the network condition responsible
+    for the initial losses had been corrected. Operation with multiple nodes
+    was evaluated with simulated nodes, flagged as such, which talk to the
+    server through the same interface as the firmware: a thousand nodes at the
+    real rate were served without loss and with a 99th-percentile latency of
+    7.5 ms, and the service lost no reading up to 4000 requests per second,
+    without its ceiling being reached. With three copies of the service behind
+    a reverse proxy, stopping one of them in the middle of the load, over
+    HTTPS, cost none of 18,000 readings, and two independent installations on
+    the same machine proved isolated from each other. The deployment method
+    for a new installation and a new node was described as a reproducible
+    procedure. Calibration against the mechanical vacuum gauge, which kept the
+    catalogue nominal coefficients because the available instrument did not
+    hold vacuum, validation in soil and deployment on a remote server remain
     unperformed. The work therefore establishes the technical feasibility of
-    the measurement and transmission chain, and explicitly delimits the claims
-    that the trials carried out do not authorise.
+    the acquisition and transmission chain and its operation with multiple
+    nodes in a controlled environment, and explicitly delimits the claims that
+    the trials carried out do not authorise.
   ],
   keywords: (
     "Internet of Things",

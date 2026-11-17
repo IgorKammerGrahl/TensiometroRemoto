@@ -4,8 +4,10 @@ Firmware do nó de tensiometria eletrônica: mede a tensão de água no solo com
 um transdutor XGZP6847A100KPGN, converte para kPa e envia ao backend em Go
 (`../Backend`).
 
-Esta é a **etapa 1**: POST direto, uma leitura por ciclo, sem buffer. Falha de
-rede perde a leitura. Buffer em LittleFS e deep sleep vêm na etapa 2.
+Cada leitura entra numa **fila em RAM** e só sai dela quando o servidor
+responde (RNF04, 16/11/2026). Rede fora, a fila cresce; rede de volta, ela
+drena em lotes, da mais antiga para a mais nova. A fila não sobrevive a
+reinício nem a falta de energia — LittleFS e deep sleep ficam para depois.
 
 ## Hardware
 
@@ -43,6 +45,7 @@ Circuito/
 ├── sketch/
 │   ├── sketch.ino          medição, os dois modos, Wi-Fi → NTP → POST
 │   ├── payload.h           montagem do JSON e leitura da resposta (C puro)
+│   ├── fila.h              fila de leituras pendentes e lote de várias (C puro)
 │   ├── prov.h              portal cativo de configuração (AP, HTML, rotas)
 │   ├── prov_nvs.h          leitura e gravação da configuração na NVS
 │   ├── prov_valida.h       validação dos campos do formulário (C puro)
@@ -51,6 +54,7 @@ Circuito/
 ├── calibrar.py             ensaio de calibração: pareia serial × vacuômetro e ajusta a reta
 └── teste/
     ├── teste_payload.c     teste do payload no host, sem hardware
+    ├── teste_fila.c        teste da fila de pendentes, sem hardware
     └── teste_prov.c        teste da validação e do escape de HTML, sem hardware
 ```
 
@@ -262,8 +266,12 @@ contra a raiz embutida em `CA_RAIZ_PEM`.
 // #define DEV_SEM_TLS
 ```
 
-O `config.h.example` já traz a **ISRG Root X1** (Let's Encrypt), que cobre
-a maioria dos hosts com certificado gratuito. Para outra CA:
+O `config.h.example` já traz as quatro raízes do Let's Encrypt — **ISRG Root
+X1**, **X2**, **Root YR** e **Root YE** —, com as impressões digitais no
+comentário. Desde maio de 2026 o LE emite pela hierarquia "Generation Y" (YR,
+YE), que hoje chega à X1 por assinatura cruzada; com as quatro, o nó continua
+validando quando o LE tirar as cruzadas da cadeia padrão. Conferir a cadeia que
+o servidor entrega: `docs/DEPLOY.md`. Para outra CA:
 
 ```bash
 openssl s_client -showcerts -connect SEU_HOST:443 </dev/null
@@ -451,6 +459,32 @@ Resposta esperada no primeiro envio, e no segundo:
 
 O segundo confirma a idempotência por `(device_id, seq)`.
 
+## Teste da fila de pendentes no host
+
+`fila.h` também é C puro. Testa a ordem (mais antiga primeiro), o transbordo
+(cheia, sai a mais antiga, e `descartadas` conta), o corte do lote quando o
+buffer acaba (nunca JSON truncado) e a regra do que fazer com o lote conforme
+o status HTTP:
+
+```bash
+cd teste
+gcc -Wall -Wextra -o teste_fila teste_fila.c && ./teste_fila
+```
+
+| Resposta | O lote | Por quê |
+|---|---|---|
+| `200` | sai da fila (aceitas, duplicadas **e** recusadas) | reenviar uma recusada daria a mesma recusa, para sempre |
+| `4xx` | é descartado | o servidor recusou o lote inteiro (token errado, nó desativado); repetir dá a mesma resposta |
+| sem resposta, `5xx`, `3xx` | **fica** e volta no próximo ciclo | soluço de rede ou de servidor; um `3xx` é configuração errada, e descartar o dado por isso seria pior |
+
+Reenviar é seguro porque o servidor é idempotente em `(device_id, seq)`: se a
+resposta se perder depois de ele gravar, o lote volta como `duplicates`.
+Conferido em 16/11/2026 contra o backend com um lote de 5 leituras montado
+pelo próprio `fila.h`: `accepted=5` e, no reenvio, `duplicates=5`.
+
+Padrões (sobrescrevíveis no `config.h`): `FILA_CAPACIDADE 720` (~17 KB de
+RAM; 12 h a 60 s), `LOTE_MAX 20`, `LOTES_POR_CICLO 10`.
+
 ## Teste do provisionamento no host
 
 `prov_valida.h` também é C puro: valida os campos do formulário do portal e
@@ -505,10 +539,13 @@ gcc -Wall -Wextra -o teste_prov teste_prov.c && ./teste_prov
 
 ## Limitações conhecidas desta etapa
 
-- **Sem buffer.** POST que falha perde a leitura. O `seq` avança mesmo assim,
-  de propósito: o buraco na sequência é diagnosticável, enquanto reaproveitar
-  o `seq` produziria duas leituras diferentes com o mesmo identificador.
-  Na bancada do portal, em 16/09/2026 (cerca de 9 h, envio a cada 60 s): de
+- **Fila só em RAM.** Desde 16/11/2026 a leitura que não sai espera na fila,
+  mas a fila se perde num reinício ou numa falta de energia, e o boot ainda
+  exige rede (sem o NTP não há como carimbar a leitura). Cheia, a mais antiga
+  sai sem ser enviada. Nos três casos o `seq` já avançou, de propósito: o
+  buraco na sequência é diagnosticável, enquanto reaproveitar o `seq`
+  produziria duas leituras diferentes com o mesmo identificador.
+  Antes da fila, na bancada do portal, em 16/09/2026 (cerca de 9 h, envio a cada 60 s): de
   523 emissões pelo `seq`, 377 chegaram — **146 perdas, ~28%**. Sessenta
   num bloco único de pouco mais de 1 h no fim, de causa não determinada; as
   outras 86 em 46 buracos, quase todos de 1 a 3 leituras, e o trecho íntegro

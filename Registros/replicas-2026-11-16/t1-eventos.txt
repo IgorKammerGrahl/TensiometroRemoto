@@ -1,0 +1,17 @@
+11:24:39.727 cadastro feito
+11:24:39.730 carga iniciada
+tcc-a-caddy-1 46.82%
+tcc-a-api-2 3.53%
+tcc-a-api-3 3.91%
+tcc-a-api-1 3.96%
+tcc-a-db-1 19.21%
+11:25:11.801 parando tcc-a-api-2
+11:25:12.397 tcc-a-api-2 parada
+11:25:42.401 religando tcc-a-api-2
+11:25:42.653 tcc-a-api-2 religada
+tcc-a-caddy-1 59.79%
+tcc-a-api-2 5.10%
+tcc-a-api-3 4.79%
+tcc-a-api-1 4.89%
+tcc-a-db-1 25.13%
+11:26:10.013 carga terminou (exit 0)

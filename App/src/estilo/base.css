@@ -803,3 +803,655 @@ a.cartao:hover {
   font-size: var(--texto-sm);
   font-weight: 700;
 }
+
+/* ------------------------------------------------------- no simulado
+ *
+ * Procedencia, nao estado: so tinta e contorno tracejado, nenhuma cor. Ver
+ * componentes/Simulado.tsx. Caixa alta e espacamento aberto, como a marca do
+ * aplicativo, para ler como rotulo e nao como parte do nome do no. */
+.selo-simulado {
+  display: inline-block;
+  margin-left: var(--e2);
+  padding: 0 var(--e1);
+  border: var(--borda-fina) dashed var(--borda-forte);
+  border-radius: var(--raio);
+  color: var(--tinta-2);
+  font-size: var(--texto-xs);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  vertical-align: middle;
+  white-space: nowrap;
+}
+
+/* ------------------------------------------------------------- intervalo
+ *
+ * As duas datas do RF07, lado a lado quando cabem. Logo abaixo do seletor de
+ * periodo e acima do grafico: e o grafico que elas mudam. */
+.intervalo {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
+  gap: var(--e3);
+  margin: calc(-1 * var(--e2)) 0 var(--e4);
+}
+
+/* -------------------------------------------------------------- talhoes
+ *
+ * A lista agrupada por talhao. Cada grupo e separado do seguinte pela mesma
+ * linha grossa de tinta do cabecalho da pagina: o talhao e a unidade de
+ * manejo, e e ele que a linha anuncia. Sem cartao em volta do grupo -- cartao
+ * dentro de cartao confundiria o que se toca (o no) com o que se le (o
+ * talhao). */
+.busca {
+  margin: var(--e4) 0 var(--e2);
+}
+.talhoes {
+  display: flex;
+  flex-direction: column;
+  margin-top: var(--e4);
+}
+.talhao {
+  display: flex;
+  flex-direction: column;
+  gap: var(--e4);
+  padding: var(--e5) 0 var(--e6);
+  border-top: var(--borda-grossa) solid var(--tinta);
+}
+.talhao__cabecalho {
+  display: flex;
+  flex-direction: column;
+  gap: var(--e1);
+}
+
+/* ----------------------------------------------------------------- tira
+ *
+ * A regua deitada. Tres camadas de cima para baixo: os tracos dos nos sobre o
+ * fundo afundado (neutro, para que a tinta dos tracos leia contra qualquer
+ * coisa); a faixa de estados, fina, com as mesmas cores e hachuras da regua;
+ * e o eixo. Canto vivo, como a regua: e instrumento graduado. */
+.tira {
+  display: flex;
+  flex-direction: column;
+  gap: var(--e3);
+}
+.tira__figura {
+  margin: 0;
+}
+.tira__tracos {
+  position: relative;
+  height: 2.75rem;
+  border: var(--borda-grossa) solid var(--tinta);
+  border-bottom: 0;
+  background: var(--superficie-afundada);
+}
+.tira__tracos--sem-faixa {
+  border-style: dashed;
+  border-color: var(--borda-forte);
+}
+/* Semitransparente de proposito: onde ha muitos nos, os tracos se somam e a
+   faixa escurece. A densidade sai do navegador, nao de um histograma. */
+.tira__traco {
+  position: absolute;
+  top: var(--e2);
+  bottom: 0;
+  width: 2px;
+  margin-left: -1px;
+  background: var(--tinta);
+  opacity: 0.45;
+}
+/* Os limiares atravessam a area dos tracos, como as linhas tracejadas do
+   grafico: e contra eles que se le de que lado cada no esta. */
+.tira__limiar {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  border-left: var(--borda-fina) dashed var(--tinta-2);
+}
+.tira__faixas {
+  position: relative;
+  height: 0.875rem;
+  border: var(--borda-grossa) solid var(--tinta);
+  background: var(--superficie-afundada);
+}
+.tira__faixas--sem-faixa {
+  border-style: dashed;
+  border-color: var(--borda-forte);
+}
+.tira__faixa {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+}
+.tira__eixo {
+  position: relative;
+  display: flex;
+  justify-content: space-between;
+  margin-top: var(--e1);
+  font-size: var(--texto-xs);
+  color: var(--tinta-2);
+}
+.tira__eixo-limiar {
+  position: absolute;
+  top: 0;
+  transform: translateX(-50%);
+  color: var(--tinta-3);
+}
+.tira__contagem {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(11rem, 1fr));
+  gap: var(--e2) var(--e4);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.tira__contagem .numero {
+  min-width: 2ch;
+  text-align: right;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  /* O unico movimento da tela: os tracos chegam com a resposta do servidor.
+     Uma vez, curto, e so porque diz "isto acabou de ser medido". */
+  .tira__traco {
+    animation: tira-chega 420ms ease-out both;
+  }
+  @keyframes tira-chega {
+    from {
+      transform: scaleY(0);
+      transform-origin: bottom;
+    }
+  }
+}
+
+/* =========================================================== redesenho 11/2026
+ *
+ * Resposta primeiro (spec 2026-11-16). Cor so para estado, como sempre; o que
+ * muda e a hierarquia: a resposta em palavras e o maior texto da tela. */
+
+h1,
+h2,
+h3 {
+  text-wrap: balance;
+}
+p {
+  text-wrap: pretty;
+}
+
+/* MARGENS LATERAIS COM TETO. O espacamento vertical acompanha o texto
+   (rem); a margem lateral nao precisa, e em 200% ela comia 64 px de uma tela
+   de 390 -- justamente de quem aumentou a fonte por enxergar mal. */
+:root {
+  --margem: min(var(--e4), 20px);
+}
+.pagina {
+  padding-inline: var(--margem);
+}
+
+/* ---------------------------------------------------------- cabecalho do dia */
+.cabecalho--dia {
+  flex-direction: column;
+  gap: var(--e1);
+}
+.dia {
+  font-size: var(--texto-sm);
+  font-weight: 700;
+  color: var(--tinta-2);
+}
+/* Uma situacao por linha, a mais urgente em cima (partesDaSintese). */
+.sintese {
+  display: flex;
+  flex-direction: column;
+  gap: var(--e1);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: var(--texto-lg);
+  font-weight: 700;
+  line-height: 1.3;
+}
+.sintese > li:first-child {
+  font-size: var(--texto-xl);
+}
+
+/* ------------------------------------------------------------ linha de estado */
+.linha-estado {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--e2) var(--e4);
+  margin-bottom: var(--e5);
+  font-size: var(--texto-sm);
+  color: var(--tinta-2);
+}
+.linha-estado--erro {
+  padding: var(--e3) var(--e4);
+  border: var(--borda-grossa) solid var(--tinta);
+  border-left-width: 6px;
+  border-radius: var(--raio);
+  background: var(--superficie-afundada);
+  color: var(--tinta);
+}
+
+/* ------------------------------------------------------------------ resposta */
+/* Em texto grande a resposta DESCE para baixo da marca, em vez de espremer
+   a palavra: medido em 200%, "Solo secando" passava da borda do cartao. A
+   base de 9rem cresce com o texto, entao o salto acontece sozinho quando a
+   pessoa aumenta a fonte, sem breakpoint em pixel. */
+.resposta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--e3) var(--e4);
+}
+.resposta__texto {
+  flex: 1 1 9rem;
+  min-width: 0;
+}
+.resposta__principal {
+  font-size: var(--texto-veredito);
+  font-weight: 700;
+  line-height: 1.15;
+}
+.resposta__linha {
+  font-size: var(--texto-lg);
+  line-height: 1.3;
+}
+.resposta__linha--aviso {
+  font-weight: 700;
+}
+
+/* A marca e decorativa: cresce com o texto ate 80 px e para. Em 200% ela
+   ocuparia um terco da largura sem dizer nada a mais. */
+.marca-veredito {
+  flex: none;
+  width: min(4rem, 88px);
+  height: min(4rem, 88px);
+  border: var(--borda-grossa) solid var(--cor-estado, var(--neutro));
+  border-radius: 50%;
+  background-color: var(--cor-estado, var(--neutro));
+}
+.marca-veredito--pequena {
+  width: 1.5rem;
+  height: 1.5rem;
+}
+/* Vazado: as duas classes juntas, senao o preenchimento de .marca-veredito
+   (declarado depois de .hachura--vazado) venceria, e "sem limites" viraria
+   um disco cinza cheio -- parecido demais com um grau da escala. */
+.marca-veredito.hachura--vazado,
+.cartao-talhao__faixa.hachura--vazado {
+  background-color: transparent;
+  border-style: dashed;
+}
+.marca-veredito.sem-estado {
+  border-radius: var(--raio);
+  border-style: dashed;
+  border-color: var(--borda-forte);
+  background-color: var(--neutro-fraco);
+}
+
+/* ------------------------------------------------------------ cartao do talhao */
+.cartoes-talhao {
+  display: flex;
+  flex-direction: column;
+  gap: var(--e5);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.cartao-talhao {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--e3);
+  padding: var(--e4) var(--margem) var(--e4) calc(var(--margem) + min(var(--faixa-estado), 12px));
+  border: var(--borda-fina) solid var(--borda);
+  border-radius: var(--raio);
+  background: var(--superficie-2);
+}
+/* Faixa lateral: a cor e a hachura do estado, na altura toda do cartao. */
+.cartao-talhao__faixa {
+  position: absolute;
+  inset: -1px auto -1px -1px;
+  width: min(var(--faixa-estado), 12px);
+  border-radius: var(--raio) 0 0 var(--raio);
+  background-color: var(--cor-estado, var(--neutro));
+}
+.cartao-talhao__faixa.hachura--vazado {
+  border: var(--borda-grossa) dashed var(--borda-forte);
+  background-color: transparent;
+}
+.cartao-talhao__faixa.sem-estado {
+  background-color: var(--neutro-fraco);
+  border: var(--borda-grossa) dashed var(--borda-forte);
+}
+.cartao-talhao__topo {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--e1) var(--e3);
+}
+.cartao-talhao__topo h2 {
+  font-size: var(--texto-lg);
+}
+.cartao-talhao__rodape {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--e2) var(--e4);
+  font-size: var(--texto-sm);
+  color: var(--tinta-2);
+}
+.cartao-talhao__ver {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--toque);
+  margin-left: auto;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--tinta);
+  font-size: var(--texto-base);
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+  cursor: pointer;
+}
+/* LINK ESTICADO (guia "card"): o link do titulo cobre o cartao inteiro. O
+   titulo continua parecendo titulo; quem diz "toque aqui" e o texto do
+   rodape. Botoes e links que nao sao o principal sobem acima da camada,
+   senao a camada engoliria o toque deles. */
+.cartao-talhao__link {
+  color: inherit;
+  text-decoration: none;
+}
+.cartao-talhao__link::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+}
+.cartao-talhao:has(.cartao-talhao__link) :is(a:not(.cartao-talhao__link), button) {
+  position: relative;
+  z-index: 1;
+}
+.cartao-talhao__link:focus-visible {
+  outline: none;
+}
+.cartao-talhao:has(.cartao-talhao__link:focus-visible) {
+  outline: 3px solid var(--tinta);
+  outline-offset: 3px;
+}
+.cartao-talhao:has(.cartao-talhao__link:hover) {
+  border-color: var(--borda-forte);
+}
+.cartao-talhao:has(.cartao-talhao__link:hover) .cartao-talhao__ver {
+  text-decoration-thickness: 2px;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .cartao-talhao {
+    transition: scale 120ms ease-out;
+  }
+  .cartao-talhao:has(.cartao-talhao__link:active) {
+    scale: 0.98;
+  }
+}
+
+/* ---------------------------------------------------- sensores um por um */
+.cartao-talhao__sensores {
+  display: flex;
+  flex-direction: column;
+  gap: var(--e2);
+}
+.linhas-sensor {
+  display: flex;
+  flex-direction: column;
+  gap: var(--e2);
+  margin: 0;
+  padding: var(--e3) 0 0;
+  border-top: var(--borda-fina) solid var(--borda);
+  list-style: none;
+}
+.linha-sensor {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--e1) var(--e3);
+}
+.linha-sensor__nome {
+  flex: 1 1 7rem;
+  font-weight: 700;
+}
+.linha-sensor__valor {
+  margin-left: auto;
+  font-weight: 700;
+}
+
+/* ------------------------------------------------------- barra de proporcao */
+.proporcao {
+  display: flex;
+  flex-direction: column;
+  gap: var(--e2);
+}
+.proporcao__barra {
+  display: flex;
+  height: 1.5rem;
+  overflow: hidden;
+  border: var(--borda-grossa) solid var(--tinta);
+  border-radius: var(--raio);
+}
+.proporcao__segmento {
+  min-width: 0.375rem;
+  background-color: var(--cor-estado, var(--neutro));
+}
+.proporcao__segmento + .proporcao__segmento {
+  border-left: var(--borda-grossa) solid var(--tinta);
+}
+.proporcao__segmento--sem-leitura {
+  background-color: var(--neutro-fraco);
+}
+.proporcao__legenda {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--e1) var(--e4);
+}
+
+/* ------------------------------------------------------- tela do sensor */
+.agora__medida {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0 var(--e2);
+}
+.agora__rotulo {
+  flex-basis: 100%;
+  font-size: var(--texto-sm);
+  font-weight: 700;
+  color: var(--tinta-2);
+}
+/* Menor que a resposta: o numero e detalhe. */
+.agora__medida .agora__valor {
+  font-size: 2rem;
+}
+
+/* -------------------------------------------------------- blocos fechados
+ *
+ * <details> nativo (guia "accordion"): sem titulo dentro do summary, que o
+ * leitor de tela anuncia como botao; seta desenhada logo ANTES do rotulo --
+ * longe dele, quem usa lupa de tela nao associa uma ao outro --, girando ao
+ * abrir, e so com movimento para quem nao pediu menos movimento. */
+.dobra {
+  border-top: var(--borda-grossa) solid var(--tinta);
+}
+.dobra > summary {
+  display: flex;
+  align-items: center;
+  gap: var(--e3);
+  min-height: var(--toque-principal);
+  font-size: var(--texto-lg);
+  font-weight: 700;
+  list-style: none;
+  cursor: pointer;
+}
+.dobra > summary::-webkit-details-marker {
+  display: none;
+}
+.dobra > summary::before {
+  content: '';
+  flex-shrink: 0;
+  inline-size: 1em;
+  block-size: 1em;
+  background-color: currentColor;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M5 9l7 7 7-7' fill='none' stroke='black' stroke-width='3.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")
+    no-repeat center / contain;
+  rotate: -90deg;
+}
+.dobra[open] > summary::before {
+  rotate: 0deg;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .dobra > summary::before {
+    transition: rotate 0.2s;
+  }
+}
+.dobra > summary:hover {
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}
+.dobra[open] {
+  padding-bottom: var(--e4);
+}
+
+/* --------------------------------------------- confirmacao dos limites */
+.mudanca {
+  margin: 0;
+  padding-left: var(--e5);
+}
+.mudanca li + li {
+  margin-top: var(--e1);
+}
+
+/* A barra de proporcao dentro da resposta (pagina do talhao) usa a largura
+   toda; .agora alinha os filhos ao inicio. */
+.agora > .proporcao {
+  align-self: stretch;
+}
+
+/* ----------------------------------------- cabecalho da inicial: dia e Ajustes */
+.cabecalho__linha {
+  align-self: stretch; /* .cabecalho alinha ao inicio; esta linha usa a largura toda */
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--e2) var(--e4);
+}
+.ajustes__titulo {
+  margin-bottom: var(--e5);
+}
+
+/* -------------------------------------------------------------- ajustes */
+.ajustes {
+  gap: var(--e6);
+}
+.opcoes {
+  display: flex;
+  flex-direction: column;
+  gap: var(--e2);
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+.opcoes > legend {
+  margin-bottom: var(--e3);
+  padding: 0;
+  font-size: var(--texto-lg);
+  font-weight: 700;
+}
+/* Opcao inteira tocavel (o <label> contem o radio). Selecionada: borda em
+   tinta. So a COR da borda muda, nao a espessura -- senao a lista pula
+   (guia "card", choice cards); o radio marcado e o sinal que nao e cor. */
+.opcao {
+  display: flex;
+  align-items: center;
+  gap: var(--e3);
+  min-height: var(--toque-principal);
+  padding: var(--e2) var(--e4);
+  border: var(--borda-grossa) solid var(--borda);
+  border-radius: var(--raio);
+  background: var(--superficie-2);
+  cursor: pointer;
+}
+.opcao:has(input:checked) {
+  border-color: var(--tinta);
+}
+.opcao:has(input:focus-visible) {
+  outline: 3px solid var(--tinta);
+  outline-offset: 2px;
+}
+.opcao input {
+  flex: none;
+  width: 1.5rem;
+  height: 1.5rem;
+  margin: 0;
+  accent-color: var(--tinta);
+}
+.opcao__texto {
+  display: flex;
+  flex-direction: column;
+}
+.opcao__rotulo {
+  font-weight: 700;
+}
+.opcao__dica {
+  font-size: var(--texto-sm);
+  color: var(--tinta-2);
+}
+
+/* ------------------------------------------------------------- pictogramas
+ *
+ * Anel de cor + hachura (o .marca-veredito de sempre) com um miolo claro, e o
+ * desenho em tinta no miolo. A hachura nao passa por baixo do traco: o
+ * desenho fica legivel no sol e em preto e branco. Em sem leitura e
+ * desligado o anel e o quadrado tracejado de "aqui nao ha estado". */
+.marca-veredito {
+  display: inline-grid;
+  place-items: center;
+}
+.marca-veredito__miolo {
+  display: grid;
+  place-items: center;
+  width: calc(100% - 0.75rem);
+  height: calc(100% - 0.75rem);
+  border-radius: inherit;
+  background: var(--superficie-2);
+  color: var(--tinta);
+}
+.marca-veredito.sem-estado .marca-veredito__miolo {
+  width: calc(100% - 0.5rem);
+  height: calc(100% - 0.5rem);
+  background: transparent;
+}
+.pictograma {
+  width: 90%;
+  height: 90%;
+}
+
+/* --------------------------------------------- campo com botao (senha) */
+.campo__com-botao {
+  display: flex;
+  gap: var(--e2);
+}
+.campo__com-botao > input {
+  flex: 1;
+  min-width: 0;
+  min-height: var(--toque);
+  padding: 0 var(--e3);
+  border: var(--borda-grossa) solid var(--borda-forte);
+  border-radius: var(--raio);
+  background: var(--superficie-2);
+}
+.campo__com-botao > input:focus {
+  border-color: var(--tinta);
+}

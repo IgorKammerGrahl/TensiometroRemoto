@@ -80,11 +80,14 @@ type UltimaLeitura struct {
 }
 
 type DeviceApp struct {
-	ID        string         `json:"id"`
-	Descricao string         `json:"descricao"`
-	Ativo     bool           `json:"ativo"`
-	Talhao    Talhao         `json:"talhao"`
-	Ultima    *UltimaLeitura `json:"ultima"` // nil = no ainda sem leitura
+	ID        string `json:"id"`
+	Descricao string `json:"descricao"`
+	Ativo     bool   `json:"ativo"`
+	// Simulado: a serie inteira do no e gerada por software. Fixado no
+	// cadastro; ver migrations/0004_simulado.sql.
+	Simulado bool           `json:"simulado"`
+	Talhao   Talhao         `json:"talhao"`
+	Ultima   *UltimaLeitura `json:"ultima"` // nil = no ainda sem leitura
 }
 
 type PontoSerie struct {
@@ -289,6 +292,25 @@ func (s *Store) AtualizarTalhao(ctx context.Context, usuarioID, talhaoID string,
 	return t, err
 }
 
+// RemoverFaixa zera os dois limiares juntos, como o CHECK exige. Mesma
+// autorizacao de AtualizarTalhao: sem concessao, zero linhas e 404.
+func (s *Store) RemoverFaixa(ctx context.Context, usuarioID, talhaoID string) (Talhao, error) {
+	var t Talhao
+	err := s.pool.QueryRow(ctx, `
+		UPDATE talhoes AS t
+		   SET kpa_alerta = NULL, kpa_estresse = NULL
+		 WHERE t.id = $2
+		   AND EXISTS (SELECT 1 FROM usuario_talhoes
+		                WHERE usuario_id = $1 AND talhao_id = t.id)
+		RETURNING t.id, t.nome, t.cultura, t.kpa_alerta, t.kpa_estresse`,
+		usuarioID, talhaoID,
+	).Scan(&t.ID, &t.Nome, &t.Cultura, &t.KPaAlerta, &t.KPaEstresse)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return Talhao{}, ErrNaoEncontrado
+	}
+	return t, err
+}
+
 // --------------------------------------------------------------- devices
 
 // selecaoDeviceApp e a unica projecao de device do plano de usuario.
@@ -310,7 +332,7 @@ func (s *Store) AtualizarTalhao(ctx context.Context, usuarioID, talhaoID string,
 // calibracao da leitura -- nunca de readings.kpa, que e o que o firmware
 // calculou com as constantes compiladas nele.
 const selecaoDeviceApp = `
-	SELECT d.id, d.descricao, d.ativo,
+	SELECT d.id, d.descricao, d.ativo, d.simulado,
 	       t.id, t.nome, t.cultura, t.kpa_alerta, t.kpa_estresse,
 	       ult.measured_at, ult.kpa
 	  FROM devices d
@@ -367,7 +389,7 @@ func coletarDevicesApp(rows pgx.Rows) ([]DeviceApp, error) {
 		var d DeviceApp
 		var medido *time.Time
 		var kpa *float32
-		if err := rows.Scan(&d.ID, &d.Descricao, &d.Ativo,
+		if err := rows.Scan(&d.ID, &d.Descricao, &d.Ativo, &d.Simulado,
 			&d.Talhao.ID, &d.Talhao.Nome, &d.Talhao.Cultura,
 			&d.Talhao.KPaAlerta, &d.Talhao.KPaEstresse,
 			&medido, &kpa); err != nil {
@@ -452,13 +474,15 @@ func (s *Store) SerieDoUsuario(ctx context.Context, usuarioID, deviceID string, 
 // inserir, ela acontece ANTES de qualquer conflito de chave. Cadastrar um id
 // ja existente num talhao alheio devolve 404, nao 409; o 409 so aparece
 // depois que a autorizacao passou.
-func (s *Store) CriarDevice(ctx context.Context, usuarioID, id, descricao, talhaoID, tokenHash string) error {
+//
+// simulado so e gravado aqui: nenhuma outra escrita em devices o toca.
+func (s *Store) CriarDevice(ctx context.Context, usuarioID, id, descricao, talhaoID, tokenHash string, simulado bool) error {
 	tag, err := s.pool.Exec(ctx, `
-		INSERT INTO devices (id, descricao, talhao_id, token_hash)
-		SELECT $2, $3, $4::uuid, $5
+		INSERT INTO devices (id, descricao, talhao_id, token_hash, simulado)
+		SELECT $2, $3, $4::uuid, $5, $6
 		  FROM usuario_talhoes
 		 WHERE usuario_id = $1 AND talhao_id = $4::uuid`,
-		usuarioID, id, descricao, talhaoID, tokenHash)
+		usuarioID, id, descricao, talhaoID, tokenHash, simulado)
 	var pgErr *pgconn.PgError
 	if errors.As(err, &pgErr) && pgErr.Code == "23505" {
 		return ErrJaExiste

@@ -446,9 +446,10 @@ idempotente, ou de detectar que a requisição original nunca foi aplicada
 
 Essa ressalva é o ponto de partida do contrato de ingestão deste trabalho: a
 requisição é tornada idempotente pela própria aplicação, por meio de uma
-chave única por leitura, e a combinação da retransmissão até a confirmação com
-o descarte de duplicatas no destino faz com que cada leitura seja gravada uma
-única vez (@cap-prototipo).
+chave única por leitura. O contrato prevê a retransmissão até a confirmação,
+combinada com o descarte de duplicatas no destino, para que cada leitura seja
+gravada uma única vez; no protótipo, só o descarte está implementado, e o nó
+ainda não retransmite (@cap-prototipo).
 
 === Provisionamento por portal cativo
 
