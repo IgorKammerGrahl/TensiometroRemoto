@@ -124,9 +124,9 @@ Convém delimitar com precisão o que este trabalho não reivindica como
 contribuição. A autonomia energética por bateria e painel solar e o
 armazenamento local das leituras durante indisponibilidade da rede já estão
 presentes em @abdelmoneim2023 e, por isso, não seriam novidade. Neste
-trabalho, nenhum dos dois foi implementado: ambos ficam registrados como
-limitação do protótipo (@sec-estado), com precedente conhecido na
-literatura. O diferencial
+trabalho, a autonomia energética não foi implementada e fica registrada como
+limitação do protótipo (@sec-estado); o armazenamento local foi implementado
+em memória volátil (@sec-fila), sem pretensão de novidade. O diferencial
 concentra-se em dois pontos. O primeiro é a aquisição analógica com
 condicionamento de sinal e correção do conversor analógico-digital, que
 mantém a cadeia de medição exposta e auditável, em vez de delegá-la a um

@@ -250,9 +250,10 @@ bool conectarWiFi() {
 // Offsets zerados = UTC puro. O backend armazena tudo em UTC; converter
 // para America/Sao_Paulo e responsabilidade da camada de apresentacao.
 //
-// Isto roda ANTES de qualquer conexao TLS: a validacao de certificado
-// compara a validade contra o relogio, e com o clock em 1970 um
-// certificado perfeitamente valido e recusado como ainda nao emitido.
+// Isto roda ANTES do primeiro POST porque o carimbo de cada leitura vem
+// deste relogio (ver loop). NAO e pela validacao TLS: o mbedTLS deste
+// nucleo nao compara as datas do certificado com o relogio (sem
+// CONFIG_MBEDTLS_HAVE_TIME_DATE; Registros/bancada-2026-11-25, T3).
 bool sincronizarNTP() {
   Serial.print("# NTP: sincronizando");
   configTime(0, 0, NTP_SERVIDOR_1, NTP_SERVIDOR_2);

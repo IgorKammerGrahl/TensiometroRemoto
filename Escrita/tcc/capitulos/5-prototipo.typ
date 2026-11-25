@@ -22,8 +22,9 @@ unidades de pressão e pela transmissão autenticada ao servidor. O terceiro é 
 serviço de retaguarda, que recebe, valida, armazena e disponibiliza as
 leituras, com modelo de autorização por concessão de talhão. O quarto é a
 camada de apresentação, uma aplicação web progressiva embutida no próprio
-binário do serviço, que exibe ao produtor a leitura corrente, o histórico e as
-faixas de atenção. Com ela, o quarto objetivo específico deste trabalho ---
+binário do serviço, que responde ao produtor, por talhão e em palavras, se é
+preciso irrigar, e exibe a leitura corrente, o histórico e as faixas de
+atenção. Com ela, o quarto objetivo específico deste trabalho ---
 implementar a infraestrutura de comunicação em nuvem e desenvolver o aplicativo
 de monitoramento --- está cumprido quanto à construção. A operação, contudo,
 ocorreu sempre com o servidor na rede local: a hospedagem remota não foi
@@ -42,7 +43,7 @@ de outubro não produziram nenhum ponto válido: o instrumento não sustenta
 vácuo, e a entrada de ar foi localizada no próprio tensiômetro, sem que a
 derivação tenha sido descartada como caminho adicional (@sec-substituto).
 
-Três itens previstos permanecem não realizados, e determinam os limites do
+Dois itens previstos permanecem não realizados, e determinam os limites do
 que este capítulo autoriza afirmar.
 
 A *calibração experimental* não foi concluída. Os coeficientes de conversão em
@@ -59,15 +60,18 @@ conversão
 e de transmissão, mas não a resposta do instrumento à dinâmica de secagem e
 umedecimento do solo.
 
-O *RNF04 não está atendido.* O nó sensor não armazena leituras durante a
-indisponibilidade da rede: uma transmissão que falha perde a leitura. O número
-de sequência avança mesmo assim, de modo que a perda fica registrada como
-lacuna na série, e não oculta, mas não é recuperada. Quanto ao RNF02, o
-consumo do nó não foi medido, e o ciclo de aquisição aguarda entre leituras
-sem suspensão profunda (_deep sleep_): a alimentação por rede elétrica é
-atendida, mas a evolução para bateria, prevista no próprio requisito, exigirá
-esse recurso. Ambos têm precedente direto na literatura @abdelmoneim2023 e
-ficam registrados como trabalho futuro.
+O *RNF04 foi atendido em novembro*, em bancada. O nó guarda em memória as
+leituras cujo envio falha e as reenvia quando a conexão volta, da mais antiga
+para a mais nova, retirando-as só depois da resposta do servidor. Com o serviço
+parado por cinco minutos e, em seguida, com o Wi-Fi do roteador desligado por
+doze, nenhuma leitura se perdeu, e cada uma chegou com a hora em que foi medida
+(@sec-fila). A memória é volátil: um reinício ou uma falta de energia apaga o
+que estava na fila. Quanto ao RNF02, o consumo do nó não foi medido, e o ciclo
+de aquisição aguarda entre leituras sem suspensão profunda (_deep sleep_): a
+alimentação por rede elétrica é atendida, mas a evolução para bateria,
+prevista no próprio requisito, exigirá esse recurso. A fila persistente e a
+suspensão profunda têm precedente direto na literatura @abdelmoneim2023 e
+ficam registradas como trabalho futuro.
 
 O RF07 e o RF08 foram os últimos requisitos completados. A consulta ao
 histórico passou a oferecer, além dos três períodos fixos --- 24 horas, 7 dias
@@ -395,28 +399,32 @@ retransmissão subsequente, descartada por idempotência.
 ) <fig-sequencia>
 #fonte[Elaborado pelo autor (2026).]
 
-A figura descreve o contrato completo, e apenas a metade do servidor está
-implementada. A chave composta e o descarte da leitura repetida estão
-construídos e cobertos pela suíte automatizada. O lado do nó --- manter a
-leitura sem confirmação e retransmiti-la --- depende do armazenamento local,
-que não foi implementado (@sec-estado): no firmware atual, a leitura cuja
-transmissão falha é perdida, e a terceira situação da figura não ocorre. Como
-o servidor já trata a retransmissão, esse armazenamento pode ser acrescentado
-ao nó sem alteração do lado do servidor. O recurso tem precedente direto na
-literatura, em que se emprega cartão de memória para o mesmo fim
-@abdelmoneim2023, e não constituiria contribuição original deste trabalho.
+A figura descreve o contrato completo, e as duas metades estão implementadas.
+Do lado do servidor, a chave composta e o descarte da leitura repetida estão
+cobertos pela suíte automatizada. Do lado do nó, a leitura sem confirmação
+fica numa fila em memória e é reenviada no ciclo seguinte (@sec-fila); como o
+servidor já tratava a retransmissão, a fila foi acrescentada ao nó sem
+alteração do lado do servidor. A terceira situação da figura, porém, não foi
+provocada na placa: nos ensaios, as falhas ocorreram antes de a leitura chegar
+ao servidor, e o descarte da repetida segue verificado apenas pela suíte. O
+recurso tem precedente direto na literatura, em que se emprega cartão de
+memória para o mesmo fim @abdelmoneim2023, e não constitui contribuição
+original deste trabalho.
 
-Um detalhe de ordem de inicialização merece registro por não ser evidente. O
-firmware sincroniza o relógio por NTP antes de estabelecer qualquer conexão
-TLS. A razão é que a validação do certificado do servidor compara a validade
-declarada contra o relógio local: com o relógio na origem da contagem, em
-1970, um certificado perfeitamente válido é recusado sob a alegação de ainda
-não haver sido emitido. O certificado raiz da autoridade certificadora é
-embutido no firmware, de modo que a validação não depende de nenhum
-repositório externo de confiança. Esse ramo do firmware foi compilado --- o
-binário ocupa 83% da partição de aplicação ---, mas os ensaios relatados na
-@sec-bancada usaram HTTP sem TLS, de modo que o estabelecimento da sessão
-segura contra o servidor não foi exercitado.
+Um detalhe de ordem de inicialização merece registro, porque a sua
+justificativa estava errada até a verificação na placa. O firmware sincroniza
+o relógio por NTP antes do primeiro envio, e a razão suposta era a validação
+do certificado do servidor, que compararia a validade declarada com o relógio
+local. O ensaio da @sec-tls-placa mostrou que não compara: o núcleo do ESP32
+em uso compila a biblioteca de TLS sem a verificação de datas, e o nó aceita
+um certificado vencido. A ordem continua necessária, por outro motivo: o
+carimbo de tempo de cada leitura vem desse relógio. As raízes de confiança
+--- quatro, da autoridade certificadora Let's Encrypt --- são embutidas no
+firmware, de modo que a validação não depende de nenhum repositório externo
+de confiança. Os ensaios da @sec-bancada usaram HTTP sem TLS; o
+estabelecimento da sessão segura foi exercitado na placa contra servidores de
+teste da autoridade certificadora (@sec-tls-placa), mas não contra o servidor
+deste trabalho.
 
 == Serviço de retaguarda e modelo de dados <sec-retaguarda>
 
@@ -569,8 +577,8 @@ regravar o firmware. Eles passaram a ser gravados na memória não volátil do
 próprio ESP32 por um portal cativo. Sem configuração gravada, o nó sobe como
 ponto de acesso, e o celular de quem instala, ao conectar-se a ele, abre a
 página de configuração. O arquivo compilado guarda apenas o que não muda entre
-instalações: a física do circuito, os coeficientes nominais, os intervalos e o
-certificado raiz.
+instalações: a física do circuito, os coeficientes nominais, os intervalos e
+as raízes de confiança.
 
 A memória não volátil não oferece transação: cada campo é uma escrita
 independente, e uma gravação interrompida deixaria o nó com parte da
@@ -670,15 +678,27 @@ o servidor com duas interfaces de rede na mesma sub-rede, configuração em que 
 sistema operacional descarta em silêncio os pacotes que chegam pela interface
 que não é a da rota de volta, de modo que o nó acerta ou erra conforme a
 interface que lhe respondeu. O bloco final pode ter uma terceira causa. O que a
-sessão estabelece é mais restrito e independe da causa: *sem armazenamento
-local, cada perda é definitiva* (@sec-estado), e foi o próprio número de
-sequência, que avança mesmo quando o envio falha, que permitiu contá-las sem
-instrumentação adicional.
+sessão estabelece é mais restrito e independe da causa: *com o firmware de
+então, sem armazenamento local, cada perda era definitiva*, e foi o próprio
+número de sequência, que avança mesmo quando o envio falha, que permitiu
+contá-las sem instrumentação adicional. O nó passou a guardar as leituras em
+novembro (@sec-fila).
 
-O ciclo que encadeia as duas partes desta seção --- registrar uma calibração
-pelo aplicativo, gravar o seu identificador no portal e ter a leitura aceita
---- foi verificado contra o servidor pela suíte automatizada, mas não com o nó
-físico. Vale como implementado, e não como validado em bancada.
+Em 25/11/2026, o ciclo que encadeia as duas partes desta seção --- registrar
+uma calibração pelo aplicativo, gravar o seu identificador no portal e ter a
+leitura aceita --- foi exercitado com o nó físico. Um ensaio registrado pelo
+aplicativo, com os mesmos coeficientes nominais em vigor, recebeu o
+identificador `cal-2026-11-25-7c74`; gravado no portal, ele passou a constar
+de todas as leituras aceitas a partir de então. Com um identificador
+inexistente, o servidor recusou cada leitura com o motivo --- calibração
+desconhecida para o dispositivo ---, e o nó não as reenviou, como previsto:
+reenviar o que o servidor recusa por validação travaria a fila. O portal
+manteve a credencial gravada, com o campo em branco, enquanto o endereço e o
+identificador não mudaram, e exigiu-a de novo quando o endereço mudou; na
+varredura, listou 16 redes, contra as 4 vistas até então. A sessão registrou
+também um tropeço de uso: o campo do endereço vem preenchido com o valor
+gravado, e a troca de servidor passou despercebida na primeira tentativa,
+sem outro sinal além do console serial do nó.
 
 == Faixas de atenção e tratamento do sinal <sec-faixas>
 
@@ -743,9 +763,12 @@ dependência de recurso nativo do dispositivo: a aplicação consulta séries
 históricas e exibe classificações calculadas no servidor, operações
 inteiramente cobertas pelas capacidades de um navegador.
 
-O que se segue não é uma descrição de telas. São as decisões de projeto em que
-a interface pode afirmar ao produtor um fato falso sobre o solo dele, e a
-forma como cada uma foi tratada.
+O que se segue não é uma descrição de telas. São, primeiro, as decisões de
+projeto em que a interface pode afirmar ao produtor um fato falso sobre o solo
+dele, e a forma como cada uma foi tratada; depois, as decisões do redesenho
+feito ao fim do desenvolvimento, para que a resposta chegue a quem vai lê-la
+--- um produtor muitas vezes mais velho, que consulta o celular sob o sol e,
+às vezes, sem óculos.
 
 === Distribuição em artefato único
 
@@ -805,7 +828,7 @@ porque os limites do campo são inclusivos enquanto a restrição exige
 desigualdade estrita; e a chegada dos valores por qualquer caminho que não
 seja aquele formulário.
 
-=== Estados que não podem colapsar em conforto
+=== Estados que não podem colapsar em conforto <sec-estados-leitura>
 
 A interface distingue quatro situações, verificadas nesta ordem: o nó está
 desativado; o nó nunca reportou; a última leitura é antiga demais para
@@ -839,7 +862,8 @@ relação a todos eles. A justificativa está no RNF05 lido em concreto: a tela
 será consultada sob luz solar direta, onde a distinção entre matizes se
 degrada, e por um usuário que pode ser daltônico. Nas duas situações a cor
 deixa de ser um canal confiável, e um sistema cujo alerta depende só dela
-falha exatamente para quem mais precisa dele.
+falha exatamente para quem mais precisa dele. O redesenho acrescentou a esses
+canais um pictograma (@sec-legibilidade).
 
 === Descontinuidade da série
 
@@ -868,28 +892,265 @@ lacuna responderia "não há lacuna" e a linha seria ligada. *O modo de falha
 escolhido é um gráfico fragmentado, que é visível, em vez de uma reta
 inventada, que não é.*
 
-=== A lista com centenas de nós
+=== Uma resposta por talhão <sec-veredito>
 
-A lista de nós foi desenhada para poucos aparelhos: um cartão por nó, do mais
-seco para o mais úmido. Com os nós simulados da @sec-escala, ela virou
-rolagem, e a pergunta que a tela existe para responder --- de qual talhão
-cuidar agora --- passou a exigir a leitura de cartão por cartão. A lista foi
-então agrupada por talhão, sem reordenar nada: como o servidor já entrega os
-nós do mais seco para o mais úmido, preservar essa ordem ao agrupar põe
-primeiro o talhão do nó mais seco e, dentro dele, o nó mais seco, e a regra do
-sinal continua tendo uma única implementação.
+Até a fase final do desenvolvimento, a tela inicial era uma lista de nós
+agrupados por talhão, cada um com a sua leitura em kPa e a sua zona. Executada em um celular Android
+emulado e examinada do ponto de vista de quem a usaria, ela mostrou três
+problemas que nenhum teste automatizado acusava. A pergunta que motiva a
+consulta --- é preciso irrigar? --- não tinha resposta direta: o talhão exibia
+contagens por zona e uma tira de traços, e a conclusão ficava por conta de
+quem lia. O caminho principal empregava o vocabulário do sistema --- nó, faixa,
+valores negativos de kPa --- e misturava à leitura as funções do técnico que
+instala e calibra. E o tamanho de texto escolhido nas configurações do
+celular não chegava à página, problema tratado na @sec-legibilidade.
 
-Cada talhão com mais nós do que os três cartões exibidos ganha um resumo: a
-régua do detalhe, deitada, com as mesmas faixas e hachuras, e um traço por nó
-com leitura atual na posição da sua tensão. Os traços são semitransparentes,
-de modo que a sobreposição escurece onde há muitos nós, e a distribuição do
-talhão se lê de relance, sem histograma calculado. Abaixo da tira, a contagem
-por estado vem escrita, na ordem de gravidade. Nó sem leitura atual não ganha
-traço --- um traço afirma onde o solo está agora --- e aparece só na contagem.
-Com todos os cartões à vista, o resumo não aparece, porque apenas repetiria o
-que está logo abaixo. Uma busca por nome, código ou talhão completa a tela.
-Verificado com 160 nós simulados em quatro talhões, um deles sem faixa
-configurada.
+A tela inicial passou, então, a responder por talhão, em palavras: _Solo
+úmido · Não precisa irrigar agora_, _Solo secando · Irrigar nos próximos
+dias_, _Solo seco · Irrigar agora_. O valor em kPa continua disponível,
+rotulado como tensão da água no solo, mas como detalhe abaixo da resposta. A
+resposta é calculada a partir das zonas que o servidor já atribuiu a cada nó,
+por uma função que percorre uma sequência fixa de verificações, e, como nos
+estados da leitura (@sec-estados-leitura), a ordem é a regra:
+
++ nenhum nó ligado no talhão: não há a quem perguntar, e os nós desligados não
+  entram em conta alguma;
++ talhão sem limites de irrigação: nenhuma quantidade de dados permite
+  afirmar, razão pela qual esta verificação precede a contagem;
++ menos da metade dos nós ligados com leitura atual: a resposta seria a de uma
+  minoria, e o talhão aparece como _Sem leitura recente_;
++ alguma leitura atual sem zona em um talhão com limites, situação que o banco
+  de dados não deveria admitir: a resposta é _Não dá para dizer_, porque um
+  valor nulo nunca é convertido em conforto;
++ só então, a mediana das zonas das leituras atuais.
+
+A mediana é tomada sobre as zonas, e não sobre os valores de tensão. Isso é
+legítimo porque a classificação feita pelo servidor é monótona na tensão e os
+dois limiares são os mesmos para todos os nós do talhão --- são atributos do
+talhão, e não do nó (@sec-faixas) ---, de modo que a zona da leitura mediana é
+a mediana das zonas. A consequência é que o cliente continua sem comparar
+leitura com limiar: o módulo que calcula a resposta recebe zonas, conta-as e
+escolhe uma posição, e a verificação dos limites lê-os apenas como presença.
+A defesa contra o sinal invertido, que consistia em tornar o erro
+inexprimível, sobrevive à agregação.
+
+Com número ímpar de leituras atuais, a mediana é a usual. Com número par, há
+duas zonas no meio, e a escolhida é a mais seca das duas --- uma mediana
+superior, no sentido da severidade. É o caso do talhão do painel (b) da
+@fig-app-telas, em que dois nós úmidos e dois secando resultam em _Solo
+secando_. A escolha segue a mesma orientação da
+agregação temporal pelo mínimo (@sec-faixas): na dúvida entre duas zonas, a
+interface pende para a que pede atenção. A mediana foi preferida ao nó mais
+seco, critério implícito da lista anterior, porque com ele um único nó com
+defeito que lesse seco decidiria a resposta do talhão inteiro; com a mediana,
+mudar a resposta exige que metade dos nós concorde.
+
+O caso de campo, porém, é de poucos nós por talhão, e aí a proteção diminui.
+Com um nó, vale ele. Com dois, a mediana superior é o mais seco dos dois, e o
+defeito do lado seco volta a decidir. O cartão do talhão declara isso em uma
+frase --- _Com dois sensores, vale o mais seco_ --- e lista os dois nós, cada
+um com a sua palavra e o seu valor, de modo que a discordância entre eles
+fica à vista.
+
+A mediana tem também o defeito simétrico: esconde a minoria. Em um talhão de
+quarenta nós, quinze em estresse podem conviver com uma mediana em conforto.
+Para esse caso, a resposta ganha um complemento --- _Solo úmido · mas 15
+sensores secos · Não precisa irrigar agora_ --- quando os nós de uma zona mais
+seca que a resposta somam ao menos um quarto das leituras atuais,
+$ceil(n slash 4)$. O
+complemento avisa e não muda a resposta, que continua sendo a da mediana; o
+estresse tem prioridade sobre o alerta por ser a situação mais urgente. O
+limiar separa o defeito isolado do fenômeno: com quarenta nós, um nó em
+estresse não aciona o aviso, e dez acionam. Com um ou dois nós o complemento
+não ocorre por construção, já que a mediana superior já é o mais seco; com
+três, basta um. As frases de todos os casos estão em um único lugar do
+código, pela mesma razão que já orientava o texto da idade da leitura: duas
+redações do mesmo estado são duas oportunidades de uma delas soar como "tudo
+bem".
+
+Há uma tensão com a @sec-faixas que precisa ser declarada. Lá, a
+classificação foi posta no servidor para que todos os clientes produzissem o
+mesmo resultado; a resposta do talhão, que também é regra de negócio, ficou no
+cliente. A escolha decorreu do recorte do redesenho, que não alterou a API, e
+o risco é exatamente o descrito naquela seção: um segundo cliente teria de
+reimplementar a ordem das verificações, a mediana e o limiar do complemento. O
+que se preservou é a parte mais propensa a erro, a comparação com limiares
+negativos, que continua tendo uma só implementação. Levar a agregação para o
+servidor fica como trabalho futuro.
+
+=== A tela inicial e a lista com centenas de nós
+
+A primeira tela inicial foi desenhada para poucos aparelhos: um cartão por nó,
+do mais seco para o mais úmido. Com os nós simulados da @sec-escala, ela
+virou rolagem, e foi primeiro agrupada por talhão, preservando a ordem do
+servidor, com um resumo para cada talhão com mais nós do que os cartões
+exibidos: a régua do detalhe, deitada, com as mesmas faixas e hachuras e um
+traço semitransparente por nó com leitura atual na posição da sua tensão. A
+sobreposição escurece onde há muitos nós, e a distribuição do talhão se lê de
+relance, sem histograma calculado. Nó sem leitura atual não ganha traço,
+porque um traço afirma onde o solo está agora.
+
+No redesenho, essa tira saiu da tela inicial. A pergunta de qual talhão cuidar
+passou a ser respondida pela frase, e a distribuição foi para a página do
+talhão, sob o título _Onde está cada sensor_, para quem quer ver de onde vem a
+resposta. Cada talhão é agora um cartão cuja primeira linha é a resposta. O
+miolo do cartão muda com o número de nós ligados, porque o caso de campo é de
+um a quatro nós por talhão, e não de quarenta. Com um nó, o cartão mostra o
+próprio nó em uma linha e leva direto à tela dele, já que a página do talhão
+só repetiria o que ele diz. Com dois ou três, há uma linha por nó, com a
+palavra e o valor. Com quatro ou mais, há uma barra de proporção: um segmento
+por zona, com a cor e a hachura dela, e um segmento neutro para os nós sem
+leitura recente, cada um de largura proporcional à contagem, com as contagens
+escritas embaixo. Talhão sem limites não tem barra
+nem amostras de cor, porque não há zonas a mostrar; no lugar, uma frase diz
+quantos nós têm leitura sem limites para classificá-la.
+
+A ordem dos cartões também mudou. A anterior --- o talhão do nó mais seco
+primeiro --- contradiria a mediana: um único nó com defeito poria um talhão de
+_Solo úmido_ acima de um de _Solo seco_. Os cartões passaram a seguir a
+urgência da resposta: estresse, alerta, sem leitura recente, indeterminado,
+sem limites, conforto e, por último, talhão sem nó em uso. A ordenação é
+estável sobre categorias --- dentro de uma mesma resposta, vale a ordem do
+servidor --- e não compara tensão alguma, de modo que não é uma segunda
+implementação da regra de sinal. O custo foi registrado: os cartões trocam de
+lugar quando a resposta muda, e quem usa o aplicativo todos os dias pode se
+guiar pela posição. A alternativa, uma ordem fixa com a urgência apenas no
+cabeçalho, depende do teste com usuários, que não foi realizado. Acima dos
+cartões, uma síntese da propriedade responde antes de qualquer um deles, com
+uma linha por situação --- _1 talhão para irrigar agora_, _2 talhões para
+irrigar nos próximos dias_ ---, e não uma frase corrida, que com seis talhões
+passava de cinco linhas.
+
+A partir do cartão, o caminho tem dois níveis, cada um com endereço próprio,
+de modo que o botão de voltar do Android funciona em todos eles. A página do
+talhão traz a resposta e a origem dela, com os dois limites do talhão
+escritos, a tira, uma busca a partir de nove nós e a lista dos nós, do mais
+seco para o mais úmido. A tela do nó traz a resposta daquele nó, o valor, a
+régua e o gráfico. O que serve ao técnico --- identificadores, registro de
+calibração, dados de cadastro --- foi para uma área recolhida ao fim da tela
+do nó, _Para o técnico_. Alterar os limites passou a pedir confirmação na
+própria tela, com os valores anteriores e os novos, porque a mudança altera a
+resposta de todos os nós do talhão. O vocabulário da tela mudou junto: nó
+passou a ser _sensor_, faixa passou a ser _limites de irrigação_, e desativado
+passou a ser _desligado_. Neste texto, nó continua designando o dispositivo,
+como nos capítulos anteriores; a mudança é de quem lê a tela. A
+@fig-app-telas mostra os três níveis.
+
+// Flutuante, com a fonte DENTRO da figura: as três telas não cabem no resto
+// de uma página qualquer, e uma figura presa ao fluxo deixaria meia página
+// em branco. Fora da figura, a linha de fonte ficaria para trás.
+#figure(
+  kind: image,
+  placement: auto,
+  caption: [Telas do aplicativo: (a) tela inicial; (b) página de um talhão com
+    quatro nós; (c) tela de um nó],
+  {
+    grid(
+      columns: 3,
+      column-gutter: 4mm,
+      row-gutter: 2mm,
+      ..("app-inicio", "app-talhao", "app-sensor").map(f => box(
+        stroke: 0.5pt + luma(55%),
+        image("../figuras/" + f + ".png", width: 4.8cm),
+      )),
+      ..("(a)", "(b)", "(c)").map(t => text(size: 10pt, t)),
+    )
+    fonte[Elaborado pelo autor (2026), em emulador (Android Studio, perfil
+      Pixel 5, Chrome 149), com dados simulados.]
+  },
+) <fig-app-telas>
+
+=== Legível sem cor, com texto grande e sob o sol <sec-legibilidade>
+
+Cada estado é comunicado agora por quatro canais redundantes: um pictograma, a
+palavra, a cor e a hachura. Os pictogramas foram desenhados para o
+aplicativo: um torrão com três gotas para o solo úmido; com uma gota, para o
+que está secando; rachado e sob o sol, para o seco; tracejado e com um ponto
+de interrogação, quando não é possível dizer; um relógio, para a falta de
+leitura recente; uma tomada solta, para o nó desligado. O desenho é feito em
+tinta sobre o centro claro de um anel, e a cor e a hachura ficam no anel, de
+modo que o pictograma se lê sob o sol, em impressão monocromática e por quem
+não distingue cores. Os leitores de tela o ignoram, porque a informação é a
+palavra, que vem sempre ao lado. Com as capturas de tela convertidas para tons
+de cinza, o estado continuou legível, o que atende, quanto aos estados, ao critério 1.4.1 das diretrizes de acessibilidade do W3C,
+segundo o qual a cor não pode ser o único meio visual de transmitir uma
+informação @w3c2024.
+
+O problema do texto era menos visível. O Android permite aumentar o tamanho da
+fonte nas configurações do sistema, e é esse o recurso que uma pessoa com
+visão reduzida de fato usa. Com a escala em 130%, porém, só a interface do
+navegador crescia, e a página continuava igual. Desde a versão 146, o Chrome
+só aplica essa escala ao conteúdo quando a página a pede, por uma metatag
+(`<meta name="text-scale" content="scale">`), que o aplicativo não tinha. Com
+ela, a escala do sistema passa a valer, desde que nenhuma regra de estilo fixe
+o tamanho da fonte na raiz do documento, o que a anularia; o texto e a maior
+parte dos espaçamentos da interface são definidos em relação a essa raiz. O critério 1.4.4 das mesmas
+diretrizes pede que o texto possa ser ampliado até 200% sem perda de conteúdo
+ou de funcionalidade @w3c2024, e foi esse o teto testado: seis telas, três
+escalas de texto (100%, 130% e 200%) e os dois temas, 36 combinações, nenhuma
+com rolagem horizontal, conferida por medição no navegador do emulador, e não
+por inspeção visual. A largura da tela emulada é de 392 pixels CSS, maior que
+os 320 do critério de refluxo (1.4.10), que não foi verificado nessa largura.
+A @fig-app-legibilidade mostra a tela de um nó convertida para tons de cinza
+e a tela inicial com o texto em 200%, em que a resposta do cartão passa para
+baixo do pictograma em vez de ser cortada.
+
+#figure(
+  kind: image,
+  placement: auto,
+  caption: [Legibilidade: (a) tela de um nó convertida para tons de cinza;
+    (b) tela inicial com o texto do sistema em 200%; (c) cartão de talhão
+    com o texto em 200%],
+  {
+    grid(
+      columns: 3,
+      column-gutter: 4mm,
+      row-gutter: 2mm,
+      ..("app-sensor-cinza", "app-inicio-200", "app-cartao-200").map(f => box(
+        stroke: 0.5pt + luma(55%),
+        image("../figuras/" + f + ".png", width: 4.8cm),
+      )),
+      ..("(a)", "(b)", "(c)").map(t => text(size: 10pt, t)),
+    )
+    fonte[Elaborado pelo autor (2026), em emulador (Android Studio, perfil
+      Pixel 5, Chrome 149), com dados simulados.]
+  },
+) <fig-app-legibilidade>
+
+O tema claro passou a ser o padrão, mesmo com o celular em modo escuro, e o
+escuro, uma escolha feita nos ajustes do aplicativo. É um desvio deliberado da
+orientação usual, que é seguir a preferência do sistema, por dois motivos de
+campo: sob o sol, o tema claro é o legível; e a economia de bateria do Android
+liga o modo escuro sozinha, de modo que o produtor com pouca carga receberia a
+tela escura sem ter escolhido nada. O tema claro é declarado de forma a
+recusar também o escurecimento automático que os navegadores podem aplicar a
+páginas claras, que inverteria por algoritmo as cores e as hachuras escolhidas
+para serem distinguíveis por daltônicos. O que foi medido limita essa
+garantia: o tema escuro do próprio Chrome não altera o aplicativo, mas o
+escurecimento forçado, que no Chrome 149 só existe como opção experimental,
+ignora a recusa. A escolha do tema é aplicada antes da primeira pintura da
+tela por um script em arquivo separado, e não embutido no documento, porque a
+política de segurança de conteúdo enviada pelo serviço só admite scripts
+carregados de arquivos da própria origem.
+
+Uma decisão de navegação foi construída e revertida, e o registro vale pelo
+método. O projeto previa uma barra inferior fixa, na região alcançada pelo
+polegar, com os destinos _Talhões_ e _Ajustes_, e fixou, antes de construí-la,
+a condição para que ela ficasse: com o texto em 200%, a barra teria de deixar
+visível pelo menos um cartão de talhão inteiro. Construída e medida, ela
+ocupou 154 dos 745 pixels de altura útil, e nenhum cartão coube inteiro acima
+dela. Pela condição, a barra saiu, e os ajustes viraram um botão no topo da
+tela inicial. Sem a condição escrita antes, a barra --- um padrão consagrado
+em aplicativos móveis --- provavelmente teria ficado, e a tela teria perdido
+um quinto da altura justamente para quem aumenta o texto por precisar dele.
+
+Toda essa verificação foi feita em emulador (Android Studio, perfil Pixel 5,
+Chrome 149), com dados simulados --- talhões de um a quatro nós, um deles sem
+limites e outro com nós sem leitura recente --- e com os 160 nós simulados da
+@sec-escala. A execução em um celular físico, a instalação completa do
+aplicativo e o teste com pessoas do público a que o redesenho se destina não
+foram realizados. É esse teste que diria se as palavras, os pictogramas e a
+ordem dos cartões são lidos como se pretendeu.
 
 === Três defeitos que só apareceram contra o sistema real
 
@@ -984,10 +1245,13 @@ chave primária composta e o resultado das consultas de autorização por junç�
 não são reproduzíveis por um substituto sem reimplementá-lo, o que faria o
 teste verificar a reimplementação em vez do sistema.
 
-A camada de apresentação é verificada por 95 casos distribuídos em nove
+A camada de apresentação é verificada por 156 casos distribuídos em catorze
 arquivos, que cobrem a segmentação da série, a geometria da régua, a ordem de
-verificação dos estados da leitura, a tradução de zona em aparência e a
-montagem dos coeficientes de calibração enviados ao servidor.
+verificação dos estados da leitura, a tradução de zona em aparência, a
+montagem dos coeficientes de calibração enviados ao servidor e, desde o
+redesenho, a resposta do talhão --- a ordem das verificações, a mediana
+superior, o complemento, as frases e os plurais, a ordenação por urgência e a
+síntese --- e a escolha do tema.
 
 Os comportamentos críticos cobertos são a inversão de sinal na classificação
 das faixas de atenção; as fronteiras exatas dos limiares, verificadas nos
@@ -1257,8 +1521,9 @@ instrumento e a calibração passaram a esforço secundário.
 
 Esta seção separa deliberadamente o que foi observado do que ainda não pode
 ser afirmado. Ela relata dois ensaios contínuos, retifica um resultado
-anteriormente registrado e enumera, ao final, as afirmações que os dados
-obtidos não sustentam.
+anteriormente registrado, relata a sessão de novembro com quedas de conexão
+provocadas e com a validação de certificados na placa, e enumera, ao final,
+as afirmações que os dados obtidos não sustentam.
 
 === Verificação funcional preliminar
 
@@ -1450,12 +1715,10 @@ contraste entre os dois.
 Cabe registrar o que esse resultado não estabelece. Nenhum dos dois ensaios
 submeteu o enlace a uma condição adversa controlada, com atenuação medida ou
 interferência conhecida; a degradação do segundo ensaio foi encontrada, e não
-provocada. Sob perda prolongada de conectividade, o comportamento do nó é
-conhecido por construção, e não por ensaio: sem armazenamento local, toda
-leitura emitida durante a indisponibilidade se perde. O descarte idempotente
-de retransmissões está verificado apenas do lado do servidor, pela suíte
-automatizada; nenhum ensaio o exercitou a partir do nó, que hoje não
-retransmite.
+provocada. Com o firmware desses ensaios, que não guardava leituras, toda
+leitura emitida durante uma indisponibilidade se perdia. O nó passou a
+guardá-las em novembro, e a queda de conexão foi então provocada
+(@sec-fila).
 
 === Latência e o desvio entre relógios
 
@@ -1631,6 +1894,120 @@ verificação independente pode ser feita sobre eles. É por isso que a
 retificação da deriva, na @tab-deriva, precisou usar as médias horárias
 transcritas naquele registro: elas são tudo o que restou daquele ensaio.
 
+=== Queda de conexão provocada <sec-fila>
+
+Os dois ensaios contínuos usaram o firmware de então, que não guardava
+leituras. Em novembro, o nó passou a guardá-las numa fila, segundo quatro
+regras. A fila fica na memória RAM, e não na flash, para não escrever na
+memória permanente a cada leitura: cobre a queda de rede com o nó ligado, e
+perde-se num reinício. Cheia, com 720 leituras --- doze horas no intervalo de
+um minuto ---, descarta a mais antiga, porque para decidir a irrigação a
+leitura de agora vale mais que a de doze horas atrás, e a descartada vira
+lacuna na sequência. O envio lê um lote sem retirá-lo, e só a resposta do
+servidor o retira: se a resposta se perder depois da gravação, o lote volta
+no ciclo seguinte e é descartado como repetido pela chave (dispositivo,
+sequência). E a leitura recebe o carimbo de tempo na medição, e não no envio.
+
+Em 25/11/2026, a fila foi exercitada na placa, com o transdutor aberto à
+atmosfera, HTTP sem TLS e o servidor na rede local, em duas quedas
+provocadas (@tab-fila). Na primeira, o serviço foi parado por cinco minutos,
+com o Wi-Fi do nó intacto. Na segunda, o Wi-Fi do roteador foi desligado por
+doze minutos, o que exercita também a reconexão: o nó detecta a queda, tenta
+reconectar a cada ciclo e retoma sozinho quando a rede volta.
+
+#figure(
+  caption: [Fila de leituras pendentes do nó sob duas quedas provocadas],
+  text(size: 10pt)[#table(
+    columns: (1.6fr, 1fr, 1fr),
+    inset: (x: 5pt, y: 4.5pt),
+    align: (left, right, right),
+    stroke: (x, y) => if y == 0 { (bottom: 0.75pt) } else { (bottom: 0.5pt) },
+    table.header(
+      [*Medida*], [*Serviço parado*], [*Wi-Fi desligado*],
+    ),
+    [Duração da queda], [5 min], [12 min],
+    [Leituras retidas na fila], [5], [9],
+    [Entregues no primeiro envio após a volta], [5 de 5], [9 de 9],
+    [Leituras perdidas], [0], [0],
+    [Maior espera entre medição e gravação], [5 min 1 s], [12 min 5 s],
+  )],
+) <tab-fila>
+#fonte[Elaborado pelo autor (2026).]
+
+Nas duas quedas, nenhuma leitura se perdeu, e cada uma foi gravada com a hora
+em que foi medida, de modo que a série não registra a queda como lacuna. A
+única lacuna da sessão é a das três leituras recusadas de propósito no ensaio
+do portal (@sec-provisionamento). A perda que a fila não evita também
+apareceu: uma leitura pendente desapareceu com um reinício manual da placa,
+como previsto para memória volátil.
+
+O ensaio expôs um efeito não previsto. Sem rede, o ciclo de medição passou de
+60 para cerca de 80 segundos: a tentativa de reconexão, feita dentro do
+ciclo, bloqueia por até 20 segundos, e é feita enquanto o próprio controlador
+do Wi-Fi já tenta reconectar por conta própria. Nada se perde, mas o
+intervalo entre medições, durante a queda, não é o configurado. A sessão não
+cobre a fila cheia, cuja regra de descarte está coberta apenas por teste
+automatizado executado fora da placa; a resposta perdida depois da gravação,
+terceira situação da @fig-sequencia; nem quedas de horas.
+
+=== Raízes de confiança na placa <sec-tls-placa>
+
+O firmware valida o servidor com quatro raízes da autoridade certificadora
+Let's Encrypt --- ISRG Root X1 e X2, Root YR e YE ---, embutidas para que a
+validação não dependa de repositório externo e continue valendo quando a
+autoridade trocar a cadeia padrão. Sem servidor remoto disponível, a validação
+foi verificada na placa, em 25/11/2026, contra os servidores de teste que a
+própria autoridade mantém, um por raiz, com um programa separado do firmware
+que usa o mesmo cliente TLS e o mesmo conjunto de raízes. O resultado esperado
+de cada caso foi calculado antes, no computador, com a ferramenta `openssl` e
+as mesmas raízes (@tab-tls).
+
+A primeira rodada carrega as quatro raízes juntas, como em operação. Como os
+servidores de teste das raízes X1 e X2 enviam cadeias que passam pelas raízes
+novas, YR e YE, a segunda rodada carrega uma raiz por vez e acrescenta um
+controle negativo: o servidor da raiz YE com apenas a X1, que precisa ser
+recusado.
+
+#figure(
+  caption: [Validação de certificados na placa, contra servidores de teste da autoridade certificadora],
+  text(size: 10pt)[#table(
+    columns: (1.7fr, 1fr, 0.75fr, 0.75fr),
+    inset: (x: 5pt, y: 4.5pt),
+    align: (left, left, left, left),
+    stroke: (x, y) => if y == 0 { (bottom: 0.75pt) } else { (bottom: 0.5pt) },
+    table.header(
+      [*Caso*], [*Raízes carregadas*], [*Esperado*], [*Placa*],
+    ),
+    [Cadeia de cada raiz (4 servidores)], [as quatro], [aceita], [aceita],
+    [Cadeia de cada raiz (4 servidores)], [só a própria], [aceita], [aceita],
+    [Raiz errada (servidor da YE)], [só a X1], [recusa], [recusa],
+    [Outra autoridade certificadora], [as quatro], [recusa], [recusa],
+    [Certificado revogado], [as quatro], [aceita], [aceita],
+    [*Certificado vencido*], [as quatro], [*recusa*], [*aceita*],
+  )],
+) <tab-tls>
+#fonte[Elaborado pelo autor (2026).]
+
+Onze dos doze casos conferem. O certificado revogado é aceito também pelo
+`openssl` sem consulta à lista de revogação, e o caso está ali para registrar
+que o nó não a consulta. A divergência está no certificado vencido: com o
+relógio sincronizado, o nó o aceitou. A causa está na compilação, e não no
+firmware: o núcleo do ESP32 em uso, versão 3.3.11, compila a biblioteca de TLS
+(mbedTLS) com a opção de tempo ligada e sem a de verificação de datas
+(`CONFIG_MBEDTLS_HAVE_TIME_DATE`), de modo que a validade do certificado não
+é comparada com o relógio. O comentário do firmware que afirmava o contrário
+foi corrigido.
+
+O risco é estreito, mas existe: um certificado antigo do domínio do servidor,
+cuja chave tivesse vazado, continuaria aceito pelo nó, porque nem a validade
+nem a revogação são verificadas. A correção é comparar, no firmware, a
+validade do certificado recebido com o relógio sincronizado, logo depois de
+estabelecida a sessão, ou usar um núcleo compilado com a verificação de
+datas, e fica como trabalho futuro. Sem o caso de recusa, a rodada teria
+passado inteira, e o comentário errado teria seguido como fato. A validação
+contra a cadeia que o servidor deste trabalho vai entregar continua não
+exercitada, porque depende da hospedagem remota (@sec-implantacao).
+
 === Limites da interpretação
 
 As afirmações a seguir não são autorizadas pelos dados obtidos.
@@ -1656,11 +2033,11 @@ os dois ensaios divergem quanto à existência de tendência, e nenhuma causa fo
 estabelecida. Afirmar deriva sistemática, ou negá-la, excede o que duas
 observações sustentam.
 
-*O enlace não foi submetido a condição adversa controlada.* A degradação
-observada no início do segundo ensaio foi encontrada e corrigida, não
-provocada e medida. Sob perda prolongada de conectividade, sabe-se apenas o
-que decorre da construção: sem armazenamento local, as leituras do período
-se perdem.
+*O enlace não foi submetido a degradação controlada.* A degradação observada
+no início do segundo ensaio foi encontrada e corrigida, não provocada e
+medida. As quedas provocadas em novembro (@sec-fila) foram completas e
+duraram minutos: nem a atenuação gradual do sinal nem uma queda de horas
+foram ensaiadas.
 
 == Operação com múltiplos nós <sec-escala>
 
@@ -1691,8 +2068,9 @@ sequência, e nunca um número reaproveitado.
 O dado simulado fica marcado. O cadastro do nó ganhou um atributo que o
 identifica como simulado, fixado no momento do cadastro: a edição posterior do
 nó não o altera em nenhuma direção, e um nó real não pode ser convertido em
-simulado, nem o contrário. O serviço devolve o atributo, e o aplicativo exibe o
-selo _Simulado_ na lista de nós e no detalhe de cada um. O nó de demonstração,
+simulado, nem o contrário. O serviço devolve o atributo, e o aplicativo
+exibe o selo _Simulado_ em cada nó simulado --- ou uma única vez, no cartão do
+talhão, quando todos os nós dele o são. O nó de demonstração,
 cuja série também é gerada, recebeu a mesma marca. A ferramenta, por sua vez,
 só envia com as credenciais que ela própria recebeu ao cadastrar, e confere,
 antes de cada execução, que todos os seus nós estão marcados como simulados,
@@ -1871,10 +2249,11 @@ uma instalação por máquina virtual.
 O método foi exercitado em modo local, com a autoridade certificadora interna
 do proxy. Como a máquina virtual de implantação ainda não está disponível, a
 emissão do certificado por uma autoridade pública e a validação dessa cadeia
-pelo ESP32 seguem sem verificação. Da segunda parte do método, a configuração
-pelo portal foi validada em bancada contra o servidor de desenvolvimento, sem
-TLS, e o encadeamento com a calibração registrada vale como implementado, não
-como validado com o nó físico (@sec-provisionamento).
+pelo ESP32 seguem sem verificação; as raízes embutidas no firmware foram
+verificadas na placa contra servidores de teste da autoridade
+(@sec-tls-placa). Da segunda parte do método, a configuração pelo portal e o
+encadeamento com a calibração registrada foram exercitados com o nó físico,
+contra o servidor de desenvolvimento e sem TLS (@sec-provisionamento).
 
 === Limites destes ensaios
 
@@ -1985,9 +2364,10 @@ alternativa é dar ao concentrador uma credencial própria, autorizada a enviar
 em nome de um conjunto de nós, o que exige uma entidade nova no servidor e
 desloca para o concentrador a confiança hoje depositada em cada nó.
 
-O concentrador é também o lugar natural do armazenamento local que falta ao
-nó, o RNF04 (@sec-estado). Com memória e alimentação de rede, ele pode guardar
-as leituras durante a falta de conexão e reenviá-las depois, e a idempotência
-do servidor já descarta as que chegarem em dobro. A implementação dependia de
+O concentrador também estenderia o armazenamento local. A fila do nó fica em
+memória volátil e se perde num reinício (@sec-fila); com memória persistente e
+alimentação de rede, o concentrador pode guardar as leituras durante quedas
+longas e reenviá-las depois, e a idempotência do servidor já descarta as que
+chegarem em dobro. A implementação dependia de
 um segundo ESP32, que não esteve disponível, e fica como trabalho futuro, assim
 como o LoRa, outra tecnologia de rádio, como alternativa ao ESP-NOW.

@@ -454,6 +454,18 @@ rfc9110:
     value: https://www.rfc-editor.org/rfc/rfc9110
     date: 2026-11-04
 
+w3c2024:
+  type: report
+  title: "Web Content Accessibility Guidelines (WCAG) 2.2"
+  author:
+    - name: World Wide Web Consortium
+  date: 2024-12-12
+  publisher:
+    name: W3C
+  url:
+    value: https://www.w3.org/TR/WCAG22/
+    date: 2026-11-17
+
 rfc8446:
   type: report
   title: "RFC 8446: The Transport Layer Security (TLS) Protocol Version 1.3"
