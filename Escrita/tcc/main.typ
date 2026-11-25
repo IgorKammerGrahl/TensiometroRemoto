@@ -42,7 +42,8 @@
     de 2,6 mV ao longo de 13 h 36 min, duas corridas em dias distintos
     diferiram em 1,9 mV, cerca de 0,07 kPa, e não houve perda em 772 emissões
     consecutivas após a correção da condição de rede responsável pelas perdas
-    iniciais. A operação com múltiplos nós foi avaliada com nós simulados,
+    iniciais; com o Wi-Fi desligado por 12 min, também nada se perdeu. A
+    operação com múltiplos nós foi avaliada com nós simulados,
     marcados como tais, que se comunicam com o servidor pela mesma interface do
     firmware: mil nós na cadência real foram atendidos sem perda e com
     latência de 7,5 ms no percentil 99, e o serviço não perdeu leitura até
@@ -90,7 +91,8 @@
     showed a standard deviation of 2.6 mV over 13 h 36 min, two runs on
     different days differed by 1.9 mV, about 0.07 kPa, and no loss occurred
     over 772 consecutive transmissions once the network condition responsible
-    for the initial losses had been corrected. Operation with multiple nodes
+    for the initial losses had been corrected; with the Wi-Fi off for 12 min,
+    nothing was lost either. Operation with multiple nodes
     was evaluated with simulated nodes, flagged as such, which talk to the
     server through the same interface as the firmware: a thousand nodes at the
     real rate were served without loss and with a 99th-percentile latency of

@@ -123,8 +123,8 @@ identificados:
   vez de publicação e assinatura, por dispensar um intermediário permanente
   e por tornar síncrona a confirmação de gravação: pela resposta, o nó sensor
   sabe se a leitura foi persistida, condição para que um armazenamento local
-  possa descartá-la com segurança. Esse armazenamento não foi implementado
-  nesta etapa, conforme declarado no @cap-prototipo.
+  possa descartá-la com segurança. Esse armazenamento foi implementado como
+  uma fila em memória volátil no nó (@sec-fila).
 - *RF05 -- Armazenamento persistente em nuvem:* o backend deve armazenar as
   leituras recebidas em um repositório persistente, organizado por nó sensor,
   talhão e cultura, garantindo a integridade e a rastreabilidade dos dados.

@@ -448,8 +448,8 @@ Essa ressalva é o ponto de partida do contrato de ingestão deste trabalho: a
 requisição é tornada idempotente pela própria aplicação, por meio de uma
 chave única por leitura. O contrato prevê a retransmissão até a confirmação,
 combinada com o descarte de duplicatas no destino, para que cada leitura seja
-gravada uma única vez; no protótipo, só o descarte está implementado, e o nó
-ainda não retransmite (@cap-prototipo).
+gravada uma única vez; no protótipo, o servidor descarta as duplicatas, e o
+nó guarda e retransmite as leituras sem confirmação (@sec-fila).
 
 === Provisionamento por portal cativo
 

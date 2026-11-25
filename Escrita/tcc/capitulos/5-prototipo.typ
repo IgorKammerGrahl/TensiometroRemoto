@@ -43,7 +43,7 @@ de outubro não produziram nenhum ponto válido: o instrumento não sustenta
 vácuo, e a entrada de ar foi localizada no próprio tensiômetro, sem que a
 derivação tenha sido descartada como caminho adicional (@sec-substituto).
 
-Três itens previstos permanecem não realizados, e determinam os limites do
+Dois itens previstos permanecem não realizados, e determinam os limites do
 que este capítulo autoriza afirmar.
 
 A *calibração experimental* não foi concluída. Os coeficientes de conversão em
@@ -60,15 +60,18 @@ conversão
 e de transmissão, mas não a resposta do instrumento à dinâmica de secagem e
 umedecimento do solo.
 
-O *RNF04 não está atendido.* O nó sensor não armazena leituras durante a
-indisponibilidade da rede: uma transmissão que falha perde a leitura. O número
-de sequência avança mesmo assim, de modo que a perda fica registrada como
-lacuna na série, e não oculta, mas não é recuperada. Quanto ao RNF02, o
-consumo do nó não foi medido, e o ciclo de aquisição aguarda entre leituras
-sem suspensão profunda (_deep sleep_): a alimentação por rede elétrica é
-atendida, mas a evolução para bateria, prevista no próprio requisito, exigirá
-esse recurso. Ambos têm precedente direto na literatura @abdelmoneim2023 e
-ficam registrados como trabalho futuro.
+O *RNF04 foi atendido em novembro*, em bancada. O nó guarda em memória as
+leituras cujo envio falha e as reenvia quando a conexão volta, da mais antiga
+para a mais nova, retirando-as só depois da resposta do servidor. Com o serviço
+parado por cinco minutos e, em seguida, com o Wi-Fi do roteador desligado por
+doze, nenhuma leitura se perdeu, e cada uma chegou com a hora em que foi medida
+(@sec-fila). A memória é volátil: um reinício ou uma falta de energia apaga o
+que estava na fila. Quanto ao RNF02, o consumo do nó não foi medido, e o ciclo
+de aquisição aguarda entre leituras sem suspensão profunda (_deep sleep_): a
+alimentação por rede elétrica é atendida, mas a evolução para bateria,
+prevista no próprio requisito, exigirá esse recurso. A fila persistente e a
+suspensão profunda têm precedente direto na literatura @abdelmoneim2023 e
+ficam registradas como trabalho futuro.
 
 O RF07 e o RF08 foram os últimos requisitos completados. A consulta ao
 histórico passou a oferecer, além dos três períodos fixos --- 24 horas, 7 dias
@@ -396,28 +399,32 @@ retransmissão subsequente, descartada por idempotência.
 ) <fig-sequencia>
 #fonte[Elaborado pelo autor (2026).]
 
-A figura descreve o contrato completo, e apenas a metade do servidor está
-implementada. A chave composta e o descarte da leitura repetida estão
-construídos e cobertos pela suíte automatizada. O lado do nó --- manter a
-leitura sem confirmação e retransmiti-la --- depende do armazenamento local,
-que não foi implementado (@sec-estado): no firmware atual, a leitura cuja
-transmissão falha é perdida, e a terceira situação da figura não ocorre. Como
-o servidor já trata a retransmissão, esse armazenamento pode ser acrescentado
-ao nó sem alteração do lado do servidor. O recurso tem precedente direto na
-literatura, em que se emprega cartão de memória para o mesmo fim
-@abdelmoneim2023, e não constituiria contribuição original deste trabalho.
+A figura descreve o contrato completo, e as duas metades estão implementadas.
+Do lado do servidor, a chave composta e o descarte da leitura repetida estão
+cobertos pela suíte automatizada. Do lado do nó, a leitura sem confirmação
+fica numa fila em memória e é reenviada no ciclo seguinte (@sec-fila); como o
+servidor já tratava a retransmissão, a fila foi acrescentada ao nó sem
+alteração do lado do servidor. A terceira situação da figura, porém, não foi
+provocada na placa: nos ensaios, as falhas ocorreram antes de a leitura chegar
+ao servidor, e o descarte da repetida segue verificado apenas pela suíte. O
+recurso tem precedente direto na literatura, em que se emprega cartão de
+memória para o mesmo fim @abdelmoneim2023, e não constitui contribuição
+original deste trabalho.
 
-Um detalhe de ordem de inicialização merece registro por não ser evidente. O
-firmware sincroniza o relógio por NTP antes de estabelecer qualquer conexão
-TLS. A razão é que a validação do certificado do servidor compara a validade
-declarada contra o relógio local: com o relógio na origem da contagem, em
-1970, um certificado perfeitamente válido é recusado sob a alegação de ainda
-não haver sido emitido. O certificado raiz da autoridade certificadora é
-embutido no firmware, de modo que a validação não depende de nenhum
-repositório externo de confiança. Esse ramo do firmware foi compilado --- o
-binário ocupa 83% da partição de aplicação ---, mas os ensaios relatados na
-@sec-bancada usaram HTTP sem TLS, de modo que o estabelecimento da sessão
-segura contra o servidor não foi exercitado.
+Um detalhe de ordem de inicialização merece registro, porque a sua
+justificativa estava errada até a verificação na placa. O firmware sincroniza
+o relógio por NTP antes do primeiro envio, e a razão suposta era a validação
+do certificado do servidor, que compararia a validade declarada com o relógio
+local. O ensaio da @sec-tls-placa mostrou que não compara: o núcleo do ESP32
+em uso compila a biblioteca de TLS sem a verificação de datas, e o nó aceita
+um certificado vencido. A ordem continua necessária, por outro motivo: o
+carimbo de tempo de cada leitura vem desse relógio. As raízes de confiança
+--- quatro, da autoridade certificadora Let's Encrypt --- são embutidas no
+firmware, de modo que a validação não depende de nenhum repositório externo
+de confiança. Os ensaios da @sec-bancada usaram HTTP sem TLS; o
+estabelecimento da sessão segura foi exercitado na placa contra servidores de
+teste da autoridade certificadora (@sec-tls-placa), mas não contra o servidor
+deste trabalho.
 
 == Serviço de retaguarda e modelo de dados <sec-retaguarda>
 
@@ -570,8 +577,8 @@ regravar o firmware. Eles passaram a ser gravados na memória não volátil do
 próprio ESP32 por um portal cativo. Sem configuração gravada, o nó sobe como
 ponto de acesso, e o celular de quem instala, ao conectar-se a ele, abre a
 página de configuração. O arquivo compilado guarda apenas o que não muda entre
-instalações: a física do circuito, os coeficientes nominais, os intervalos e o
-certificado raiz.
+instalações: a física do circuito, os coeficientes nominais, os intervalos e
+as raízes de confiança.
 
 A memória não volátil não oferece transação: cada campo é uma escrita
 independente, e uma gravação interrompida deixaria o nó com parte da
@@ -671,15 +678,27 @@ o servidor com duas interfaces de rede na mesma sub-rede, configuração em que 
 sistema operacional descarta em silêncio os pacotes que chegam pela interface
 que não é a da rota de volta, de modo que o nó acerta ou erra conforme a
 interface que lhe respondeu. O bloco final pode ter uma terceira causa. O que a
-sessão estabelece é mais restrito e independe da causa: *sem armazenamento
-local, cada perda é definitiva* (@sec-estado), e foi o próprio número de
-sequência, que avança mesmo quando o envio falha, que permitiu contá-las sem
-instrumentação adicional.
+sessão estabelece é mais restrito e independe da causa: *com o firmware de
+então, sem armazenamento local, cada perda era definitiva*, e foi o próprio
+número de sequência, que avança mesmo quando o envio falha, que permitiu
+contá-las sem instrumentação adicional. O nó passou a guardar as leituras em
+novembro (@sec-fila).
 
-O ciclo que encadeia as duas partes desta seção --- registrar uma calibração
-pelo aplicativo, gravar o seu identificador no portal e ter a leitura aceita
---- foi verificado contra o servidor pela suíte automatizada, mas não com o nó
-físico. Vale como implementado, e não como validado em bancada.
+Em 25/11/2026, o ciclo que encadeia as duas partes desta seção --- registrar
+uma calibração pelo aplicativo, gravar o seu identificador no portal e ter a
+leitura aceita --- foi exercitado com o nó físico. Um ensaio registrado pelo
+aplicativo, com os mesmos coeficientes nominais em vigor, recebeu o
+identificador `cal-2026-11-25-7c74`; gravado no portal, ele passou a constar
+de todas as leituras aceitas a partir de então. Com um identificador
+inexistente, o servidor recusou cada leitura com o motivo --- calibração
+desconhecida para o dispositivo ---, e o nó não as reenviou, como previsto:
+reenviar o que o servidor recusa por validação travaria a fila. O portal
+manteve a credencial gravada, com o campo em branco, enquanto o endereço e o
+identificador não mudaram, e exigiu-a de novo quando o endereço mudou; na
+varredura, listou 16 redes, contra as 4 vistas até então. A sessão registrou
+também um tropeço de uso: o campo do endereço vem preenchido com o valor
+gravado, e a troca de servidor passou despercebida na primeira tentativa,
+sem outro sinal além do console serial do nó.
 
 == Faixas de atenção e tratamento do sinal <sec-faixas>
 
@@ -1502,8 +1521,9 @@ instrumento e a calibração passaram a esforço secundário.
 
 Esta seção separa deliberadamente o que foi observado do que ainda não pode
 ser afirmado. Ela relata dois ensaios contínuos, retifica um resultado
-anteriormente registrado e enumera, ao final, as afirmações que os dados
-obtidos não sustentam.
+anteriormente registrado, relata a sessão de novembro com quedas de conexão
+provocadas e com a validação de certificados na placa, e enumera, ao final,
+as afirmações que os dados obtidos não sustentam.
 
 === Verificação funcional preliminar
 
@@ -1695,12 +1715,10 @@ contraste entre os dois.
 Cabe registrar o que esse resultado não estabelece. Nenhum dos dois ensaios
 submeteu o enlace a uma condição adversa controlada, com atenuação medida ou
 interferência conhecida; a degradação do segundo ensaio foi encontrada, e não
-provocada. Sob perda prolongada de conectividade, o comportamento do nó é
-conhecido por construção, e não por ensaio: sem armazenamento local, toda
-leitura emitida durante a indisponibilidade se perde. O descarte idempotente
-de retransmissões está verificado apenas do lado do servidor, pela suíte
-automatizada; nenhum ensaio o exercitou a partir do nó, que hoje não
-retransmite.
+provocada. Com o firmware desses ensaios, que não guardava leituras, toda
+leitura emitida durante uma indisponibilidade se perdia. O nó passou a
+guardá-las em novembro, e a queda de conexão foi então provocada
+(@sec-fila).
 
 === Latência e o desvio entre relógios
 
@@ -1876,6 +1894,120 @@ verificação independente pode ser feita sobre eles. É por isso que a
 retificação da deriva, na @tab-deriva, precisou usar as médias horárias
 transcritas naquele registro: elas são tudo o que restou daquele ensaio.
 
+=== Queda de conexão provocada <sec-fila>
+
+Os dois ensaios contínuos usaram o firmware de então, que não guardava
+leituras. Em novembro, o nó passou a guardá-las numa fila, segundo quatro
+regras. A fila fica na memória RAM, e não na flash, para não escrever na
+memória permanente a cada leitura: cobre a queda de rede com o nó ligado, e
+perde-se num reinício. Cheia, com 720 leituras --- doze horas no intervalo de
+um minuto ---, descarta a mais antiga, porque para decidir a irrigação a
+leitura de agora vale mais que a de doze horas atrás, e a descartada vira
+lacuna na sequência. O envio lê um lote sem retirá-lo, e só a resposta do
+servidor o retira: se a resposta se perder depois da gravação, o lote volta
+no ciclo seguinte e é descartado como repetido pela chave (dispositivo,
+sequência). E a leitura recebe o carimbo de tempo na medição, e não no envio.
+
+Em 25/11/2026, a fila foi exercitada na placa, com o transdutor aberto à
+atmosfera, HTTP sem TLS e o servidor na rede local, em duas quedas
+provocadas (@tab-fila). Na primeira, o serviço foi parado por cinco minutos,
+com o Wi-Fi do nó intacto. Na segunda, o Wi-Fi do roteador foi desligado por
+doze minutos, o que exercita também a reconexão: o nó detecta a queda, tenta
+reconectar a cada ciclo e retoma sozinho quando a rede volta.
+
+#figure(
+  caption: [Fila de leituras pendentes do nó sob duas quedas provocadas],
+  text(size: 10pt)[#table(
+    columns: (1.6fr, 1fr, 1fr),
+    inset: (x: 5pt, y: 4.5pt),
+    align: (left, right, right),
+    stroke: (x, y) => if y == 0 { (bottom: 0.75pt) } else { (bottom: 0.5pt) },
+    table.header(
+      [*Medida*], [*Serviço parado*], [*Wi-Fi desligado*],
+    ),
+    [Duração da queda], [5 min], [12 min],
+    [Leituras retidas na fila], [5], [9],
+    [Entregues no primeiro envio após a volta], [5 de 5], [9 de 9],
+    [Leituras perdidas], [0], [0],
+    [Maior espera entre medição e gravação], [5 min 1 s], [12 min 5 s],
+  )],
+) <tab-fila>
+#fonte[Elaborado pelo autor (2026).]
+
+Nas duas quedas, nenhuma leitura se perdeu, e cada uma foi gravada com a hora
+em que foi medida, de modo que a série não registra a queda como lacuna. A
+única lacuna da sessão é a das três leituras recusadas de propósito no ensaio
+do portal (@sec-provisionamento). A perda que a fila não evita também
+apareceu: uma leitura pendente desapareceu com um reinício manual da placa,
+como previsto para memória volátil.
+
+O ensaio expôs um efeito não previsto. Sem rede, o ciclo de medição passou de
+60 para cerca de 80 segundos: a tentativa de reconexão, feita dentro do
+ciclo, bloqueia por até 20 segundos, e é feita enquanto o próprio controlador
+do Wi-Fi já tenta reconectar por conta própria. Nada se perde, mas o
+intervalo entre medições, durante a queda, não é o configurado. A sessão não
+cobre a fila cheia, cuja regra de descarte está coberta apenas por teste
+automatizado executado fora da placa; a resposta perdida depois da gravação,
+terceira situação da @fig-sequencia; nem quedas de horas.
+
+=== Raízes de confiança na placa <sec-tls-placa>
+
+O firmware valida o servidor com quatro raízes da autoridade certificadora
+Let's Encrypt --- ISRG Root X1 e X2, Root YR e YE ---, embutidas para que a
+validação não dependa de repositório externo e continue valendo quando a
+autoridade trocar a cadeia padrão. Sem servidor remoto disponível, a validação
+foi verificada na placa, em 25/11/2026, contra os servidores de teste que a
+própria autoridade mantém, um por raiz, com um programa separado do firmware
+que usa o mesmo cliente TLS e o mesmo conjunto de raízes. O resultado esperado
+de cada caso foi calculado antes, no computador, com a ferramenta `openssl` e
+as mesmas raízes (@tab-tls).
+
+A primeira rodada carrega as quatro raízes juntas, como em operação. Como os
+servidores de teste das raízes X1 e X2 enviam cadeias que passam pelas raízes
+novas, YR e YE, a segunda rodada carrega uma raiz por vez e acrescenta um
+controle negativo: o servidor da raiz YE com apenas a X1, que precisa ser
+recusado.
+
+#figure(
+  caption: [Validação de certificados na placa, contra servidores de teste da autoridade certificadora],
+  text(size: 10pt)[#table(
+    columns: (1.7fr, 1fr, 0.75fr, 0.75fr),
+    inset: (x: 5pt, y: 4.5pt),
+    align: (left, left, left, left),
+    stroke: (x, y) => if y == 0 { (bottom: 0.75pt) } else { (bottom: 0.5pt) },
+    table.header(
+      [*Caso*], [*Raízes carregadas*], [*Esperado*], [*Placa*],
+    ),
+    [Cadeia de cada raiz (4 servidores)], [as quatro], [aceita], [aceita],
+    [Cadeia de cada raiz (4 servidores)], [só a própria], [aceita], [aceita],
+    [Raiz errada (servidor da YE)], [só a X1], [recusa], [recusa],
+    [Outra autoridade certificadora], [as quatro], [recusa], [recusa],
+    [Certificado revogado], [as quatro], [aceita], [aceita],
+    [*Certificado vencido*], [as quatro], [*recusa*], [*aceita*],
+  )],
+) <tab-tls>
+#fonte[Elaborado pelo autor (2026).]
+
+Onze dos doze casos conferem. O certificado revogado é aceito também pelo
+`openssl` sem consulta à lista de revogação, e o caso está ali para registrar
+que o nó não a consulta. A divergência está no certificado vencido: com o
+relógio sincronizado, o nó o aceitou. A causa está na compilação, e não no
+firmware: o núcleo do ESP32 em uso, versão 3.3.11, compila a biblioteca de TLS
+(mbedTLS) com a opção de tempo ligada e sem a de verificação de datas
+(`CONFIG_MBEDTLS_HAVE_TIME_DATE`), de modo que a validade do certificado não
+é comparada com o relógio. O comentário do firmware que afirmava o contrário
+foi corrigido.
+
+O risco é estreito, mas existe: um certificado antigo do domínio do servidor,
+cuja chave tivesse vazado, continuaria aceito pelo nó, porque nem a validade
+nem a revogação são verificadas. A correção é comparar, no firmware, a
+validade do certificado recebido com o relógio sincronizado, logo depois de
+estabelecida a sessão, ou usar um núcleo compilado com a verificação de
+datas, e fica como trabalho futuro. Sem o caso de recusa, a rodada teria
+passado inteira, e o comentário errado teria seguido como fato. A validação
+contra a cadeia que o servidor deste trabalho vai entregar continua não
+exercitada, porque depende da hospedagem remota (@sec-implantacao).
+
 === Limites da interpretação
 
 As afirmações a seguir não são autorizadas pelos dados obtidos.
@@ -1901,11 +2033,11 @@ os dois ensaios divergem quanto à existência de tendência, e nenhuma causa fo
 estabelecida. Afirmar deriva sistemática, ou negá-la, excede o que duas
 observações sustentam.
 
-*O enlace não foi submetido a condição adversa controlada.* A degradação
-observada no início do segundo ensaio foi encontrada e corrigida, não
-provocada e medida. Sob perda prolongada de conectividade, sabe-se apenas o
-que decorre da construção: sem armazenamento local, as leituras do período
-se perdem.
+*O enlace não foi submetido a degradação controlada.* A degradação observada
+no início do segundo ensaio foi encontrada e corrigida, não provocada e
+medida. As quedas provocadas em novembro (@sec-fila) foram completas e
+duraram minutos: nem a atenuação gradual do sinal nem uma queda de horas
+foram ensaiadas.
 
 == Operação com múltiplos nós <sec-escala>
 
@@ -2117,10 +2249,11 @@ uma instalação por máquina virtual.
 O método foi exercitado em modo local, com a autoridade certificadora interna
 do proxy. Como a máquina virtual de implantação ainda não está disponível, a
 emissão do certificado por uma autoridade pública e a validação dessa cadeia
-pelo ESP32 seguem sem verificação. Da segunda parte do método, a configuração
-pelo portal foi validada em bancada contra o servidor de desenvolvimento, sem
-TLS, e o encadeamento com a calibração registrada vale como implementado, não
-como validado com o nó físico (@sec-provisionamento).
+pelo ESP32 seguem sem verificação; as raízes embutidas no firmware foram
+verificadas na placa contra servidores de teste da autoridade
+(@sec-tls-placa). Da segunda parte do método, a configuração pelo portal e o
+encadeamento com a calibração registrada foram exercitados com o nó físico,
+contra o servidor de desenvolvimento e sem TLS (@sec-provisionamento).
 
 === Limites destes ensaios
 
@@ -2231,9 +2364,10 @@ alternativa é dar ao concentrador uma credencial própria, autorizada a enviar
 em nome de um conjunto de nós, o que exige uma entidade nova no servidor e
 desloca para o concentrador a confiança hoje depositada em cada nó.
 
-O concentrador é também o lugar natural do armazenamento local que falta ao
-nó, o RNF04 (@sec-estado). Com memória e alimentação de rede, ele pode guardar
-as leituras durante a falta de conexão e reenviá-las depois, e a idempotência
-do servidor já descarta as que chegarem em dobro. A implementação dependia de
+O concentrador também estenderia o armazenamento local. A fila do nó fica em
+memória volátil e se perde num reinício (@sec-fila); com memória persistente e
+alimentação de rede, o concentrador pode guardar as leituras durante quedas
+longas e reenviá-las depois, e a idempotência do servidor já descarta as que
+chegarem em dobro. A implementação dependia de
 um segundo ESP32, que não esteve disponível, e fica como trabalho futuro, assim
 como o LoRa, outra tecnologia de rádio, como alternativa ao ESP-NOW.
