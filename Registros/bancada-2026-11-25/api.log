@@ -1,0 +1,4 @@
+{"time":"2026-11-25T15:52:37.616965089-03:00","level":"INFO","msg":"escutando","porta":"8080"}
+{"time":"2026-11-25T16:29:51.982557348-03:00","level":"INFO","msg":"sinal recebido: esperando as requisicoes em andamento"}
+{"time":"2026-11-25T16:29:51.982677987-03:00","level":"INFO","msg":"encerrado sem requisicoes pendentes"}
+{"time":"2026-11-25T16:34:39.810218679-03:00","level":"INFO","msg":"escutando","porta":"8080"}

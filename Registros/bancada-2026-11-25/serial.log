@@ -1,0 +1,327 @@
+15:57:51 ;f<p?fn&b$;n&&n$l#;"$&df|fn&&&bn&&&f`<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<;$$$l;&>&ff<#f&;nb$"$"b;db"<8d`;f<p?fn&b$;n&&n$l#;"8#&ln|n&&&f"&&ffn`<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<;$$$l;&>&ff<#f&;nb$""b;b"":$ets Jul 29 2019 12:21:46
+15:57:51 
+15:57:51 rst:0x1 (POWERON_RESET),boot:0x13 (SPI_FAST_FLASH_BOOT)
+15:57:51 configsip: 0, SPIWP:0xee
+15:57:51 clk_drv:0x00,q_drv:0x00,d_drv:0x00,cs0_drv:0x00,hd_drv:0x00,wp_drv:0x00
+15:57:51 mode:DIO, clock div:1
+15:57:51 load:0x3fff0030,len:4640
+15:57:51 load:0x40078000,len:15592
+15:57:51 load:0x40080400,len:3164
+15:57:51 entry 0x4008059c
+15:57:53 
+15:57:53 # No sensor de tensiometria - MODO TELEMETRIA
+15:57:53 # Device: tensio-01
+15:57:53 # Destino: http://192.168.1.12:8080/api/v1/readings
+15:57:53 # ATENCAO: DEV_SEM_TLS ativo. Trafego SEM CRIPTOGRAFIA.
+15:57:53 # seq recuperado da NVS: 539
+15:57:57 # Wi-Fi: conectando a <rede>.......
+15:57:57 # Wi-Fi conectado. IP: 192.168.1.8
+15:57:58 # NTP: sincronizando.......
+15:57:58 # NTP sincronizado. Agora (UTC): 2026-11-25T18:57:58Z
+15:57:58 # Fila de pendentes: ate 720 leituras em RAM.
+15:57:58 #
+15:57:58 # seq,mv_pino,v_sensor,kpa,pendentes
+15:57:59 # ERRO no POST. Codigo: -1  (connection refused)
+15:57:59 539,3026,4.539,0.98,1
+15:58:11 ets Jul 29 2019 12:21:46
+15:58:11 
+15:58:11 rst:0x1 (POWERON_RESET),boot:0x13 (SPI_FAST_FLASH_BOOT)
+15:58:11 configsip: 0, SPIWP:0xee
+15:58:11 clk_drv:0x00,q_drv:0x00,d_drv:0x00,cs0_drv:0x00,hd_drv:0x00,wp_drv:0x00
+15:58:11 mode:DIO, clock div:1
+15:58:11 load:0x3fff0030,len:4640
+15:58:11 load:0x40078000,len:15592
+15:58:11 load:0x40080400,len:3164
+15:58:11 entry 0x4008059c
+15:58:13 
+15:58:13 # No sensor de tensiometria - MODO TELEMETRIA
+15:58:13 # Device: tensio-01
+15:58:13 # Destino: http://192.168.1.12:8080/api/v1/readings
+15:58:13 # ATENCAO: DEV_SEM_TLS ativo. Trafego SEM CRIPTOGRAFIA.
+15:58:13 # seq recuperado da NVS: 540
+15:58:17 # Wi-Fi: conectando a <rede>........
+15:58:17 # Wi-Fi conectado. IP: 192.168.1.8
+15:58:19 # NTP: sincronizando.........
+15:58:19 # NTP sincronizado. Agora (UTC): 2026-11-25T18:58:19Z
+15:58:19 # Fila de pendentes: ate 720 leituras em RAM.
+15:58:19 #
+15:58:19 # seq,mv_pino,v_sensor,kpa,pendentes
+15:58:20 # ERRO no POST. Codigo: -1  (connection refused)
+15:58:20 540,3025,4.537,0.94,1
+15:59:20 # ERRO no POST. Codigo: -1  (connection refused)
+15:59:20 541,3020,4.530,0.75,2
+16:00:20 # ERRO no POST. Codigo: -1  (connection refused)
+16:00:20 542,3017,4.525,0.64,3
+16:01:20 # ERRO no POST. Codigo: -1  (connection refused)
+16:01:20 543,3017,4.525,0.64,4
+16:02:20 # ERRO no POST. Codigo: -1  (connection refused)
+16:02:20 544,3019,4.529,0.71,5
+16:03:20 # ERRO no POST. Codigo: -1  (connection refused)
+16:03:20 545,3019,4.529,0.71,6
+16:04:20 # ERRO no POST. Codigo: -1  (connection refused)
+16:04:20 546,3018,4.527,0.67,7
+16:05:21 # ERRO no POST. Codigo: -1  (connection refused)
+16:05:21 547,3017,4.525,0.64,8
+16:06:21 # ERRO no POST. Codigo: -1  (connection refused)
+16:06:21 548,3021,4.531,0.79,9
+16:07:21 # ERRO no POST. Codigo: -1  (connection refused)
+16:07:21 549,3016,4.524,0.60,10
+16:08:21 # ERRO no POST. Codigo: -1  (connection refused)
+16:08:21 550,3017,4.525,0.64,11
+16:08:39 ets Jul 29 2019 12:21:46
+16:08:39 
+16:08:39 rst:0x1 (POWERON_RESET),boot:0x13 (SPI_FAST_FLASH_BOOT)
+16:08:39 configsip: 0, SPIWP:0xee
+16:08:39 clk_drv:0x00,q_drv:0x00,d_drv:0x00,cs0_drv:0x00,hd_drv:0x00,wp_drv:0x00
+16:08:39 mode:DIO, clock div:1
+16:08:39 load:0x3fff0030,len:4640
+16:08:39 load:0x40078000,len:15592
+16:08:39 load:0x40080400,len:3164
+16:08:39 entry 0x4008059c
+16:08:41 # BOOT pressionado: abrindo o portal.
+16:08:41 # MODO PROVISIONAMENTO
+16:08:41 # AP: tensio-setup-A19C   IP: 192.168.4.1
+16:08:41 # Portal: varrendo redes...
+16:08:46 # Portal: 16 redes encontradas.
+16:10:23 # Portal: testando associacao em <rede>
+16:10:27 # Portal: associou.
+16:14:52 # Portal: testando associacao em <rede>
+16:14:55 # Portal: associou.
+16:15:26 ets Jul 29 2019 12:21:46
+16:15:26 
+16:15:26 rst:0xc (SW_CPU_RESET),boot:0x13 (SPI_FAST_FLASH_BOOT)
+16:15:26 configsip: 0, SPIWP:0xee
+16:15:26 clk_drv:0x00,q_drv:0x00,d_drv:0x00,cs0_drv:0x00,hd_drv:0x00,wp_drv:0x00
+16:15:26 mode:DIO, clock div:1
+16:15:26 load:0x3fff0030,len:4640
+16:15:26 load:0x40078000,len:15592
+16:15:26 load:0x40080400,len:3164
+16:15:26 entry 0x4008059c
+16:15:28 
+16:15:28 # No sensor de tensiometria - MODO TELEMETRIA
+16:15:28 # Device: tensio-01
+16:15:28 # Destino: http://192.168.1.12:8080/api/v1/readings
+16:15:28 # ATENCAO: DEV_SEM_TLS ativo. Trafego SEM CRIPTOGRAFIA.
+16:15:28 # seq recuperado da NVS: 551
+16:15:32 # Wi-Fi: conectando a <rede>.......
+16:15:32 # Wi-Fi conectado. IP: 192.168.1.8
+16:15:33 # NTP: sincronizando...
+16:15:33 # NTP sincronizado. Agora (UTC): 2026-11-25T19:15:33Z
+16:15:33 # Fila de pendentes: ate 720 leituras em RAM.
+16:15:33 #
+16:15:33 # seq,mv_pino,v_sensor,kpa,pendentes
+16:15:38 # ERRO no POST. Codigo: -1  (connection refused)
+16:15:38 551,3025,4.537,0.94,1
+16:16:38 # ERRO no POST. Codigo: -1  (connection refused)
+16:16:38 552,3021,4.531,0.79,2
+16:17:38 # ERRO no POST. Codigo: -1  (connection refused)
+16:17:38 553,3020,4.530,0.75,3
+16:17:50 ets Jul 29 2019 12:21:46
+16:17:50 
+16:17:50 rst:0x1 (POWERON_RESET),boot:0x13 (SPI_FAST_FLASH_BOOT)
+16:17:50 configsip: 0, SPIWP:0xee
+16:17:50 clk_drv:0x00,q_drv:0x00,d_drv:0x00,cs0_drv:0x00,hd_drv:0x00,wp_drv:0x00
+16:17:50 mode:DIO, clock div:1
+16:17:50 load:0x3fff0030,len:4640
+16:17:50 load:0x40078000,len:15592
+16:17:50 load:0x40080400,len:3164
+16:17:50 entry 0x4008059c
+16:17:52 # BOOT pressionado: abrindo o portal.
+16:17:52 # MODO PROVISIONAMENTO
+16:17:53 # AP: tensio-setup-A19C   IP: 192.168.4.1
+16:17:53 # Portal: varrendo redes...
+16:17:57 # Portal: 15 redes encontradas.
+16:18:47 # Portal: testando associacao em <rede>
+16:18:51 # Portal: associou.
+16:19:44 ets Jul 29 2019 12:21:46
+16:19:44 
+16:19:44 rst:0xc (SW_CPU_RESET),boot:0x13 (SPI_FAST_FLASH_BOOT)
+16:19:44 configsip: 0, SPIWP:0xee
+16:19:44 clk_drv:0x00,q_drv:0x00,d_drv:0x00,cs0_drv:0x00,hd_drv:0x00,wp_drv:0x00
+16:19:44 mode:DIO, clock div:1
+16:19:44 load:0x3fff0030,len:4640
+16:19:44 load:0x40078000,len:15592
+16:19:44 load:0x40080400,len:3164
+16:19:44 entry 0x4008059c
+16:19:46 
+16:19:46 # No sensor de tensiometria - MODO TELEMETRIA
+16:19:46 # Device: tensio-01
+16:19:46 # Destino: http://192.168.1.2:8080/api/v1/readings
+16:19:46 # ATENCAO: DEV_SEM_TLS ativo. Trafego SEM CRIPTOGRAFIA.
+16:19:46 # seq recuperado da NVS: 554
+16:19:50 # Wi-Fi: conectando a <rede>.......
+16:19:50 # Wi-Fi conectado. IP: 192.168.1.8
+16:19:53 # NTP: sincronizando...........
+16:19:53 # NTP sincronizado. Agora (UTC): 2026-11-25T19:19:53Z
+16:19:53 # Fila de pendentes: ate 720 leituras em RAM.
+16:19:53 #
+16:19:53 # seq,mv_pino,v_sensor,kpa,pendentes
+16:19:58 # ERRO no POST. Codigo: -1  (connection refused)
+16:19:58 554,3027,4.541,1.01,1
+16:20:58 # HTTP 200  lote=2 accepted=2 duplicates=0 rejected=0
+16:20:58 555,3021,4.531,0.79,0
+16:21:58 # HTTP 200  lote=1 accepted=1 duplicates=0 rejected=0
+16:21:58 556,3020,4.530,0.75,0
+16:22:58 # HTTP 200  lote=1 accepted=1 duplicates=0 rejected=0
+16:22:58 557,3018,4.527,0.67,0
+16:23:22 ets Jul 29 2019 12:21:46
+16:23:22 
+16:23:22 rst:0x1 (POWERON_RESET),boot:0x13 (SPI_FAST_FLASH_BOOT)
+16:23:22 configsip: 0, SPIWP:0xee
+16:23:22 clk_drv:0x00,q_drv:0x00,d_drv:0x00,cs0_drv:0x00,hd_drv:0x00,wp_drv:0x00
+16:23:22 mode:DIO, clock div:1
+16:23:22 load:0x3fff0030,len:4640
+16:23:22 load:0x40078000,len:15592
+16:23:22 load:0x40080400,len:3164
+16:23:22 entry 0x4008059c
+16:23:23 # BOOT pressionado: abrindo o portal.
+16:23:23 # MODO PROVISIONAMENTO
+16:23:24 # AP: tensio-setup-A19C   IP: 192.168.4.1
+16:23:24 # Portal: varrendo redes...
+16:23:28 # Portal: 16 redes encontradas.
+16:23:57 # Portal: testando associacao em <rede>
+16:24:01 # Portal: associou.
+16:24:51 ets Jul 29 2019 12:21:46
+16:24:51 
+16:24:51 rst:0xc (SW_CPU_RESET),boot:0x13 (SPI_FAST_FLASH_BOOT)
+16:24:51 configsip: 0, SPIWP:0xee
+16:24:51 clk_drv:0x00,q_drv:0x00,d_drv:0x00,cs0_drv:0x00,hd_drv:0x00,wp_drv:0x00
+16:24:51 mode:DIO, clock div:1
+16:24:51 load:0x3fff0030,len:4640
+16:24:51 load:0x40078000,len:15592
+16:24:51 load:0x40080400,len:3164
+16:24:51 entry 0x4008059c
+16:24:53 
+16:24:53 # No sensor de tensiometria - MODO TELEMETRIA
+16:24:53 # Device: tensio-01
+16:24:53 # Destino: http://192.168.1.2:8080/api/v1/readings
+16:24:53 # ATENCAO: DEV_SEM_TLS ativo. Trafego SEM CRIPTOGRAFIA.
+16:24:53 # seq recuperado da NVS: 558
+16:24:56 # Wi-Fi: conectando a <rede>.......
+16:24:56 # Wi-Fi conectado. IP: 192.168.1.8
+16:24:57 # NTP: sincronizando..
+16:24:57 # NTP sincronizado. Agora (UTC): 2026-11-25T19:24:57Z
+16:24:57 # Fila de pendentes: ate 720 leituras em RAM.
+16:24:57 #
+16:24:57 # seq,mv_pino,v_sensor,kpa,pendentes
+16:25:02 # ERRO no POST. Codigo: -1  (connection refused)
+16:25:02 558,3029,4.543,1.09,1
+16:26:02 # HTTP 200  lote=2 accepted=0 duplicates=0 rejected=2
+16:26:02 # ALERTA: leitura rejeitada pelo servidor -> {"accepted":0,"duplicates":0,"rejected":2,"rejections":[{"index":0,"seq":558,"reason":"calibration_id desconhecido para este device: cal-nao-existe"},{"index":1,"seq":559,"reason":"calibration_id desconhecido para este device: cal-nao-existe"}],"server_time":"2026-11-25T19:26:02.556043136Z"}
+16:26:02 
+16:26:02 559,3024,4.536,0.90,0
+16:27:02 # HTTP 200  lote=1 accepted=0 duplicates=0 rejected=1
+16:27:02 # ALERTA: leitura rejeitada pelo servidor -> {"accepted":0,"duplicates":0,"rejected":1,"rejections":[{"index":0,"seq":560,"reason":"calibration_id desconhecido para este device: cal-nao-existe"}],"server_time":"2026-11-25T19:27:02.863870673Z"}
+16:27:02 
+16:27:02 560,3023,4.535,0.86,0
+16:27:09 ets Jul 29 2019 12:21:46
+16:27:09 
+16:27:09 rst:0x1 (POWERON_RESET),boot:0x13 (SPI_FAST_FLASH_BOOT)
+16:27:09 configsip: 0, SPIWP:0xee
+16:27:09 clk_drv:0x00,q_drv:0x00,d_drv:0x00,cs0_drv:0x00,hd_drv:0x00,wp_drv:0x00
+16:27:09 mode:DIO, clock div:1
+16:27:09 load:0x3fff0030,len:4640
+16:27:09 load:0x40078000,len:15592
+16:27:09 load:0x40080400,len:3164
+16:27:09 entry 0x4008059c
+16:27:11 # BOOT pressionado: abrindo o portal.
+16:27:11 # MODO PROVISIONAMENTO
+16:27:11 # AP: tensio-setup-A19C   IP: 192.168.4.1
+16:27:11 # Portal: varrendo redes...
+16:27:15 # Portal: 15 redes encontradas.
+16:27:45 # Portal: testando associacao em <rede>
+16:27:49 # Portal: associou.
+16:28:15 ets Jul 29 2019 12:21:46
+16:28:15 
+16:28:15 rst:0xc (SW_CPU_RESET),boot:0x13 (SPI_FAST_FLASH_BOOT)
+16:28:15 configsip: 0, SPIWP:0xee
+16:28:15 clk_drv:0x00,q_drv:0x00,d_drv:0x00,cs0_drv:0x00,hd_drv:0x00,wp_drv:0x00
+16:28:15 mode:DIO, clock div:1
+16:28:15 load:0x3fff0030,len:4640
+16:28:15 load:0x40078000,len:15592
+16:28:15 load:0x40080400,len:3164
+16:28:15 entry 0x4008059c
+16:28:16 
+16:28:16 # No sensor de tensiometria - MODO TELEMETRIA
+16:28:16 # Device: tensio-01
+16:28:16 # Destino: http://192.168.1.2:8080/api/v1/readings
+16:28:17 # ATENCAO: DEV_SEM_TLS ativo. Trafego SEM CRIPTOGRAFIA.
+16:28:17 # seq recuperado da NVS: 561
+16:28:20 # Wi-Fi: conectando a <rede>.......
+16:28:20 # Wi-Fi conectado. IP: 192.168.1.8
+16:28:25 # NTP: sincronizando...................
+16:28:25 # NTP sincronizado. Agora (UTC): 2026-11-25T19:28:25Z
+16:28:25 # Fila de pendentes: ate 720 leituras em RAM.
+16:28:25 #
+16:28:25 # seq,mv_pino,v_sensor,kpa,pendentes
+16:28:30 # ERRO no POST. Codigo: -1  (connection refused)
+16:28:30 561,3032,4.548,1.20,1
+16:29:30 # HTTP 200  lote=2 accepted=2 duplicates=0 rejected=0
+16:29:30 562,3026,4.539,0.98,0
+16:30:30 # ERRO no POST. Codigo: -1  (connection refused)
+16:30:30 563,3026,4.539,0.98,1
+16:31:31 # ERRO no POST. Codigo: -1  (connection refused)
+16:31:31 564,3024,4.536,0.90,2
+16:32:31 # ERRO no POST. Codigo: -1  (connection refused)
+16:32:31 565,3024,4.536,0.90,3
+16:33:31 # ERRO no POST. Codigo: -1  (connection refused)
+16:33:31 566,3023,4.535,0.86,4
+16:34:31 # ERRO no POST. Codigo: -1  (connection refused)
+16:34:31 567,3024,4.536,0.90,5
+16:35:31 # HTTP 200  lote=6 accepted=6 duplicates=0 rejected=0
+16:35:31 568,3024,4.536,0.90,0
+16:36:31 # HTTP 200  lote=1 accepted=1 duplicates=0 rejected=0
+16:36:31 569,3024,4.536,0.90,0
+16:37:31 # HTTP 200  lote=1 accepted=1 duplicates=0 rejected=0
+16:37:31 570,3023,4.535,0.86,0
+16:38:31 # HTTP 200  lote=1 accepted=1 duplicates=0 rejected=0
+16:38:31 571,3024,4.536,0.90,0
+16:39:32 # HTTP 200  lote=1 accepted=1 duplicates=0 rejected=0
+16:39:32 572,3023,4.535,0.86,0
+16:40:32 # Wi-Fi caiu. Reconectando.
+16:40:32 # Wi-Fi: conectando a <rede>E (740192) wifi:sta is connecting, cannot set config
+16:40:52 .........................................
+16:40:52 # ERRO: Wi-Fi nao conectou dentro do timeout.
+16:40:52 573,3028,4.542,1.05,1
+16:41:52 # Wi-Fi caiu. Reconectando.
+16:41:52 # Wi-Fi: conectando a <rede>E (820757) wifi:sta is connecting, cannot set config
+16:42:13 .........................................
+16:42:13 # ERRO: Wi-Fi nao conectou dentro do timeout.
+16:42:13 574,3030,4.545,1.13,2
+16:43:13 # Wi-Fi caiu. Reconectando.
+16:43:13 # Wi-Fi: conectando a <rede>E (901322) wifi:sta is connecting, cannot set config
+16:43:33 .........................................
+16:43:33 # ERRO: Wi-Fi nao conectou dentro do timeout.
+16:43:33 575,3031,4.547,1.16,3
+16:44:33 # Wi-Fi caiu. Reconectando.
+16:44:33 # Wi-Fi: conectando a <rede>E (981887) wifi:sta is connecting, cannot set config
+16:44:54 .........................................
+16:44:54 # ERRO: Wi-Fi nao conectou dentro do timeout.
+16:44:54 576,3032,4.548,1.20,4
+16:45:54 # Wi-Fi caiu. Reconectando.
+16:45:54 # Wi-Fi: conectando a <rede>E (1062452) wifi:sta is connecting, cannot set config
+16:46:15 .........................................
+16:46:15 # ERRO: Wi-Fi nao conectou dentro do timeout.
+16:46:15 577,3030,4.545,1.13,5
+16:47:15 # Wi-Fi caiu. Reconectando.
+16:47:15 # Wi-Fi: conectando a <rede>E (1143017) wifi:sta is connecting, cannot set config
+16:47:35 .........................................
+16:47:35 # ERRO: Wi-Fi nao conectou dentro do timeout.
+16:47:35 578,3032,4.548,1.20,6
+16:48:35 # Wi-Fi caiu. Reconectando.
+16:48:35 # Wi-Fi: conectando a <rede>E (1223582) wifi:sta is connecting, cannot set config
+16:48:56 .........................................
+16:48:56 # ERRO: Wi-Fi nao conectou dentro do timeout.
+16:48:56 579,3031,4.547,1.16,7
+16:49:56 # Wi-Fi caiu. Reconectando.
+16:49:56 # Wi-Fi: conectando a <rede>E (1304147) wifi:sta is connecting, cannot set config
+16:50:16 .........................................
+16:50:16 # ERRO: Wi-Fi nao conectou dentro do timeout.
+16:50:16 580,3032,4.548,1.20,8
+16:51:16 # Wi-Fi caiu. Reconectando.
+16:51:16 # Wi-Fi: conectando a <rede>E (1384712) wifi:sta is connecting, cannot set config
+16:51:37 .........................................
+16:51:37 # ERRO: Wi-Fi nao conectou dentro do timeout.
+16:51:37 581,3031,4.547,1.16,9
+16:52:37 # HTTP 200  lote=10 accepted=10 duplicates=0 rejected=0
+16:52:37 582,3027,4.541,1.01,0
