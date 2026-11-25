@@ -69,9 +69,11 @@
 // assinatura cruzada (root-yr-by-x1, root-ye-by-x2) sobre a mesma chave. Como
 // conferir a cadeia que o servidor entrega: docs/DEPLOY.md.
 //
-// A validacao compara a validade do certificado contra o relogio, e por
-// isso o NTP sincroniza ANTES do primeiro POST -- com o clock em 1970
-// qualquer certificado valido e recusado como ainda nao emitido.
+// As DATAS do certificado NAO sao conferidas: o nucleo esp32 (3.3.11)
+// compila o mbedTLS sem CONFIG_MBEDTLS_HAVE_TIME_DATE, e um certificado
+// vencido de uma cadeia que leva a estas raizes e aceito (medido na placa:
+// Registros/bancada-2026-11-25, T3). Revogacao tambem nao e consultada. O NTP
+// sincroniza antes do primeiro POST pelo carimbo das leituras, nao pelo TLS.
 static const char CA_RAIZ_PEM[] =
     // ISRG Root X1
     "-----BEGIN CERTIFICATE-----\n"

@@ -280,10 +280,12 @@ openssl s_client -showcerts -connect SEU_HOST:443 </dev/null
 O último certificado da cadeia é a raiz. Cole o PEM no formato que já está
 no arquivo — uma string C por linha, cada uma terminada em `\n`.
 
-O `setup()` sincroniza o NTP **antes** de qualquer conexão TLS, e isso não é
-ordem arbitrária: a validação do certificado compara a validade contra o
-relógio, e com o relógio em 1970 um certificado perfeitamente válido é
-recusado como ainda não emitido.
+O `setup()` sincroniza o NTP **antes** do primeiro envio porque o carimbo de
+cada leitura vem desse relógio. Não é pela validação do certificado: o núcleo
+esp32 (3.3.11) compila o mbedTLS sem `CONFIG_MBEDTLS_HAVE_TIME_DATE`, e o nó
+**não confere as datas de validade**. Um certificado vencido de uma cadeia que
+leva às raízes do `CA_RAIZ_PEM` é aceito, e a revogação também não é
+consultada (medido na placa em `Registros/bancada-2026-11-25/`, T3).
 
 ### 2. Telemetria sem TLS — apenas desenvolvimento
 
